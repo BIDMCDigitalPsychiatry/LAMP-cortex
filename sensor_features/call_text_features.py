@@ -16,6 +16,12 @@ def conversational_degree():
 def call_degree(data, times, resolution):
     """
     Find degree of call log (i.e. how many persons the user connected with over phone)
+    
+    :param data (dict): sensor data, which may or may not contain 'lamp.calls' df
+    :param times (list): range of datetimes used in feature dataframe
+	:param resolution (datetime.timedelta): time difference between subsequence datetimes in "times"
+    
+    :return callDegreeDf (pandas.DataFrame): the call log degree ('Call Degree') at a given datetime ('Date')
     """
     if 'lamp.calls' not in data:
         return pd.DataFrame({'Date': times, 'Call Degree': [0] * len(times)})
@@ -41,9 +47,12 @@ def call_duration(data, times, resolution, label=1):
     """
     Find call time
 
-    :param
-    :param
+    :param data (dict): sensor data, which may or may not contain 'lamp.calls' df
+    :param times (list): range of datetimes used in feature dataframe
+	:param resolution (datetime.timedelta): time difference between subsequence datetimes in "times"
     :param label(int): indicates whether or not to query incoming calls (1) or outgoing calls (2)
+    
+    :return callDurationDf (pandas.DataFrame): the cumulative call time ('Call Duration') of incoming or outgoing calls at a given datetime ('Date')
     """
     if 'lamp.calls' not in data:
         return pd.DataFrame({'Date': times, 'Call Duration': [0] * len(times)})
@@ -68,9 +77,12 @@ def call_number(data, times, resolution, label=1):
     """
     Find number of calls
 
-    :param (str): 
-    :param 
-    :param label(int): indicates whether or not to query incoming calls (1), outgoing calls (2)
+    :param data (dict): sensor data, which may or may not contain 'lamp.calls' df
+    :param times (list): range of datetimes used in feature dataframe
+	:param resolution (datetime.timedelta): time difference between subsequence datetimes in "times"
+    :param label(int): indicates whether or not to query incoming calls (1) or outgoing calls (2)
+    
+    :return callNumberDf (pandas.DataFrame): the cumulative number of calls made or received ('Call Number') at a given datetime ('Date')
     """
     if 'lamp.calls' not in data:
         return pd.DataFrame({'Date': times, 'Call Number': [0] * len(times)})
