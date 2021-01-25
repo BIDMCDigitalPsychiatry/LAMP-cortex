@@ -13,7 +13,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="LAMP_cortex",
-    version="1.0.1,
+    version="1.0.3",
     description="LAMP Platform",
     author="Division of Digital Psychiatry at Beth Israel Deaconess Medical Center.",
     author_email="team@digitalpsych.org",
@@ -24,12 +24,16 @@ setup(
       "datetime",
       "numpy",
       "pandas",
-      "altair".
+      "altair",
       "tzwhere",
-      "geopy",
+      "geopy>=2.0",
       "pytz",
+      "tzwhere", 
+      "entrypoints", 
+      "tool",
+      "lifelines"
     ],
-    extras_require={':python_version >= "3.6"': ['future']},
+    python_requires='>=3',
     packages=find_packages(exclude=["test", "tests"]),
     include_package_data=True,
     long_description="""\

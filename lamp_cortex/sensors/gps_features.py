@@ -1,7 +1,7 @@
 import math 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+import datetime
 from geopy import distance
 
 #import geopy
@@ -24,7 +24,7 @@ def label_gps_points(sensor_data):
             
         else:
             dist = distance.distance((point1['latitude'], point1['longitude']), (point2['latitude'], point2['longitude'])).km 
-            speed =  dist / ((datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
+            speed =  dist / ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
             
             if speed >= SPEED_THRESHOLD: stationary = False
             else: stationary = True
@@ -35,8 +35,9 @@ def label_gps_points(sensor_data):
 def get_total_distance(df, idx1, idx2):
     dist = 0
     for i in range(idx1 + 1, idx2 + 1):
-        c2 = (df['latitude'][i], df['longitude'][i])
-        c1 = (df['latitude'][i-1], df['longitude'][i-1])
+        #print(df.loc[df.index == i, :])
+        c2 = (float(df.loc[df.index == i, 'latitude'].values[0]), float(df.loc[df.index == i, 'longitude'].values[0]))
+        c1 = (float(df.loc[df.index == i - 1, 'latitude'].values[0]), float(df.loc[df.index == i - 1, 'longitude'].values[0]))
         dist += distance.distance(c1, c2).km
     return dist
 
@@ -81,7 +82,7 @@ def get_trip_count(trip_dict, interval_range, l):
 def trip_count(dates):
     pass
 
-def get_trip_features(trips, dates):#interval_range, l):
+def get_trip_features(trips, dates, freq=datetime.timedelta(days=1)):#interval_range, l):
     '''
     trip_dict values' units:
     Duration - Minutes
@@ -89,37 +90,50 @@ def get_trip_features(trips, dates):#interval_range, l):
     '''
 
     #callDf = pd.DataFrame([[min([t for t in times if t <= call[0]], key=lambda x: abs(x - call[0])), dict(call[1])['call_trace']] for call in call_data if dict(call[1])['call_type'] == label and call[0] >= sorted(times)[0] and call[0] <= sorted(times)[-1] + resolution], columns=['Date', 'Call Trace'])
-    for date in dates:
-        print(date)
+    #for date in dates:
+    #    print(date)
 
-    
-    # trip_dict = gen_trip_dict(interval_range)
-    # for i in range(len(interval_range)):
-    #     for j in range(len(l)):
-    #         if l[j][0] >= interval_range[i].left and l[j][1] <= interval_range[i].right:
-                
-    #             trip_dict[interval_range[i]]['Trip Count'] += 1
-                
-    #             trip_len = l[j][1] - l[j][0]
-    #             days, seconds = trip_len.days, trip_len.seconds
-    #             hours = days * 1440 + seconds / 60
-    #             trip_dict[interval_range[i]]['Duration'] += hours
+    l = trips
+    interval_range = dates
 
-    #             trip_dict[interval_range[i]]['Distance Traveled'] += l[j][2]
+    trip_dict = gen_trip_dict(interval_range)
 
-    # return trip_dict
+    #for i in range(len(interval_range)):
+    for i in range(len(dates)):
+        if i == len(dates) - 1:
+            date, next_date = dates[i], dates[i] + freq
+        else:
+            date, next_date = dates[i], dates[i+1]
+        for idx, trip in trips.iterrows():
+            if date <= trip['Trip Start'] and next_date >= trip['Trip End']:
+                trip_dict[date]['Trip Count'] += 1
+                trip_duration = trip['Trip End'] - trip['Trip Start']
+                trip_dict[date]['Duration'] = (trip_duration.days * 24) + (trip_duration.seconds / 60)
+                trip_dict[date]['Distance Traveled'] = trip['Distance']
+
+    tripDf = pd.DataFrame([[t, trip_dict[t]['Trip Count'], trip_dict[t]['Duration'], trip_dict[t]['Distance Traveled']] for t in trip_dict],
+                          columns=['Date', 'Trip Count', 'Duration', 'Distance Traveled'])
+
+    return tripDf
 
 
 
 def all(sensor_data, dates, resolution):
+    if "lamp.gps" not in sensor_data or len(sensor_data['lamp.gps']) <= 1:
+        return pd.DataFrame({'Date': dates})
+
     labeled_data = label_gps_points(sensor_data)
     trip_data = get_trips(labeled_data)
     interval_range = pd.interval_range(labeled_data.loc[labeled_data.index[0], 'local_timestamp'], 
                                        labeled_data.loc[labeled_data.index[-1], 'local_timestamp'], 
                                        freq=resolution)
 
-    get_trip_features(trip_data, dates)
-
+    tripDf = get_trip_features(trip_data, 
+                                      dates, 
+                                      freq=resolution)
+    
+    return tripDf
+    
 
 if __name__ == "__main__":
     pass
