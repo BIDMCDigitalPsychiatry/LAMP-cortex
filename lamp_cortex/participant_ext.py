@@ -126,6 +126,13 @@ class ParticipantExt():
             if len(s_results) > 0:
                 participant_sensors[sensor] = pd.DataFrame.from_dict(s_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
 
+        
+        #Edge case of lamp.gps.contextual
+        if 'lamp.gps.contextual' in participant_sensors and 'lamp.gps' not in participant_sensors:
+            gps_context = participant_sensors['lamp.gps.contextual'].copy()
+            if len(gps_context[['UTC_timestamp', 'latitude', 'longitude', 'accuracy']].dropna()) > 0:
+                participant_sensors['lamp.gps'] = gps_context[['UTC_timestamp', 'latitude', 'longitude', 'accuracy']].dropna()
+
         return participant_sensors
 
     def cognitive_game_results(self, participant=None):
@@ -137,7 +144,6 @@ class ParticipantExt():
         participant_activities_cg_ids = {cg['id']:cg for cg in participant_activities_cgs}        
         cg_data = {}
 
-        #NOTE: bug here, as if len(results) > 1000, not all results will be returned
         raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant)['data'], key=lambda x: x['timestamp'])
         cg_results = [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
 
@@ -176,11 +182,19 @@ class ParticipantExt():
             participant = self.id
 
         participant_activities = LAMP.Activity.all_by_participant(participant)['data']
-        participant_activities_surveys = [activity for activity in participant_activities if activity['spec'] == 'lamp.survey']
+        participant_activities_surveys = [activity for activity in participant_activities if activity['spec'] == 'lamp.survey'] 
         participant_activities_surveys_ids = [survey['id'] for survey in participant_activities_surveys]        
+        
+        raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant)['data'], key=lambda x: x['timestamp'])
+        participant_results = [result for result in raw_results if 'activity' in result and result['activity'] in participant_activities_surveys_ids and len(result['temporal_slices']) > 0]
 
-        #NOTE: bug here, as if len(results) > 1000, not all results will be returned
-        participant_results = [result for result in LAMP.ActivityEvent.all_by_participant(participant)['data'] if 'activity' in result and result['activity'] in participant_activities_surveys_ids and len(result['temporal_slices']) > 0]
+        if len(raw_results) > 0: #add results until no more
+            res_oldest = raw_results[0]['timestamp']
+
+            while raw_results == 1000:
+                raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest)['data'], key=lambda x: x['timestamp'])
+                participant_results += [result for result in raw_results if 'activity' in result and result['activity'] in participant_activities_surveys_ids and len(result['temporal_slices']) > 0]
+                res_oldest = raw_results[0]['timestamp']
 
         
         participant_surveys = {} #maps survey_type to occurence of scores 
@@ -204,7 +218,6 @@ class ParticipantExt():
                         exists = True
                         break
 
-                
                 if not exists: #question text is different from the activity setting; skip
                     continue
                     
@@ -217,8 +230,8 @@ class ParticipantExt():
                     score = float(event_value)
                         
                 elif current_question_info['type'] == 'boolean':
-                    if event_value == 'no': score = 0.0 #no is healthy in standard scoring
-                    elif event_value == 'yes' : score = 3.0 # yes is healthy in reverse scoring
+                    if event_value.upper() == 'NO': score = 0.0 #no is healthy in standard scoring
+                    elif event_value.upper() == 'YES' : score = 3.0 # yes is healthy in reverse scoring
 
                 elif current_question_info['type'] == 'list' :
                     for option_index in range(len(current_question_info['options'])) :
@@ -309,28 +322,50 @@ class ParticipantExt():
         
         #Convert timestamps to appropriate local time; use GPS if it exists
         for dom in results:
-            if 'lamp.gps' in results:
-                if 'timezone' not in results['lamp.gps'].columns: #Generate timezone for every gps readings and convert timestamps
-                    tz = tzwhere.tzwhere(forceTZ=True) #force timezone if ambigiuous
-                    results['lamp.gps'].loc[:, 'timezone'] = results['lamp.gps'].apply(lambda x: tz.tzNameAt(x['latitude'], 
-                                                                                                             x['longitude'], 
-                                                                                                             forceTZ=True), 
-                                                                                       axis=1)
 
-                    gps_converted_datetimes = pd.Series([datetime.datetime.fromtimestamp(t/1000, tz=pytz.timezone(results['lamp.gps']['timezone'][idx])) for idx, t in results['lamp.gps']['UTC_timestamp'].iteritems()])
+            if 'lamp.gps' in results:
+                gps_sensor = 'lamp.gps'
+
+                #if no not-null gps readings, short circuit
+                if len(results[gps_sensor].dropna(subset=['latitude', 'longitude'])) == 0: #if no gps readings, remove sensor
+
+                    tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) #pytz.timezone('America/New_York')
+                    matched_gps_readings = pd.Series([tz] * len(results[dom]))
+                    converted_datetimes = results[dom]['UTC_timestamp'].apply(lambda t: datetime.datetime.fromtimestamp(t/1000, tz=tz))
+                    converted_timestamps = converted_datetimes.apply(lambda t: t.timestamp() * 1000)
+            
+                    results[dom].loc[:, 'timezone'] = matched_gps_readings
+                    results[dom].loc[:, 'local_timestamp'] = converted_timestamps.values
+                    results[dom].loc[:, 'local_datetime'] = converted_datetimes.dt.tz_localize(None).values
+                    results[dom].reset_index(drop=True, inplace=True)
+                    continue
+
+                if 'timezone' not in results[gps_sensor].columns: #Generate timezone for every gps readings and convert timestamps
+                    tz = tzwhere.tzwhere(forceTZ=True) #force timezone if ambigiuous
+                    try:
+                        results[gps_sensor].loc[:, 'timezone'] = results[gps_sensor].apply(lambda x: tz.tzNameAt(x['latitude'], 
+                                                                                                                x['longitude'], 
+                                                                                                                forceTZ=True), 
+                                                                                        axis=1)
+                    except:
+                        tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) 
+                        matched_gps_readings = pd.Series([tz] * len(results[dom]))
+                        results[gps_sensor].loc[:, 'timezone'] = matched_gps_readings
+
+                    gps_converted_datetimes = pd.Series([datetime.datetime.fromtimestamp(t/1000, tz=pytz.timezone(results[gps_sensor]['timezone'][idx])) for idx, t in results[gps_sensor]['UTC_timestamp'].iteritems()])
                     gps_converted_timestamps = gps_converted_datetimes.apply(lambda t: t.timestamp() * 1000)
                     
-                    results['lamp.gps'].loc[:, 'local_timestamp'] = gps_converted_timestamps.values
-                    #BUG HERE: local_datetime not being read as datetime object (even though they all are)
+                    results[gps_sensor].loc[:, 'local_timestamp'] = gps_converted_timestamps.values
+                    #FIX HERE: local_datetime not being read as datetime object (even though they all are)
                     try:
-                        results['lamp.gps'].loc[:, 'local_datetime'] = gps_converted_datetimes.dt.tz_localize(None).values
+                        results[gps_sensor].loc[:, 'local_datetime'] = gps_converted_datetimes.dt.tz_localize(None).values
                     except:
-                        results['lamp.gps'].loc[:, 'local_datetime'] = pd.Series([dt.replace(tzinfo=None) for dt in gps_converted_datetimes.values])
+                        results[gps_sensor].loc[:, 'local_datetime'] = pd.Series([dt.replace(tzinfo=None) for dt in gps_converted_datetimes.values])
 
-                    results['lamp.gps'].reset_index(drop=True, inplace=True)
-                if dom == 'lamp.gps': continue
+                    results[gps_sensor].reset_index(drop=True, inplace=True)
+                if dom == gps_sensor: continue
                     
-                matched_gps_readings = results[dom]['UTC_timestamp'].apply(lambda t: results['lamp.gps'].loc[(results['lamp.gps']['UTC_timestamp'] - t).idxmin, 'timezone'])
+                matched_gps_readings = results[dom]['UTC_timestamp'].apply(lambda t: results[gps_sensor].loc[(results[gps_sensor]['UTC_timestamp'] - t).idxmin, 'timezone'])
                 converted_datetimes = pd.Series([datetime.datetime.fromtimestamp(t/1000, tz=pytz.timezone(matched_gps_readings[idx])) for idx, t in results[dom]['UTC_timestamp'].iteritems()])
 
             else:
@@ -402,14 +437,13 @@ class ParticipantExt():
         #Single sensor features
         callTextDf = lamp_cortex.sensors.call_text_features.all(results, date_list, resolution=resolution)
         accelDf = lamp_cortex.sensors.accelerometer_features.all(results, date_list, resolution=resolution)
-        screenDf = lamp_cortex.sensors.screen_features.all(sensors, df, resolution)
+        screenDf = lamp_cortex.sensors.screen_features.all(sensors, date_list, resolution)
         gpsDf = lamp_cortex.sensors.gps_features.all(sensors, date_list, resolution=resolution)
 
         # #Merge dfs
         df = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), 
                     [surveyDf, accelDf, callTextDf, gpsDf]) #screenDf])
 
-        df = surveyDf
         #Trim columns if there are predetermined domains
         if self.domains is not None: 
             df = df.loc[:, ['Date', 'id'] + [d for d in self.domains if d in df.columns.values]]
@@ -462,64 +496,6 @@ class ParticipantExt():
             self.df[dom] = dom_values
 
         self.impute_status = True
-
-
-    def bin(self, domains, window_size=3, shift=0):
-        """
-        Bin dataframe
-        :param domains (list): the domains to bin 
-        :window_size (int): the size of the bins (in days)
-        :shift (int): the day of the week to start the binning on (Monday == 0)
-        """
-
-        #domains = self.domain_check(domains)
-        domains = self.df.columns.drop(['Date', 'id'])
-        
-        #Shift until Monday
-        df_copy = self.df.copy()
-        if shift is not None:
-            try:
-                dow = df_copy.iloc[0]['Date'].weekday()
-                if dow > 0 and len(df_copy) > dow:
-                    df_copy = df_copy.shift(shift - dow)
-            except:
-                print(self.id, df_copy)
-        df_copy['bin'] = np.floor(df_copy.index / window_size )
-        bins = df_copy.groupby('bin')
-        subj_bin_df = pd.DataFrame(columns=['Bin Start Date', 'Bin End Date'] + domains.values.tolist())
-        for b in bins:
-            bin_values = []
-            #Add bin start/end dates
-            
-            start_date, end_date = b[1].iloc[0]['Date'], b[1].iloc[-1]['Date']
-            bin_values.extend((start_date, end_date))
-            for dom in domains:
-                if dom in b[1].columns:
-                    bin_dom_value = b[1][dom].mean()
-                    bin_values.append(bin_dom_value)
-                else:
-                    bin_values.append(np.nan)
-
-            #Add date range
-            subj_bin_df.loc[b[0]] = bin_values    
-
-        subj_bin_df['id'] = self.id
-        
-        self.bins = subj_bin_df
-        
-    def impute_bins(self, domains):
-        """
-        Try to impute bin objects
-        """
-        assert self.bins is not None
-        
-        for d in domains:
-            for index, row in self.bins.iterrows():
-                if 0 < index < len(self.bins.index) - 1:
-                    index = int(index)
-                    if pd.isnull(self.bins.iloc[index][d]) and not pd.isnull(self.bins.iloc[index-1][d]) and not pd.isnull(self.bins.iloc[index+1][d]):                        
-                        self.bins.at[index,d] = np.mean([self.bins.iloc[index-1][d], self.bins.iloc[index+1][d]])
-
 
     def normalize(self, domains, domain_means={}, domain_vars={}):
         """

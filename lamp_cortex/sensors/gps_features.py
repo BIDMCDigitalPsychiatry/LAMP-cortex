@@ -3,10 +3,11 @@ import pandas as pd
 import numpy as np
 import datetime
 from geopy import distance
+from sklearn.cluster import KMeans
 
 #import geopy
 
-def label_gps_points(sensor_data):
+def label_gps_points(sensor_data, gps_sensor):
     """
     Label gps readings as being either "stationary" (0) or "transitionary" (1)
 
@@ -14,20 +15,35 @@ def label_gps_points(sensor_data):
     
     :return (pd.DataFrame): columns ['local_timestamp', 'latitude', 'longitude', 'stationary'], where 'stationary' is bool indicating whether GPS point is stationary/nonstationary
     """
-    SPEED_THRESHOLD = 1.0
+    assert gps_sensor in sensor_data
 
-    labeled_data = sensor_data['lamp.gps'].copy()
-    for (_, point1), (_, point2) in zip(sensor_data['lamp.gps'].iterrows(), sensor_data['lamp.gps'].shift(-1).iterrows()):
+    SPEED_THRESHOLD = 1.0
+    stationary = True #initial state is not moving (in case gps points are very close together)
+
+    labeled_data = sensor_data[gps_sensor].copy()
+    for (_, point1), (_, point2) in zip(sensor_data[gps_sensor].iterrows(), sensor_data[gps_sensor].shift(-1).iterrows()):
         #If last timestamp in df, carry over label from previous point
         if point1['local_timestamp'] == labeled_data.loc[labeled_data.index[-1], 'local_timestamp']:
             labeled_data.loc[labeled_data.index[-1], 'stationary'] = labeled_data.loc[labeled_data.index[-2], 'stationary']
             
         else:
-            dist = distance.distance((point1['latitude'], point1['longitude']), (point2['latitude'], point2['longitude'])).km 
-            speed =  dist / ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
-            
-            if speed >= SPEED_THRESHOLD: stationary = False
-            else: stationary = True
+
+            #if nan coordinates, keep stationary status and move on
+            if None in [point1['latitude'], point1['longitude'], 
+                          point2['latitude'], point2['longitude']]:
+                pass
+            elif np.isnan(point1['latitude']) or np.isnan(point1['longitude']) or np.isnan(point2['latitude']) or np.isnan(point2['longitude']):
+                pass
+            else:
+                dist = distance.distance((point1['latitude'], point1['longitude']), (point2['latitude'], point2['longitude'])).km 
+                elapsed_time = ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
+                #print(dist, elapsed_time)
+                #update stationary if points are separated temporally (elaped time non-zero)
+                if elapsed_time > 0.0:
+                    speed =  dist / ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
+                    if speed >= SPEED_THRESHOLD: stationary = False
+                    else: stationary = True
+
             labeled_data.loc[labeled_data['local_timestamp'] == point1['local_timestamp'], 'stationary'] = stationary
 
     return labeled_data
@@ -38,6 +54,9 @@ def get_total_distance(df, idx1, idx2):
         #print(df.loc[df.index == i, :])
         c2 = (float(df.loc[df.index == i, 'latitude'].values[0]), float(df.loc[df.index == i, 'longitude'].values[0]))
         c1 = (float(df.loc[df.index == i - 1, 'latitude'].values[0]), float(df.loc[df.index == i - 1, 'longitude'].values[0]))
+    
+        if np.isnan(c1[0]) or np.isnan(c1[1]) or np.isnan(c2[0]) or np.isnan(c2[1]):
+            continue
         dist += distance.distance(c1, c2).km
     return dist
 
@@ -79,9 +98,6 @@ def get_trip_count(trip_dict, interval_range, l):
                 trip_dict[interval_range[i]]['Trip Count'] += 1
     return trip_dict
 
-def trip_count(dates):
-    pass
-
 def get_trip_features(trips, dates, freq=datetime.timedelta(days=1)):#interval_range, l):
     '''
     trip_dict values' units:
@@ -116,24 +132,91 @@ def get_trip_features(trips, dates, freq=datetime.timedelta(days=1)):#interval_r
 
     return tripDf
 
+def significant_locs(df, k_max=10):
+    """
+    Get the coordinates of the significant locations
+    """
+    K_clusters = range(1, k_max)
+    kmeans = [KMeans(n_clusters=i) for i in K_clusters]
+    #score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
+    score = [kmeans[i].fit(df[['latitude', 'longitude']]).score(df[['latitude', 'longitude']]) for i in range(len(kmeans))]
+    for i in range(len(score)):
+        if i == len(score) - 1:
+            k = i +1
+            break
+        
+        elif abs(score[i + 1] - score[i] < .01):
+            k = i + 1
+            break
+    # k = 3
+    kmeans = KMeans(n_clusters=k, init='k-means++')
+    kmeans.fit(df[['latitude', 'longitude']])  # Compute k-means clustering.
+    df.loc[:, 'cluster_label'] = kmeans.fit_predict(df[['latitude', 'longitude']])
+    centers = kmeans.cluster_centers_  # Coordinates of cluster centers.
+    labels = kmeans.predict(df[['latitude', 'longitude']])  # Labels of each point
+    cluster_count = df['cluster_label'].value_counts()
+    cluster_dict = cluster_count.to_dict()
+    return centers
+
+def entropy(df, dates, k_max=10):
+
+    K_clusters = range(1, k_max)
+    kmeans = [KMeans(n_clusters=i) for i in K_clusters]
+    #score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
+    print(kmeans, range(len(kmeans)))
+    score = [kmeans[i].fit(df[['latitude', 'longitude']]).score(df[['latitude', 'longitude']]) for i in range(len(kmeans))]
+    for i in range(len(score)):
+        if i == len(score) - 1:
+            k = i +1
+            break
+        
+        elif abs(score[i + 1] - score[i] < .01):
+            k = i + 1
+            break
+    # k = 3
+    kmeans = KMeans(n_clusters=k, init='k-means++')
+    kmeans.fit(df[['latitude', 'longitude']])  # Compute k-means clustering.
+
+    df.loc[:, 'cluster_label'] = kmeans.fit_predict(df[['latitude', 'longitude']])
+    centers = kmeans.cluster_centers_  # Coordinates of cluster centers.
+
+    #Find entropy for each time period
+    
+    print(dates)
+    labels = kmeans.predict(df[['latitude', 'longitude']])  # Labels of each point
+    cluster_count = df['cluster_label'].value_counts()
+    cluster_dict = cluster_count.to_dict()
+
+    entropy = 0.0
+    size = len(df)
+    for n in cluster_dict:
+        pctg = cluster_dict[n] / size
+        prod = pctg * math.log(pctg)
+        entropy -= prod
+
+    return entropy
+
 
 
 def all(sensor_data, dates, resolution):
-    if "lamp.gps" not in sensor_data or len(sensor_data['lamp.gps']) <= 1:
+    #Check one of two gps sensors
+    if "lamp.gps" in sensor_data and len(sensor_data['lamp.gps']) > 1:
+        gps_sensor = "lamp.gps"
+
+    else: #no gps sensor; return empty df
         return pd.DataFrame({'Date': dates})
 
-    labeled_data = label_gps_points(sensor_data)
+    labeled_data = label_gps_points(sensor_data, gps_sensor=gps_sensor)
     trip_data = get_trips(labeled_data)
     interval_range = pd.interval_range(labeled_data.loc[labeled_data.index[0], 'local_timestamp'], 
                                        labeled_data.loc[labeled_data.index[-1], 'local_timestamp'], 
                                        freq=resolution)
 
     tripDf = get_trip_features(trip_data, 
-                                      dates, 
-                                      freq=resolution)
+                               dates, 
+                               freq=resolution)
+
+    #entropy(gps_sensor, dates)
     
     return tripDf
     
-
-if __name__ == "__main__":
-    pass

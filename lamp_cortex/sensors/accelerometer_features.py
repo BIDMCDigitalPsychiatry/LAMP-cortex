@@ -145,6 +145,3 @@ def all(sensor_data, dates, resolution):
 
     allDfs = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), df_list)
     return allDfs
-
-if __name__ == "__main__":
-    pass

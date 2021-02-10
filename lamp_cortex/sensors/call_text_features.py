@@ -2,16 +2,6 @@ import datetime
 import pandas as pd
 from functools import reduce
 
-def social_duration():
-    """
-    """
-    pass
-
-def conversational_degree():
-    """
-    """
-
-    pass
 
 def call_degree(data, times, resolution):
     """
@@ -102,7 +92,11 @@ def call_number(data, times, resolution, label=1):
     
     
 def all(sensor_data, dates, resolution):
-    #print(sensor_data['lamp.calls'])
+    
+    #If calls not available, return empty dataframe with only dates
+    if 'lamp.calls' not in sensor_data:
+        return pd.DataFrame({'Date':dates})
+
     incoming_calls, outgoing_calls = call_number(sensor_data, dates, resolution=resolution, label=1), call_number(sensor_data, dates, resolution=resolution, label=2)
     incoming_callduration, outgoing_callduration = call_duration(sensor_data, dates, resolution=resolution, label=1), call_duration(sensor_data, dates, resolution=resolution, label=2)
 
@@ -113,8 +107,3 @@ def all(sensor_data, dates, resolution):
     
     return allDfs
     
-if __name__ == "__main__":
-    pass
-# def call_text_features(sensor_data, dates):
-#     print('YO')
-#     call_number(sensor_data, dates)

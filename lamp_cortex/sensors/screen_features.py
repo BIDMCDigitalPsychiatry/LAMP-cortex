@@ -12,7 +12,6 @@ def charging_frequency(sensor_data, df):
     #Match each state with a corresponding time window
     screenDf = pd.DataFrame([[min([t for t in times if t <= state[0]], key=lambda x: abs(x - state[0])), dict(state[1])['state']] for state in sensor_data['lamp.screen_state'] if dict(state[1])['state'] in ['4', '5'] and state[0] >= sorted(times)[0] and state[0] <= sorted(times)[-1] + resolution], columns=['Date', 'Screen State'])
     return screenDf
-    print(screenDf)
 
 def notification_checks(sensor_data, df):
     pass
@@ -20,14 +19,9 @@ def notification_checks(sensor_data, df):
 def daily_device_usage(sensor_data, df):
     pass
 
-def all(sensor_data, df, resolution):
-    pass
-    #charge_freq = charging_frequency(sensor_data, df)
+def all(sensor_data, dates, resolution):
 
-    #df_list = [charge_freq]
-    #allDfs = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), df_list)
-    
-    #return allDfs
-
-if __name__ == "__main__":
-    pass
+    if 'lamp.screen_state' not in sensor_data:
+        return pd.DataFrame({'Date': dates})
+        
+    return pd.DataFrame({'Date': dates})
