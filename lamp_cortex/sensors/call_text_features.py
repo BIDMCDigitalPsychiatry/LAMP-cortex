@@ -2,16 +2,6 @@ import datetime
 import pandas as pd
 from functools import reduce
 
-def social_duration():
-    """
-    """
-    pass
-
-def conversational_degree():
-    """
-    """
-
-    pass
 
 def call_degree(data, times, resolution):
     """
@@ -58,7 +48,11 @@ def call_duration(data, times, resolution, label=1):
     
     sel_call_data.loc[:, 'time'] = time_sel_call_data
     
-    callDurationDf = pd.DataFrame([[t, sel_call_data.loc[sel_call_data['time'] == t, 'call_duration'].mean()] for t in times], columns=['Date', 'Call Duration'])
+    if label == 1: column_labels = ['Date', 'Call Duration.Incoming']
+    elif label == 2: column_labels = ['Date', 'Call Duration.Outgoing']
+    else: column_labels = ['Date', '.'.join(['Call Duration', 'Unknown', str(label)])]
+
+    callDurationDf = pd.DataFrame([[t, sel_call_data.loc[sel_call_data['time'] == t, 'call_duration'].mean()] for t in times], columns=column_labels)
     
     return callDurationDf
     
@@ -72,8 +66,12 @@ def call_number(data, times, resolution, label=1):
     :param 
     :param label(int): indicates whether or not to query incoming calls (1), outgoing calls (2)
     """
+    if label == 1: column_labels = ['Date', 'Call Number.Incoming']
+    elif label == 2: column_labels = ['Date', 'Call Number.Outgoing']
+    else: column_labels = ['Date', '.'.join(['Call Number', 'Unknown', str(label)])]
+
     if 'lamp.calls' not in data:
-        return pd.DataFrame({'Date': times, 'Call Number': [0] * len(times)})
+        return pd.DataFrame([[t, 0] for t in times], columns=column_labels)
         
     #Remove duplicate entries by converting call data to set
     call_data = data['lamp.calls']
@@ -85,27 +83,27 @@ def call_number(data, times, resolution, label=1):
     
     sel_call_data.loc[:, 'time'] = time_sel_call_data
     
-    callNumberDf = pd.DataFrame([[t, len(sel_call_data.loc[sel_call_data['time'] == t, :])] for t in times], columns=['Date', 'Call Number'])
+
+
+    callNumberDf = pd.DataFrame([[t, len(sel_call_data.loc[sel_call_data['time'] == t, :])] for t in times], columns=column_labels)
     
     return callNumberDf
     
     
     
 def all(sensor_data, dates, resolution):
-    #print(sensor_data['lamp.calls'])
+    
+    #If calls not available, return empty dataframe with only dates
+    if 'lamp.calls' not in sensor_data:
+        return pd.DataFrame({'Date':dates})
+
     incoming_calls, outgoing_calls = call_number(sensor_data, dates, resolution=resolution, label=1), call_number(sensor_data, dates, resolution=resolution, label=2)
     incoming_callduration, outgoing_callduration = call_duration(sensor_data, dates, resolution=resolution, label=1), call_duration(sensor_data, dates, resolution=resolution, label=2)
 
     total_call_degree = call_degree(sensor_data, dates, resolution)
     #print(incoming_calls)#, incoming_callduration, total_call_degree)
-    
     df_list = [incoming_calls, outgoing_calls, incoming_callduration, outgoing_callduration]
     allDfs = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), df_list)
     
     return allDfs
     
-if __name__ == "__main__":
-    pass
-# def call_text_features(sensor_data, dates):
-#     print('YO')
-#     call_number(sensor_data, dates)
