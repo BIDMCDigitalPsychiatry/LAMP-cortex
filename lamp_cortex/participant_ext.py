@@ -4,6 +4,7 @@ import datetime
 import os
 import math
 import LAMP 
+import sys
 import lamp_cortex
 import itertools
 from functools import reduce
@@ -91,24 +92,6 @@ class ParticipantExt():
         """
         Get dictionary of sensor data
         """
-
-        def get_sensor_events(sensor_events, subj, origin, to=None):
-            """
-            Recursively get sensor events
-            
-            results: list containing all sensor event results up to that point
-            """
-            if to is None: results = sorted(LAMP.SensorEvent.all_by_participant(subj, origin=origin)['data'], key=lambda x: x['timestamp'])
-            else: results = sorted(LAMP.SensorEvent.all_by_participant(subj, origin=origin, to=to)['data'], key=lambda x: x['timestamp'])
-                
-            sensor_events += results
-            if len(results) < 1000: #done
-                return sensor_events
-    
-            new_to = results[0]['timestamp']
-            
-            return get_sensor_events(sensor_events, subj, origin, to=new_to)
-
         lamp_sensors = ["lamp.accelerometer", "lamp.accelerometer.motion", #"lamp.analytics", 
                         "lamp.blood_pressure", "lamp.bluetooth", "lamp.calls", "lamp.distance",
                         "lamp.flights", "lamp.gps", "lamp.gps.contextual", "lamp.gyroscope",
@@ -121,12 +104,24 @@ class ParticipantExt():
 
         participant_sensors = {}
         for sensor in lamp_sensors:
-            s_results = sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in get_sensor_events([], participant, origin=sensor)], key=lambda x: x['UTC_timestamp'])
-            
-            if len(s_results) > 0:
-                participant_sensors[sensor] = pd.DataFrame.from_dict(s_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
 
-        
+            sens_results = sorted([{'UTC_timestamp':res['timestamp'], **res['data']} 
+                                 for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
+
+            if len(sens_results) == 0:
+                continue 
+
+            sens_event_oldest = sens_results[0]['UTC_timestamp']
+
+            while len(sens_results) == 25000:
+                sens_results += sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, _to=sens_event_oldest, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
+                if len(sens_results) == 0:
+                    break
+                sens_event_oldest = sens_results[0]['UTC_timestamp']
+
+            if len(sens_results) > 0:
+                participant_sensors[sensor] = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
+
         #Edge case of lamp.gps.contextual
         if 'lamp.gps.contextual' in participant_sensors and 'lamp.gps' not in participant_sensors:
             gps_context = participant_sensors['lamp.gps.contextual'].copy()
@@ -144,16 +139,19 @@ class ParticipantExt():
         participant_activities_cg_ids = {cg['id']:cg for cg in participant_activities_cgs}        
         cg_data = {}
 
-        raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant)['data'], key=lambda x: x['timestamp'])
+
+        raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _limit=25000)['data'], key=lambda x: x['timestamp'])
         cg_results = [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
 
         if len(raw_results) == 0:
             return cg_data
         res_oldest = raw_results[0]['timestamp']
 
-        while raw_results == 1000:
-            raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest)['data'], key=lambda x: x['timestamp'])
+        while len(raw_results) == 25000:
+            raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
             cg_results += [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
+            if len(raw_results) == 0:
+                break
             res_oldest = raw_results[0]['timestamp']
 
         cg_results_dict = sorted([{'UTC_timestamp':res['timestamp'],
@@ -185,17 +183,17 @@ class ParticipantExt():
         participant_activities_surveys = [activity for activity in participant_activities if activity['spec'] == 'lamp.survey'] 
         participant_activities_surveys_ids = [survey['id'] for survey in participant_activities_surveys]        
         
-        raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant)['data'], key=lambda x: x['timestamp'])
+        raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _limit=25000)['data'], key=lambda x: x['timestamp'])
         participant_results = [result for result in raw_results if 'activity' in result and result['activity'] in participant_activities_surveys_ids and len(result['temporal_slices']) > 0]
 
-        if len(raw_results) > 0: #add results until no more
+        if len(raw_results) > 0:
             res_oldest = raw_results[0]['timestamp']
-
-            while raw_results == 1000:
-                raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest)['data'], key=lambda x: x['timestamp'])
+            while len(raw_results) == 25000:
+                raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
                 participant_results += [result for result in raw_results if 'activity' in result and result['activity'] in participant_activities_surveys_ids and len(result['temporal_slices']) > 0]
+                if len(raw_results) == 0:
+                    break
                 res_oldest = raw_results[0]['timestamp']
-
         
         participant_surveys = {} #maps survey_type to occurence of scores 
         for result in participant_results:
