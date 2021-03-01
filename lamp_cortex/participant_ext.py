@@ -117,7 +117,7 @@ class ParticipantExt():
                 sens_results += sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, _to=sens_event_oldest, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
                 if len(sens_results) == 0:
                     break
-                res_oldest = raw_results[0]['UTC_timestamp']
+                sens_event_oldest = sens_results[0]['UTC_timestamp']
 
             if len(sens_results) > 0:
                 participant_sensors[sensor] = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
