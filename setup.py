@@ -9,6 +9,8 @@
 
 from setuptools import setup, find_packages
 
+__version__ = "develop"
+
 setup(
     name="LAMP_cortex",
     version=__version__,
