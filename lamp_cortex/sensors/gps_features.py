@@ -4,8 +4,7 @@ import numpy as np
 import datetime
 from geopy import distance
 from sklearn.cluster import KMeans
-
-#import geopy
+from functools import reduce
 
 def label_gps_points(sensor_data, gps_sensor):
     """
@@ -36,8 +35,7 @@ def label_gps_points(sensor_data, gps_sensor):
                 pass
             else:
                 dist = distance.distance((point1['latitude'], point1['longitude']), (point2['latitude'], point2['longitude'])).km 
-                elapsed_time = ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
-                #print(dist, elapsed_time)
+                elapsed_time = ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)            
                 #update stationary if points are separated temporally (elaped time non-zero)
                 if elapsed_time > 0.0:
                     speed =  dist / ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
@@ -50,8 +48,7 @@ def label_gps_points(sensor_data, gps_sensor):
 
 def get_total_distance(df, idx1, idx2):
     dist = 0
-    for i in range(idx1 + 1, idx2 + 1):
-        #print(df.loc[df.index == i, :])
+    for i in range(idx1 + 1, idx2 + 1):        
         c2 = (float(df.loc[df.index == i, 'latitude'].values[0]), float(df.loc[df.index == i, 'longitude'].values[0]))
         c1 = (float(df.loc[df.index == i - 1, 'latitude'].values[0]), float(df.loc[df.index == i - 1, 'longitude'].values[0]))
     
@@ -104,11 +101,6 @@ def get_trip_features(trips, dates, freq=datetime.timedelta(days=1)):#interval_r
     Duration - Minutes
     Distance Traveled - Meters
     '''
-
-    #callDf = pd.DataFrame([[min([t for t in times if t <= call[0]], key=lambda x: abs(x - call[0])), dict(call[1])['call_trace']] for call in call_data if dict(call[1])['call_type'] == label and call[0] >= sorted(times)[0] and call[0] <= sorted(times)[-1] + resolution], columns=['Date', 'Call Trace'])
-    #for date in dates:
-    #    print(date)
-
     l = trips
     interval_range = dates
 
@@ -135,11 +127,14 @@ def get_trip_features(trips, dates, freq=datetime.timedelta(days=1)):#interval_r
 def significant_locs(df, k_max=10):
     """
     Get the coordinates of the significant locations
+
+    :return centers ()
+    :return df (pd.DataFrame): gps data with each readings labeled with a sig loc
     """
-    K_clusters = range(1, k_max)
+    K_clusters = range(1, min(k_max, len(df)))
     kmeans = [KMeans(n_clusters=i) for i in K_clusters]
-    #score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
-    score = [kmeans[i].fit(df[['latitude', 'longitude']]).score(df[['latitude', 'longitude']]) for i in range(len(kmeans))]
+    df_arr = df[['latitude', 'longitude']].values
+    score = [kmeans[i].fit(df_arr).score(df_arr) for i in range(len(kmeans))]
     for i in range(len(score)):
         if i == len(score) - 1:
             k = i +1
@@ -148,54 +143,125 @@ def significant_locs(df, k_max=10):
         elif abs(score[i + 1] - score[i] < .01):
             k = i + 1
             break
-    # k = 3
+
     kmeans = KMeans(n_clusters=k, init='k-means++')
-    kmeans.fit(df[['latitude', 'longitude']])  # Compute k-means clustering.
-    df.loc[:, 'cluster_label'] = kmeans.fit_predict(df[['latitude', 'longitude']])
-    centers = kmeans.cluster_centers_  # Coordinates of cluster centers.
-    labels = kmeans.predict(df[['latitude', 'longitude']])  # Labels of each point
-    cluster_count = df['cluster_label'].value_counts()
-    cluster_dict = cluster_count.to_dict()
-    return centers
-
-def entropy(df, dates, k_max=10):
-
-    K_clusters = range(1, k_max)
-    kmeans = [KMeans(n_clusters=i) for i in K_clusters]
-    #score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
-    print(kmeans, range(len(kmeans)))
-    score = [kmeans[i].fit(df[['latitude', 'longitude']]).score(df[['latitude', 'longitude']]) for i in range(len(kmeans))]
-    for i in range(len(score)):
-        if i == len(score) - 1:
-            k = i +1
-            break
-        
-        elif abs(score[i + 1] - score[i] < .01):
-            k = i + 1
-            break
-    # k = 3
-    kmeans = KMeans(n_clusters=k, init='k-means++')
-    kmeans.fit(df[['latitude', 'longitude']])  # Compute k-means clustering.
-
+    kmeans.fit(df_arr)  # Compute k-means clustering.
     df.loc[:, 'cluster_label'] = kmeans.fit_predict(df[['latitude', 'longitude']])
     centers = kmeans.cluster_centers_  # Coordinates of cluster centers.
 
-    #Find entropy for each time period
+    return centers, df
+
+def significant_locations_visited(df, dates, resolution, k_max=10):
+    centers, df_sig_locs  = significant_locs(df, k_max=k_max)
     
-    print(dates)
-    labels = kmeans.predict(df[['latitude', 'longitude']])  # Labels of each point
-    cluster_count = df['cluster_label'].value_counts()
-    cluster_dict = cluster_count.to_dict()
+    #Map each gps read with corresponding time window
+    timesSeries = pd.Series(dates)
+    time_sel_gps = df_sig_locs.apply(lambda row: timesSeries[(timesSeries <= row['local_datetime']) & ((row['local_datetime'] - timesSeries) < resolution)].max(), axis=1)
+    
+    df_sig_locs.loc[:, 'matched_time'] = time_sel_gps
 
-    entropy = 0.0
-    size = len(df)
-    for n in cluster_dict:
-        pctg = cluster_dict[n] / size
-        prod = pctg * math.log(pctg)
-        entropy -= prod
+    sig_locs_visited_df_data = []
+    #For each window, calculate entropy
+    for t in dates:
+        gps_readings = df_sig_locs.loc[df_sig_locs['matched_time'] == t, :].reset_index()
+        
+        for idx, row in gps_readings.iterrows():            
+            time_locs_labels = gps_readings['cluster_label'].unique()
+            time_locs = [centers[l] for l in time_locs_labels]
 
-    return entropy
+        sig_locs_visited_df_data.append([t, time_locs])
 
+    sigLocsDf = pd.DataFrame(sig_locs_visited_df_data, columns=['Date', 'Significant Locations'])
+    return sigLocsDf
+
+
+def entropy(df, dates, resolution, k_max=10):
+    """
+    """
+    _, df_sig_locs  = significant_locs(df, k_max=k_max)
+    
+    #Map each gps read with corresponding time window
+    timesSeries = pd.Series(dates)
+    time_sel_gps = df_sig_locs.apply(lambda row: timesSeries[(timesSeries <= row['local_datetime']) & ((row['local_datetime'] - timesSeries) < resolution)].max(), axis=1)
+    
+    df_sig_locs.loc[:, 'matched_time'] = time_sel_gps
+
+    ent_df_data = []
+    #For each window, calculate entropy
+    for t in dates: 
+        cluster_dict = {cluster:[] for cluster in df_sig_locs['cluster_label'].unique()}
+        gps_readings = df_sig_locs.loc[df_sig_locs['matched_time'] == t, :].reset_index()
+        for idx, row in gps_readings.iterrows():            
+            if idx == len(gps_readings) - 1: #If on last readings
+                elapsed_time = (t + resolution) - gps_readings.loc[gps_readings.index[idx], 'local_datetime']
+                if elapsed_time > datetime.timedelta(hours=1):
+                    elapsed_time = datetime.timedelta(hours=1)
+        
+            else:
+                elapsed_time = gps_readings.loc[gps_readings.index[idx + 1], 'local_datetime'] - gps_readings.loc[gps_readings.index[idx], 'local_datetime']
+                if elapsed_time > datetime.timedelta(hours=1):
+                    elapsed_time = datetime.timedelta(hours=1)
+
+            cluster = gps_readings.loc[gps_readings.index[idx], 'cluster_label']
+            cluster_dict[cluster].append(elapsed_time)
+        
+        total_time_locations_all = pd.concat([pd.Series(cluster_dict[c]) for c in cluster_dict]).sum()
+        if total_time_locations_all == 0.0:
+            total_time_locations_all = datetime.timedelta()
+
+        entropy = 0.0
+        for c in cluster_dict:
+            c_time = pd.Series(cluster_dict[c]).sum()
+            if c_time == 0:
+                continue#c_time = datetime.timedelta()
+
+            pctg = c_time / total_time_locations_all
+            prod = pctg * math.log(pctg)
+            entropy -= entropy 
+
+        if entropy == 0.0: #then add nan
+            entropy = np.nan 
+
+        ent_df_data.append([t, entropy])
+
+    entDf = pd.DataFrame(ent_df_data, columns=['Date', 'Entropy'])
+
+    return entDf
+
+def hometime(df, dates, resolution, k_max=10):
+    _, df_sig_locs  = significant_locs(df, k_max=k_max)
+    
+    #Map each gps read with corresponding time window
+    timesSeries = pd.Series(dates)
+    time_sel_gps = df_sig_locs.apply(lambda row: timesSeries[(timesSeries <= row['local_datetime']) & ((row['local_datetime'] - timesSeries) < resolution)].max(), axis=1)
+    
+    df_sig_locs.loc[:, 'matched_time'] = time_sel_gps
+
+    hometime_df_data = []
+    #For each window, calculate entropy
+    for t in dates:
+        gps_readings = df_sig_locs.loc[(df_sig_locs['matched_time'] == t) & (df_sig_locs['cluster_label']), :].reset_index()
+        hometime_total = datetime.timedelta()
+        for idx, row in gps_readings.iterrows():            
+            if idx == len(gps_readings) - 1: #If on last readings
+                elapsed_time = (t + resolution) - gps_readings.loc[gps_readings.index[idx], 'local_datetime']
+                if elapsed_time > datetime.timedelta(hours=1):
+                    elapsed_time = datetime.timedelta(hours=1)
+                
+            else:
+                elapsed_time = gps_readings.loc[gps_readings.index[idx + 1], 'local_datetime'] - gps_readings.loc[gps_readings.index[idx], 'local_datetime']
+                if elapsed_time > datetime.timedelta(hours=1):
+                    elapsed_time = datetime.timedelta(hours=1)
+
+            hometime_total += elapsed_time
+
+        if hometime_total == datetime.timedelta():
+            hometime_total = np.nan
+
+        hometime_df_data.append([t, hometime_total])
+
+    hometimeDf = pd.DataFrame(hometime_df_data, columns=['Date', 'Hometime'])
+    return hometimeDf
 
 
 def all(sensor_data, dates, resolution):
@@ -212,11 +278,13 @@ def all(sensor_data, dates, resolution):
                                        labeled_data.loc[labeled_data.index[-1], 'local_timestamp'], 
                                        freq=resolution)
 
-    tripDf = get_trip_features(trip_data, 
-                               dates, 
-                               freq=resolution)
+    tripDf = get_trip_features(trip_data, dates, freq=resolution)
+    entropyDf = entropy(sensor_data[gps_sensor], dates, resolution)
+    hometimeDf = hometime(sensor_data[gps_sensor], dates, resolution)
+    sigLocsDf = significant_locations_visited(sensor_data[gps_sensor], dates, resolution)
 
-    #entropy(gps_sensor, dates)
+    df_list = [tripDf, entropyDf, hometimeDf, sigLocsDf]
+    allDfs = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), df_list)
     
-    return tripDf
+    return allDfs
     
