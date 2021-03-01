@@ -58,12 +58,15 @@ def activities(sensor_data, dates):
         
         #Keep track of how many 10min blocks are 1. inactive during "active" periods; or 2. active during "inactive periods"
         night_activity_count, night_inactivity_count, day_inactivity_count = 0, 0, 0
-        #for t, tDf in df.groupby(pd.Grouper(key='UTC time', freq='10min')):
         for t, tDf in df.groupby(pd.Grouper(key='Shifted Time', freq='10min')):
             #Have normal time for querying the 10 min for that block (df10min)
             normal_time = t + (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
+
+            #Ignore block if can't map to mean value
+            if len(df10min.loc[df10min['Time'] == normal_time.time(), 'Magnitude'].values) == 0:
+                continue 
+             
             if (sleepStartFlexShifted <= t.time() < sleepStartShifted) or (sleepEndShifted <= t.time()):
-            #if t - sleepStart
                 if tDf['magnitude'].abs().mean() < df10min.loc[df10min['Time'] == normal_time.time(), 'Magnitude'].values[0]: 
                     night_inactivity_count += 1
                     

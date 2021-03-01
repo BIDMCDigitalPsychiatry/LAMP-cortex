@@ -114,7 +114,7 @@ class ParticipantExt():
             sens_event_oldest = sens_results[0]['UTC_timestamp']
 
             while len(sens_results) == 25000:
-                sens_results += sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, _to=sens_event_oldest, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
+                sens_results += sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, to=sens_event_oldest, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
                 if len(sens_results) == 0:
                     break
                 sens_event_oldest = sens_results[0]['UTC_timestamp']
@@ -148,7 +148,7 @@ class ParticipantExt():
         res_oldest = raw_results[0]['timestamp']
 
         while len(raw_results) == 25000:
-            raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
+            raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
             cg_results += [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
             if len(raw_results) == 0:
                 break
@@ -189,7 +189,7 @@ class ParticipantExt():
         if len(raw_results) > 0:
             res_oldest = raw_results[0]['timestamp']
             while len(raw_results) == 25000:
-                raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
+                raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
                 participant_results += [result for result in raw_results if 'activity' in result and result['activity'] in participant_activities_surveys_ids and len(result['temporal_slices']) > 0]
                 if len(raw_results) == 0:
                     break
@@ -221,8 +221,9 @@ class ParticipantExt():
                     
                 #score based on question type:
                 event_value = event.get('value') #safely get event['value'] to protect from missing keys
+                score = None #initialize score if, in the case of list parsing, it can't find a proper score
                 
-                if event_value == 'NULL': continue # invalid (TO-DO: change these events to ensure this is not being returned)
+                if event_value == 'NULL' or event_value is None: continue # invalid (TO-DO: change these events to ensure this is not being returned)
                 
                 elif current_question_info['type'] == 'likert' and event_value != None:
                     score = float(event_value)
@@ -236,8 +237,8 @@ class ParticipantExt():
                         if event_value == current_question_info['options'][option_index] :
                             score = option_index * 3 / (len(current_question_info['options'])-1)
 
-                elif current_question_info['type'] == 'text':  #skip
-                    continue
+                # elif current_question_info['type'] == 'text':  #skip
+                #     continue
                 
                 else: continue #no valid score to be used
                     
@@ -260,7 +261,9 @@ class ParticipantExt():
                 else:
                     if activity['name'] not in survey_result:
                         survey_result[activity['name']] = []
-                    survey_result[activity['name']].append(score)
+
+                    if score:
+                        survey_result[activity['name']].append(score)
                     
 
             #add mean to each cat to master dictionary           

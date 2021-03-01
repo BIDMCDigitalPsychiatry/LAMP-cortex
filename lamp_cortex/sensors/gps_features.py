@@ -165,9 +165,13 @@ def significant_locations_visited(df, dates, resolution, k_max=10):
     for t in dates:
         gps_readings = df_sig_locs.loc[df_sig_locs['matched_time'] == t, :].reset_index()
         
-        for idx, row in gps_readings.iterrows():            
-            time_locs_labels = gps_readings['cluster_label'].unique()
-            time_locs = [centers[l] for l in time_locs_labels]
+        if len(gps_readings) == 0:
+            time_locs = []
+
+        else:
+            for idx, row in gps_readings.iterrows():            
+                time_locs_labels = gps_readings['cluster_label'].unique()
+                time_locs = [centers[l] for l in time_locs_labels]
 
         sig_locs_visited_df_data.append([t, time_locs])
 
@@ -213,9 +217,13 @@ def entropy(df, dates, resolution, k_max=10):
         for c in cluster_dict:
             c_time = pd.Series(cluster_dict[c]).sum()
             if c_time == 0:
-                continue#c_time = datetime.timedelta()
+                continue
 
             pctg = c_time / total_time_locations_all
+
+            if pctg == 0:
+                continue 
+
             prod = pctg * math.log(pctg)
             entropy -= entropy 
 
