@@ -446,6 +446,10 @@ class ParticipantExt():
         if self.domains is not None: 
             df = df.loc[:, ['Date', 'id'] + [d for d in self.domains if d in df.columns.values]]
 
+        #Empty df if None
+        if df is None:
+            df = pd.DataFrame({'id':[self.id]})
+
         return df
 
  
