@@ -378,9 +378,6 @@ class ParticipantExt():
             results[dom].loc[:, 'local_timestamp'] = converted_timestamps.values
             results[dom].loc[:, 'local_datetime'] = converted_datetimes.dt.tz_localize(None).values
             results[dom].reset_index(drop=True, inplace=True)
-  
-        #passive_features = self.passive_feature_results(resolution=resolution) #beiewe.passive_features
-        #attachment_features = self.attachment_results() #static attachment features  
         
         if len(results) == 0:
             return None
@@ -429,18 +426,18 @@ class ParticipantExt():
         surveyDf = collate_surveys(surveys, df, day_first, day_last)
         
         #Jewels
-        #jewelsDf = lamp_cortex.activities.jewels_features.tempfunc(results, date_list, resolution=resolution)
+        jewelsDf = lamp_cortex.activities.jewels_features.tempfunc(results, date_list, resolution=resolution)
 
         #Parse sensors and convert them into passive features
         #Single sensor features
         callTextDf = lamp_cortex.sensors.call_text_features.all(results, date_list, resolution=resolution)
         accelDf = lamp_cortex.sensors.accelerometer_features.all(results, date_list, resolution=resolution)
-        screenDf = lamp_cortex.sensors.screen_features.all(sensors, date_list, resolution)
         gpsDf = lamp_cortex.sensors.gps_features.all(sensors, date_list, resolution=resolution)
+        #screenDf = lamp_cortex.sensors.screen_features.all(sensors, date_list, resolution)
 
         # #Merge dfs
         df = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), 
-                    [surveyDf, accelDf, callTextDf, gpsDf]) #screenDf])
+                    [surveyDf, jewelsDf, accelDf, callTextDf, gpsDf]) #screenDf])
 
         #Trim columns if there are predetermined domains
         if self.domains is not None: 

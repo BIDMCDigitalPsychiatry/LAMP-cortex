@@ -42,7 +42,7 @@ def call_duration(data, times, resolution, label=1):
     call_data = data['lamp.calls']
     sel_call_data = call_data.loc[call_data['call_type'] == label, :]
     
-    #Map each call with corresponding time wdinwo 
+    #Map each call with corresponding time window
     timesSeries = pd.Series(times)
     time_sel_call_data = sel_call_data.apply(lambda row: timesSeries[(timesSeries <= row['local_datetime']) & ((row['local_datetime'] - timesSeries) < resolution)].max(), axis=1)
     
@@ -101,7 +101,7 @@ def all(sensor_data, dates, resolution):
     incoming_callduration, outgoing_callduration = call_duration(sensor_data, dates, resolution=resolution, label=1), call_duration(sensor_data, dates, resolution=resolution, label=2)
 
     total_call_degree = call_degree(sensor_data, dates, resolution)
-    #print(incoming_calls)#, incoming_callduration, total_call_degree)
+    
     df_list = [incoming_calls, outgoing_calls, incoming_callduration, outgoing_callduration]
     allDfs = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), df_list)
     
