@@ -281,7 +281,43 @@ class ParticipantExt():
             participant_surveys[activity_category] = pd.DataFrame(data=sorted(participant_surveys[activity_category], key=lambda x: x[0]),
                                                                   columns=['UTC_timestamp', 'score'])
         return participant_surveys
+
+    def featurize(self,participant=None):
+    """
+    Convert raw sensor and activity data to features
+    """
+    if participant is None: participant = self.id
+    primary_features={'activity':'gps','walk':'gps' } #EXAMPLE, where this from?  hardcode or from gps_features.py
+
+    for feature in primary_features:
+        attachment_key='cortex.'+primary_featues[feature]+'.'+feature
         
+        # Query primary features
+        try: 
+            body=LAMP.Type.get_attachment(participant,attachment_key)['data']
+            body.remove(max(body, key=lambda x:x['end'])) #remove last in case interval still open 
+            _from=max(b['end'] for b in body)
+        except:
+            body=[]
+            _from=0
+        
+        # Download all data needed to generate missing features
+        sensors = self.sensor_results(_from=_from)  #Need to add _from into def of sensor_results
+        results = {**surveys, **sensors, **cognitive_games} #remove surveys and games?, but needed elsewhere
+
+        # Featurize  ###These func don't exist yet, need features to be seperated out###
+        all_primary={}
+        all_primary.update(lamp_cortex.sensors.accelerometer_features.primary(results))
+        all_primary.update(lamp_cortex.sensors.gps_features.primary(results))
+
+        # Upload new features as attachments
+        for feature in all_primary:
+            body_df=all_primary[feature]
+            body_df.loc[:,['start','end']]=body_df.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
+            body_new=list(body_df.to_dict(orient='index').values())
+            attachment_key='cortex.'+primary_features[feature]+'.'+feature  #depends how it is named 
+            body+=body_new
+            LAMP.Type.set_attachment(participant, 'me', attachment_key=attachment_key, body=body)
 
     @staticmethod
     def timezone_correct(results, gps_sensor='lamp.gps'):
