@@ -20,6 +20,9 @@ def call_degree(data, times, resolution):
     
     sel_call_data.loc[:, 'time'] = time_sel_call_data.values
 
+    if len(time_sel_call_data) == 0:
+        return pd.DataFrame([[t, 0] for t in times], columns=column_labels)
+
     callDegreeDf = pd.DataFrame([[t, sel_call_data.loc[sel_call_data['time'] == t, 'call_trace'].nunique()] for t in times], columns=['Date', 'Call Degree'])
     
     return callDegreeDf
@@ -47,6 +50,9 @@ def call_duration(data, times, resolution, label=1):
     time_sel_call_data = sel_call_data.apply(lambda row: timesSeries[(timesSeries <= row['local_datetime']) & ((row['local_datetime'] - timesSeries) < resolution)].max(), axis=1)
     
     sel_call_data.loc[:, 'time'] = time_sel_call_data
+
+    if len(time_sel_call_data) == 0:
+        return pd.DataFrame([[t, 0] for t in times], columns=column_labels)
     
     if label == 1: column_labels = ['Date', 'Call Duration.Incoming']
     elif label == 2: column_labels = ['Date', 'Call Duration.Outgoing']
@@ -81,6 +87,9 @@ def call_number(data, times, resolution, label=1):
     timesSeries = pd.Series(times)
     time_sel_call_data = sel_call_data.apply(lambda row: timesSeries[(timesSeries <= row['local_datetime']) & ((row['local_datetime'] - timesSeries) < resolution)].max(), axis=1)
     
+    if len(time_sel_call_data) == 0:
+        return pd.DataFrame([[t, 0] for t in times], columns=column_labels)
+
     sel_call_data.loc[:, 'time'] = time_sel_call_data
     
 
