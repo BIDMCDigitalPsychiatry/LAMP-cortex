@@ -34,7 +34,7 @@ def jewels_featurize(results, times, resolution, key):
     return jewelsDf
 
 
-def tempfunc(results, date_list, resolution):
+def featurize(results, date_list, resolution):
     jewels_a, jewels_b = jewels_featurize(results, date_list, resolution=resolution, key='lamp.jewels_a'), jewels_featurize(results, date_list, resolution=resolution, key='lamp.jewels_b')
     df_list = [jewels_a, jewels_b]
     allDfs = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), df_list)

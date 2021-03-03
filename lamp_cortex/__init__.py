@@ -5,6 +5,7 @@ from lamp_cortex.participant_ext import ParticipantExt
 from lamp_cortex.study_ext import StudyExt 
 
 from lamp_cortex.activities import jewels_features
+from lamp_cortex.activities import survey_features
 
 from lamp_cortex.sensors import gps_features
 from lamp_cortex.sensors import screen_features
