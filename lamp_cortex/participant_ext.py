@@ -54,6 +54,10 @@ class ParticipantExt():
     def sex(self):
         return self._sex
 
+    @property
+    def domains(self):
+        return self._domains
+
     @id.setter
     def id(self, value):
         self._id = value
@@ -69,6 +73,10 @@ class ParticipantExt():
     @sex.setter
     def sex(self, value):
         self._sex = value
+
+    @domains.setter 
+    def domains(self, value):
+        self._domains = value 
 
     def reset(self):
         """
@@ -88,7 +96,8 @@ class ParticipantExt():
             domains = self.domains
         return domains
 
-    def sensor_results(self, participant=None):
+    @staticmethod
+    def sensor_results(participant):
         """
         Get dictionary of sensor data
         """
@@ -98,9 +107,6 @@ class ParticipantExt():
                         "lamp.heart_rate", "lamp.height", "lamp.magnetometer", "lamp.respiratory_rate",
                         "lamp.screen_state","lamp.segment", "lamp.sleep", "lamp.sms", "lamp.steps",
                         "lamp.weight", "lamp.wifi"]
-
-        if participant is None:
-            participant = self.id
 
         participant_sensors = {}
         for sensor in lamp_sensors:
@@ -112,15 +118,13 @@ class ParticipantExt():
                 continue 
 
             sens_event_oldest = sens_results[0]['UTC_timestamp']
-
             while len(sens_results) == 25000:
                 sens_results += sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, to=sens_event_oldest, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
                 if len(sens_results) == 0:
                     break
                 sens_event_oldest = sens_results[0]['UTC_timestamp']
 
-            if len(sens_results) > 0:
-                participant_sensors[sensor] = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
+            participant_sensors[sensor] = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
 
         #Edge case of lamp.gps.contextual
         if 'lamp.gps.contextual' in participant_sensors and 'lamp.gps' not in participant_sensors:
@@ -130,19 +134,20 @@ class ParticipantExt():
 
         return participant_sensors
 
-    def cognitive_game_results(self, participant=None):
-        if participant is None:
-            participant = self.id
+    @staticmethod
+    def cognitive_game_results(participant):
+        """
+        Get dictionary of jewels data
+        """
 
         participant_activities = LAMP.Activity.all_by_participant(participant)['data']
         participant_activities_cgs = [activity for activity in participant_activities if activity['spec'] in ['lamp.jewels_a', 'lamp.jewels_b']]
         participant_activities_cg_ids = {cg['id']:cg for cg in participant_activities_cgs}        
-        cg_data = {}
-
-
+        
         raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _limit=25000)['data'], key=lambda x: x['timestamp'])
         cg_results = [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
 
+        cg_data = {}
         if len(raw_results) == 0:
             return cg_data
         res_oldest = raw_results[0]['timestamp']
@@ -168,17 +173,14 @@ class ParticipantExt():
         return cg_data
 
 
-    def survey_results(self, participant=None, question_categories=None):
+    @staticmethod
+    def survey_results(participant, question_categories=None):
         """
         Get survey events for participant
         
         :param participant (str): the LAMP ID for participant. If not provided, then take participant id
         :param question_categories (dict): maps text in active event responses to a domain (str) and reverse_scoring parameter (bool)
         """
-
-        if participant is None:
-            participant = self.id
-
         participant_activities = LAMP.Activity.all_by_participant(participant)['data']
         participant_activities_surveys = [activity for activity in participant_activities if activity['spec'] == 'lamp.survey'] 
         participant_activities_surveys_ids = [survey['id'] for survey in participant_activities_surveys]        
@@ -281,65 +283,14 @@ class ParticipantExt():
         return participant_surveys
         
 
-    def create_df(self, days_cap=120, day_first=None, day_last=None, resolution=datetime.timedelta(days=1), start_monday=False, start_morning=True, time_centered=False, question_categories=None):
+    @staticmethod
+    def timezone_correct(results, gps_sensor='lamp.gps'):
         """
-        Create participant dataframe
-        :param day_first (datetime.Date)
+        Convert timestamps to appropriate local time; use GPS if it exists
         """
-        def collate_surveys(surveys, df, day_first, day_last):
-            """
-            Convert survey scores into dense representation ("df")
-            
-            :param surveys
-            :param df
-            :param day_first
-            :param day_last
-            """
-            #Parse surveys
-            for dom in surveys:
-                if dom not in domains and domains is not None:
-                    continue
-
-                #Based on resolution, match each survey event to its closest date
-                dates = [date for date in surveys[dom]['local_datetime'] if day_first <= date <= day_last] 
-                #Choose closest date if "time centered"; else, choose preceding date
-                if time_centered: rounded_dates = [df.loc[df.index[(date - df['Date']).abs().sort_values().index[0]], 'Date'] for date in dates]
-                else: rounded_dates = [df.loc[df.index[(date - df['Date'])[(date - df['Date']) >= datetime.timedelta(0)].sort_values().index[0]], 'Date'] for date in dates]
-
-                results = surveys[dom].loc[(day_first <= surveys[dom]['local_datetime']) & (surveys[dom]['local_datetime'] <= day_last), 'score']
-
-                dom_results = pd.DataFrame({'Date':dates, 'Rounded Date':rounded_dates, 'Result':results})
-                for date, date_df in dom_results.groupby('Rounded Date'):                    
-                    df.loc[df['Date'] == date.to_pydatetime(), dom] = np.mean(date_df['Result']) 
-
-            return df
-        
-        
-        surveys = self.survey_results(question_categories=question_categories) #survey ActivityEvents
-        sensors = self.sensor_results() # sensor SensorEvents
-        cognitive_games = self.cognitive_game_results()
-        
-        results = {**surveys, **sensors, **cognitive_games} # **passive_features, **attachment_features}
-        
-        #Convert timestamps to appropriate local time; use GPS if it exists
         for dom in results:
 
-            if 'lamp.gps' in results:
-                gps_sensor = 'lamp.gps'
-
-                #if no not-null gps readings, short circuit
-                if len(results[gps_sensor].dropna(subset=['latitude', 'longitude'])) == 0: #if no gps readings, remove sensor
-
-                    tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) #pytz.timezone('America/New_York')
-                    matched_gps_readings = pd.Series([tz] * len(results[dom]))
-                    converted_datetimes = results[dom]['UTC_timestamp'].apply(lambda t: datetime.datetime.fromtimestamp(t/1000, tz=tz))
-                    converted_timestamps = converted_datetimes.apply(lambda t: t.timestamp() * 1000)
-            
-                    results[dom].loc[:, 'timezone'] = matched_gps_readings
-                    results[dom].loc[:, 'local_timestamp'] = converted_timestamps.values
-                    results[dom].loc[:, 'local_datetime'] = converted_datetimes.dt.tz_localize(None).values
-                    results[dom].reset_index(drop=True, inplace=True)
-                    continue
+            if gps_sensor in results and len(results[gps_sensor].dropna(subset=['latitude', 'longitude'])) > 0:
 
                 if 'timezone' not in results[gps_sensor].columns: #Generate timezone for every gps readings and convert timestamps
                     tz = tzwhere.tzwhere(forceTZ=True) #force timezone if ambigiuous
@@ -357,13 +308,13 @@ class ParticipantExt():
                     gps_converted_timestamps = gps_converted_datetimes.apply(lambda t: t.timestamp() * 1000)
                     
                     results[gps_sensor].loc[:, 'local_timestamp'] = gps_converted_timestamps.values
-                    #FIX HERE: local_datetime not being read as datetime object (even though they all are)
                     try:
                         results[gps_sensor].loc[:, 'local_datetime'] = gps_converted_datetimes.dt.tz_localize(None).values
                     except:
                         results[gps_sensor].loc[:, 'local_datetime'] = pd.Series([dt.replace(tzinfo=None) for dt in gps_converted_datetimes.values])
 
                     results[gps_sensor].reset_index(drop=True, inplace=True)
+
                 if dom == gps_sensor: continue
                     
                 matched_gps_readings = results[dom]['UTC_timestamp'].apply(lambda t: results[gps_sensor].loc[(results[gps_sensor]['UTC_timestamp'] - t).idxmin, 'timezone'])
@@ -381,9 +332,36 @@ class ParticipantExt():
             results[dom].loc[:, 'local_timestamp'] = converted_timestamps.values
             results[dom].loc[:, 'local_datetime'] = converted_datetimes.dt.tz_localize(None).values
             results[dom].reset_index(drop=True, inplace=True)
+
+    def create_df(self, 
+                  days_cap=120, 
+                  day_first=None, 
+                  day_last=None, 
+                  resolution=datetime.timedelta(days=1), 
+                  start_monday=False, 
+                  start_morning=True, 
+                  time_centered=False, 
+                  question_categories=None):
+        """
+        Create participant dataframe
+        :param day_first (datetime.Date)
+        """
+
+        sensors = self.sensor_results(self.id) # sensor SensorEvents
+        cognitive_games = self.cognitive_game_results(self.id) #cognitive game ActivityEvents
+        surveys = self.survey_results(self.id, question_categories=question_categories) #survey ActivityEvents
         
-        if len(results) == 0:
-            return None
+        results = {**surveys, **sensors, **cognitive_games} 
+        
+        self.timezone_correct(results)
+
+        #Save data
+        self.survey_events = surveys
+        self.sensor_events = sensors
+        self.result_events = results
+        
+        #If no data, return empty dataframe
+        if len(results) == 0: return pd.DataFrame({})
 
         #Find the first, last date
         concat_datetimes = pd.concat([results[dom] for dom in results])['local_datetime'].sort_values()
@@ -409,27 +387,15 @@ class ParticipantExt():
         #Create dateframe for the number of time units that have data; limited by days; cap at 'days_cap' if this number is large
         df = pd.DataFrame({'Date': date_list, 'id':self.id})
 
-        #Add empty survey columns
-        domains = [dom for dom in surveys]
-        for dom in domains: 
-            df[dom] = np.nan
-
-        #Save data
-        self.survey_events = surveys
-        self.sensor_events = sensors
-        self.result_events = results
-
         # Short circuit if no dates to parse
-        if len(df['Date']) == 0:
-            return df
+        if len(df['Date']) == 0: return df
 
         ### Featurize result events and add to df
-        
         #Surveys
-        surveyDf = collate_surveys(surveys, df, day_first, day_last)
+        surveyDf = lamp_cortex.activities.survey_features.featurize(surveys, date_list, resolution=resolution)
         
         #Jewels
-        jewelsDf = lamp_cortex.activities.jewels_features.tempfunc(results, date_list, resolution=resolution)
+        jewelsDf = lamp_cortex.activities.jewels_features.featurize(results, date_list, resolution=resolution)
 
         #Parse sensors and convert them into passive features
         #Single sensor features
@@ -445,10 +411,6 @@ class ParticipantExt():
         #Trim columns if there are predetermined domains
         if self.domains is not None: 
             df = df.loc[:, ['Date', 'id'] + [d for d in self.domains if d in df.columns.values]]
-
-        #Empty df if None
-        if df is None:
-            df = pd.DataFrame({'id':[self.id]})
 
         return df
 
