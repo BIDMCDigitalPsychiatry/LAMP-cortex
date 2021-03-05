@@ -58,6 +58,8 @@ class ParticipantExt():
     def domains(self):
         return self._domains
 
+    ### 
+
     @id.setter
     def id(self, value):
         self._id = value
@@ -96,10 +98,13 @@ class ParticipantExt():
             domains = self.domains
         return domains
 
-    @staticmethod
-    def sensor_results(participant):
+    @staticmethod 
+    def sensors_results(participant_id, **kwargs):
         """
         Get dictionary of sensor data
+
+        :param participant_id
+        :param 
         """
         lamp_sensors = ["lamp.accelerometer", "lamp.accelerometer.motion", #"lamp.analytics", 
                         "lamp.blood_pressure", "lamp.bluetooth", "lamp.calls", "lamp.distance",
@@ -108,23 +113,13 @@ class ParticipantExt():
                         "lamp.screen_state","lamp.segment", "lamp.sleep", "lamp.sms", "lamp.steps",
                         "lamp.weight", "lamp.wifi"]
 
+        assert 'origin' not in kwargs 
         participant_sensors = {}
         for sensor in lamp_sensors:
-
-            sens_results = sorted([{'UTC_timestamp':res['timestamp'], **res['data']} 
-                                 for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
-
-            if len(sens_results) == 0:
-                continue 
-
-            sens_event_oldest = sens_results[0]['UTC_timestamp']
-            while len(sens_results) == 25000:
-                sens_results += sorted([{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant, origin=sensor, to=sens_event_oldest, _limit=25000)['data']], key=lambda x: x['UTC_timestamp'])
-                if len(sens_results) == 0:
-                    break
-                sens_event_oldest = sens_results[0]['UTC_timestamp']
-
-            participant_sensors[sensor] = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
+            if '_limit' not in kwargs: kwargs['_limit'] = 25000
+            sens_results = lamp_cortex.ParticipantExt.sensor_results(participant_id, origin=sensor, **kwargs)
+            if not sens_results.empty:
+                participant_sensors[sensor] = sens_results
 
         #Edge case of lamp.gps.contextual
         if 'lamp.gps.contextual' in participant_sensors and 'lamp.gps' not in participant_sensors:
@@ -135,42 +130,64 @@ class ParticipantExt():
         return participant_sensors
 
     @staticmethod
-    def cognitive_game_results(participant):
+    def sensor_results(participant_id, **kwargs):
+        """
+        Get sensor events and put in Df
+        """
+        sens_results_new = [{'UTC_timestamp':res['timestamp'], **res['data']} 
+                            for res in LAMP.SensorEvent.all_by_participant(participant_id, **kwargs)['data']]        
+        sens_results = []
+        while sens_results_new: 
+            sens_results += sens_results_new
+            kwargs['to'] = sens_results_new[-1]['UTC_timestamp']
+            #kwargs['to'] = sens_results_new[0]['UTC_timestamp']
+            sens_results_new = [{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant_id, **kwargs)['data']]
+            
+        sensorDf = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
+        return sensorDf
+
+
+    @staticmethod
+    def cognitive_games_results(participant_id, **kwargs):
         """
         Get dictionary of jewels data
         """
+        assert 'origin' not in kwargs 
+        lamp_cognitive_games = ['lamp.jewels_a', 'lamp.jewels_b']
+        participant_cognitive_games = {}
+        for cognitive_game in lamp_cognitive_games:
+            cognitive_game_ids = [activity['id'] for activity in LAMP.Activity.all_by_participant(participant_id)['data'] if activity['spec'] in lamp_cognitive_games]
+            if not cognitive_game_ids: continue 
 
-        participant_activities = LAMP.Activity.all_by_participant(participant)['data']
-        participant_activities_cgs = [activity for activity in participant_activities if activity['spec'] in ['lamp.jewels_a', 'lamp.jewels_b']]
-        participant_activities_cg_ids = {cg['id']:cg for cg in participant_activities_cgs}        
-        
-        raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, _limit=25000)['data'], key=lambda x: x['timestamp'])
-        cg_results = [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
+            cognitive_game_id = cognitive_game_ids[0]
+            cg_results = lamp_cortex.ParticipantExt.cognitive_game_results(participant_id, origin=cognitive_game_id, **kwargs)
+            if not cg_results.empty:
+                participant_cognitive_games[cognitive_game] = cg_results
 
-        cg_data = {}
-        if len(raw_results) == 0:
-            return cg_data
-        res_oldest = raw_results[0]['timestamp']
+        return participant_cognitive_games
 
-        while len(raw_results) == 25000:
-            raw_results = sorted(LAMP.ActivityEvent.all_by_participant(participant, to=res_oldest, _limit=25000)['data'], key=lambda x: x['timestamp'])
-            cg_results += [res for res in raw_results if 'activity' in res and res['activity'] in participant_activities_cg_ids]
-            if len(raw_results) == 0:
-                break
-            res_oldest = raw_results[0]['timestamp']
+    @staticmethod
+    def cognitive_game_results(participant_id, **kwargs):
+        cognitive_game_results_new = [{'UTC_timestamp':res['timestamp'],
+                                    'duration':res['duration'],
+                                   'activity':res['activity'],
+                                   'activity_name':LAMP.Activity.view(res['activity'])['spec'], 
+                                   'static_data':res['static_data'], 
+                                   'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(kwargs)['data']]
 
-        cg_results_dict = sorted([{'UTC_timestamp':res['timestamp'],
+        cognitive_game_results = []
+        while cognitive_game_results_new: 
+            cognitive_game_results += cognitive_game_results_new
+            kwargs['to'] = cognitive_game_results_results_new[0]['UTC_timestamp']
+            cognitive_game_results_new = [{'UTC_timestamp':res['timestamp'],
                                    'duration':res['duration'],
                                    'activity':res['activity'],
-                                   'activity_name':participant_activities_cg_ids[res['activity']]['spec'], 
+                                   'activity_name':LAMP.Activity.view(res['activity'])['spec'], 
                                    'static_data':res['static_data'], 
-                                   'temporal_slices':res['temporal_slices']} for res in cg_results], key=lambda x: x['UTC_timestamp'])
-           
-        if len(cg_results_dict) > 0:
-            for cg, cgDf in pd.DataFrame.from_dict(cg_results_dict).drop_duplicates(subset='UTC_timestamp').groupby('activity_name'):
-                cg_data[cg] = cgDf
-        
-        return cg_data
+                                   'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(kwargs)['data']]
+            
+        cognitiveGameDf = pd.DataFrame.from_dict(cognitive_game_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
+        return cognitiveGameDf
 
 
     @staticmethod
@@ -283,41 +300,41 @@ class ParticipantExt():
         return participant_surveys
 
     def featurize(self,participant=None):
-    """
-    Convert raw sensor and activity data to features
-    """
-    if participant is None: participant = self.id
-    primary_features={'activity':'gps','walk':'gps' } #EXAMPLE, where this from?  hardcode or from gps_features.py
+        """
+        Convert raw sensor and activity data to features
+        """
+        if participant is None: participant = self.id
+        primary_features={'activity':'gps','walk':'gps'} #EXAMPLE, where this from?  hardcode or from gps_features.py
 
-    for feature in primary_features:
-        attachment_key='cortex.'+primary_featues[feature]+'.'+feature
-        
-        # Query primary features
-        try: 
-            body=LAMP.Type.get_attachment(participant,attachment_key)['data']
-            body.remove(max(body, key=lambda x:x['end'])) #remove last in case interval still open 
-            _from=max(b['end'] for b in body)
-        except:
-            body=[]
-            _from=0
-        
-        # Download all data needed to generate missing features
-        sensors = self.sensor_results(_from=_from)  #Need to add _from into def of sensor_results
-        results = {**surveys, **sensors, **cognitive_games} #remove surveys and games?, but needed elsewhere
+        for feature in primary_features:
+            attachment_key='cortex.'+primary_features[feature]+'.'+feature
+            
+            # Query primary features
+            try: 
+                body=LAMP.Type.get_attachment(participant,attachment_key)['data']
+                body.remove(max(body, key=lambda x:x['end'])) #remove last in case interval still open 
+                _from=max(b['end'] for b in body)
 
-        # Featurize  ###These func don't exist yet, need features to be seperated out###
-        all_primary={}
-        all_primary.update(lamp_cortex.sensors.accelerometer_features.primary(results))
-        all_primary.update(lamp_cortex.sensors.gps_features.primary(results))
+            except LAMP.ApiException:
+                body=[]
+                _from=0
 
-        # Upload new features as attachments
-        for feature in all_primary:
-            body_df=all_primary[feature]
-            body_df.loc[:,['start','end']]=body_df.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
-            body_new=list(body_df.to_dict(orient='index').values())
-            attachment_key='cortex.'+primary_features[feature]+'.'+feature  #depends how it is named 
-            body+=body_new
-            LAMP.Type.set_attachment(participant, 'me', attachment_key=attachment_key, body=body)
+            # Download all data needed to generate missing features
+            sensors = lamp_cortex.ParticipantExt.sensor_results(participant, _from=_from)  #Need to add _from into def of sensor_results
+
+            # Featurize  ###These func don't exist yet, need features to be seperated out###
+            all_primary={}
+            all_primary.update(lamp_cortex.sensors.accelerometer_features.primary(results))
+            all_primary.update(lamp_cortex.sensors.gps_features.primary(results))
+
+            # Upload new features as attachments
+            for feature in all_primary:
+                body_df=all_primary[feature]
+                body_df.loc[:,['start','end']]=body_df.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
+                body_new=list(body_df.to_dict(orient='index').values())
+                attachment_key='cortex.'+primary_features[feature]+'.'+feature  #depends how it is named 
+                body+=body_new
+                LAMP.Type.set_attachment(participant, 'me', attachment_key=attachment_key, body=body)
 
     @staticmethod
     def timezone_correct(results, gps_sensor='lamp.gps'):
@@ -383,9 +400,9 @@ class ParticipantExt():
         :param day_first (datetime.Date)
         """
 
-        sensors = self.sensor_results(self.id) # sensor SensorEvents
-        cognitive_games = self.cognitive_game_results(self.id) #cognitive game ActivityEvents
-        surveys = self.survey_results(self.id, question_categories=question_categories) #survey ActivityEvents
+        sensors = lamp_cortex.ParticipantExt.sensors_results(self.id) # sensor SensorEvents
+        cognitive_games = lamp_cortex.ParticipantExt.cognitive_games_results(self.id) #cognitive game ActivityEvents
+        surveys = lamp_cortex.ParticipantExt.survey_results(self.id, question_categories=question_categories) #survey ActivityEvents
         
         results = {**surveys, **sensors, **cognitive_games} 
         
