@@ -1,4 +1,4 @@
-# Python analysis pipeline for the LAMP Platform.
+# Cortex data analysis pipeline for the LAMP Platform.
 
 ## Overview
 
@@ -15,8 +15,10 @@ Python 3.4+ and `pip`.
 ### Installation
 
 ```sh
-pip install LAMP-cortex
+pip install git+https://github.com/BIDMCDigitalPsychiatry/LAMP-cortex.git@master
 ```
+
+Alternatively, instead of `pip install`, you may need to use `python3 -m pip install --user`.
 
 ### Configuration
 
