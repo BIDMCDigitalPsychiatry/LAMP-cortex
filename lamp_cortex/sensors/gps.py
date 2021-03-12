@@ -6,7 +6,7 @@ from geopy import distance
 from sklearn.cluster import KMeans
 from functools import reduce
 
-def label_gps_points(sensor_data, gps_sensor):
+def label_gps_points(gps_data):
     """
     Label gps readings as being either "stationary" (0) or "transitionary" (1)
 
@@ -14,13 +14,12 @@ def label_gps_points(sensor_data, gps_sensor):
     
     :return (pd.DataFrame): columns ['local_timestamp', 'latitude', 'longitude', 'stationary'], where 'stationary' is bool indicating whether GPS point is stationary/nonstationary
     """
-    assert gps_sensor in sensor_data
 
     SPEED_THRESHOLD = 1.0
     stationary = True #initial state is not moving (in case gps points are very close together)
 
-    labeled_data = sensor_data[gps_sensor].copy()
-    for (_, point1), (_, point2) in zip(sensor_data[gps_sensor].iterrows(), sensor_data[gps_sensor].shift(-1).iterrows()):
+    labeled_data = gps_data.copy()
+    for (_, point1), (_, point2) in zip(gps_data.iterrows(), gps_data.shift(-1).iterrows()):
         #If last timestamp in df, carry over label from previous point
         if point1['local_timestamp'] == labeled_data.loc[labeled_data.index[-1], 'local_timestamp']:
             labeled_data.loc[labeled_data.index[-1], 'stationary'] = labeled_data.loc[labeled_data.index[-2], 'stationary']

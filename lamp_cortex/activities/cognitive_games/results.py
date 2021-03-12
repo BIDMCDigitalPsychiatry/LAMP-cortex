@@ -1,6 +1,5 @@
-
-import LAMP 
 import pandas as pd 
+import LAMP
 
 LAMP_COGNITIVE_GAMES = ['lamp.jewels_a', 'lamp.jewels_b']
 
@@ -22,7 +21,7 @@ def cognitive_games_results(func):
 
         participant_cognitive_games = {}
         for cognitive_game in cognitive_games_to_query:
-            cognitive_game_ids = [activity['id'] for activity in LAMP.Activity.all_by_participant(participant_id)['data'] if activity['spec'] in lamp_cognitive_games]
+            cognitive_game_ids = [activity['id'] for activity in LAMP.Activity.all_by_participant(participant_id)['data'] if activity['spec'] in cognitive_games_to_query]
             if not cognitive_game_ids: continue 
 
             cognitive_game_id = cognitive_game_ids[0]
@@ -36,12 +35,13 @@ def cognitive_games_results(func):
 
 @cognitive_games_results
 def results(participant_id, **kwargs):
+    print(kwargs, LAMP.ActivityEvent.all_by_participant(kwargs)['data'])
     cognitive_game_results_new = [{'UTC_timestamp':res['timestamp'],
                                 'duration':res['duration'],
                                 'activity':res['activity'],
                                 'activity_name':LAMP.Activity.view(res['activity'])['spec'], 
                                 'static_data':res['static_data'], 
-                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(kwargs)['data']]
+                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(participant_id, **kwargs)['data']]
 
     cognitive_game_results = []
     while cognitive_game_results_new: 
@@ -52,7 +52,7 @@ def results(participant_id, **kwargs):
                                 'activity':res['activity'],
                                 'activity_name':LAMP.Activity.view(res['activity'])['spec'], 
                                 'static_data':res['static_data'], 
-                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(kwargs)['data']]
+                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(participant_id, **kwargs)['data']]
         
     cognitiveGameDf = pd.DataFrame.from_dict(cognitive_game_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
     return cognitiveGameDf
