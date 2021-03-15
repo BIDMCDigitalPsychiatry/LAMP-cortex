@@ -1,6 +1,8 @@
 from lamp_cortex.features.primary.primary import primary_feature
+import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
+from pprint import pprint
 
 @primary_feature(
     name='cortex.feature.significant_locations',
@@ -20,6 +22,16 @@ def significant_locations(k_max=10, **kwargs):
     :return proportion (float): The proportion of GPS events located within this 
     centeroid compared to all GPS events over the entire time window.
     """
+
+    # Calculates straight-line (not great-circle) distance between two GPS points on 
+    # Earth in kilometers; equivalent to roughly ~55% - 75% of the Haversian (great-circle)
+    # distance. 110.25 is conversion metric marking the length of a spherical degree.
+    # 
+    # https://jonisalonen.com/2014/computing-distance-between-coordinates-can-be-simple-and-fast/
+    def euclid(g0, g1):
+        def _euclid(lat, lng, lat0, lng0): # degrees -> km
+            return 110.25 * ((((lat - lat0) ** 2) + (((lng - lng0) * np.cos(lat0)) ** 2)) ** 0.5)
+        return _euclid(g0[0], g0[1], g1[0], g1[1])
 
     # Prepare input parameters.
     df = pd.DataFrame.from_dict(kwargs['sensor_data']['lamp.gps'])
@@ -47,7 +59,13 @@ def significant_locations(k_max=10, **kwargs):
     return [{
         'latitude': center[0],
         'longitude': center[1],
-        'proportion': props[props == idx].size / props.size
+        'radius': np.mean(euclid(center,
+
+            # Transpose the points within the centroid and calculate the mean euclidean
+            # distance (in km) from the center-point and convert that to meters.
+            np.transpose(df2[np.argwhere(props == idx)].reshape((-1, 2)))
+        ) * 1000),
+        'proportion': props[props == idx].size / props.size,
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
 # Example: SigLocs computed over an entire ~1 month period for a (sample) patient.
