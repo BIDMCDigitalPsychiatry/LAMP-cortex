@@ -1,7 +1,6 @@
 from inspect import getargspec
 import LAMP
 import lamp_cortex
-from pprint import pprint
 
 # A list of all functions across the package that are declared with @primary_feature.
 __primary_features__ = []
@@ -30,18 +29,23 @@ def primary_feature(name, dependencies):
             print(f"-> Processing primary feature \"{name}\"...")
 
             # Get previously calculated primary feature results from attachments.
-            try: 
-                attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-                # remove last in case interval still open 
-                attachments.remove(max(attachments, key=lambda x: x['end']))
-                _from = max(a['end'] for a in attachments)
-            except LAMP.ApiException:
-                attachments = []
-                _from = 0
+            #try: 
+            #    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
+            #    # remove last in case interval still open 
+            #    attachments.remove(max(attachments, key=lambda x: x['end']))
+            #    _from = max(a['end'] for a in attachments)
+            #except LAMP.ApiException:
+            #    attachments = []
+            #    _from = 0
 
-            # Get new sensor data and calculate new primary features.
-            # FIXME: ADD ORIGIN AND LOOP?
-            sensor_data = lamp_cortex.sensors.results(kwargs['id'], origin=dependencies[0], _from=_from) 
+            # Get all sensor data bounded by time interval per dependency to calculate new primary features.
+            sensor_data = { sensor: LAMP.SensorEvent.all_by_participant(
+                kwargs['id'],
+                origin=sensor,
+                _from=kwargs['start'],
+                to=kwargs['end'],
+                _limit=2147483647 # INT_MAX
+            )['data'] for sensor in dependencies }
             _result = func(*args, **{ **kwargs, 'sensor_data': sensor_data })
 
             # Upload new features as attachment.

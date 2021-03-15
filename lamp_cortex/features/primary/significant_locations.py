@@ -16,7 +16,8 @@ def significant_locations(k_max=10, **kwargs):
     """
 
     # Prepare input parameters.
-    df = kwargs['sensor_data']['lamp.gps']
+    df = pd.DataFrame.from_dict(kwargs['sensor_data']['lamp.gps'])
+    df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
     df2 = df[['latitude', 'longitude']].values
     K_clusters = range(1, min(k_max, len(df)))
     kmeans = [KMeans(n_clusters=i) for i in K_clusters]
@@ -34,7 +35,7 @@ def significant_locations(k_max=10, **kwargs):
     # Compute KMeans clusters. 
     kmeans = KMeans(n_clusters=k, init='k-means++')
     kmeans.fit(df2)
-    df.loc[:, 'cluster_label'] = kmeans.fit_predict(df2)
+    #df.loc[:, 'cluster_label'] = kmeans.fit_predict(df2)
     centers = kmeans.cluster_centers_ 
 
-    return centers, df
+    return centers#, df

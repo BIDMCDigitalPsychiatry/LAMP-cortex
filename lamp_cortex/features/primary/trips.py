@@ -10,12 +10,8 @@ def trips(participant_id, **kwargs):
     """
     Create primary features
     """
-    sensor_data = kwargs['sensor_data']
-
-    if 'lamp.gps' not in sensor_data:
-        return {}
-
-    gps_data = sensor_data['lamp.gps']
-    labeled_gps = lamp_cortex.sensors.gps.label_gps_points(gps_data)
+    df = pd.DataFrame.from_dict(kwargs['sensor_data']['lamp.gps'])
+    df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
+    labeled_gps = lamp_cortex.sensors.gps.label_gps_points(df)
     trip_dict = lamp_cortex.sensors.gps.get_trips(labeled_gps)
     return trip_dict
