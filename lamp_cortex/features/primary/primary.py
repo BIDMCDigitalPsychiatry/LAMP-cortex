@@ -46,13 +46,14 @@ def primary_feature(name, dependencies):
                 to=kwargs['end'],
                 _limit=2147483647 # INT_MAX
             )['data'] for sensor in dependencies }
-            _result = func(*args, **{ **kwargs, 'sensor_data': sensor_data })
+            _result = func(*args, **{**kwargs, 'sensor_data': sensor_data})
+            _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
 
             # Upload new features as attachment.
             #_result.loc[:,['start','end']]=_result.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
             #body_new=list(_result.to_dict(orient='index').values())
             #LAMP.Type.set_attachment(participant, 'me', attachment_key=name, body=body_new)
 
-            return _result
+            return _event
         return _wrapper2
     return _wrapper1
