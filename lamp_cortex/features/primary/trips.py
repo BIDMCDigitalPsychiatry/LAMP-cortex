@@ -4,7 +4,7 @@ import numpy as np
 
 @primary_feature(
     name="cortex.feature.trips",
-    sensors=['lamp.gps']
+    dependencies=['lamp.gps']
 )
 def trips(participant_id, **kwargs):
     """
