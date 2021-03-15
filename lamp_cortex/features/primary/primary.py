@@ -3,11 +3,16 @@ import LAMP
 import lamp_cortex
 from pprint import pprint
 
+# A list of all functions across the package that are declared with @primary_feature.
+__primary_features__ = []
+
 def primary_feature(name, dependencies):
     """
     Some explanation of how to use this decorator goes here.
     """
     def _wrapper1(func):
+        __primary_features__.append(func)
+
         def _wrapper2(*args, **kwargs):
 
             # Verify all required parameters for the primary feature function.
