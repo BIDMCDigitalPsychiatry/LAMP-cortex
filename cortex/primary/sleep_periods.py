@@ -1,10 +1,10 @@
+from ..feature_types import primary_feature
 import numpy as np
 import pandas as pd 
 import math 
 import datetime
 from geopy import distance
 from functools import reduce
-from ..feature_types import primary_feature
 
 @primary_feature(
     name="cortex.feature.sleep_periods",

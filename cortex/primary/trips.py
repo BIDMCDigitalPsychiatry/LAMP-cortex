@@ -1,15 +1,15 @@
 from ..feature_types import primary_feature
-from ..raw import gps
+from ..raw.gps import gps
 import numpy as np
 import pandas as pd
 
 @primary_feature(
-    name="cortex.feature.trips",
-    dependencies=['lamp.gps']
+    name="cortex.trips",
+    dependencies=[gps]
 )
-def trips(participant_id, **kwargs):
+def trips(**kwargs):
     """
-    Create primary features
+    Create primary features for trips.
     """
     ### Helper functions ###
     def label_gps_points(gps_data):
@@ -114,7 +114,7 @@ def trips(participant_id, **kwargs):
 
     ### ####
 
-    df = pd.DataFrame.from_dict(kwargs['sensor_data']['lamp.gps'])
+    df = pd.DataFrame.from_dict(gps(**kwargs))
     df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
 
     labeled_gps = label_gps_points(df)

@@ -5,6 +5,9 @@ import datetime
 from geopy import distance
 from functools import reduce
 
+def accelerometer():
+    pass # TODO
+
 def sleep_time_mean(sensor_data, dates):
     """
     Return mean expected bed and wake time

@@ -2,6 +2,8 @@
 from importlib import import_module
 from pkgutil import walk_packages
 for mod_info in walk_packages(__path__, __name__ + '.'):
+    if mod_info.name.endswith('__main__'):
+        continue
     mod = import_module(mod_info.name)
     try:
         names = mod.__dict__['__all__']

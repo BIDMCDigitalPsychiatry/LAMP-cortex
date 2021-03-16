@@ -1,12 +1,12 @@
-from ..feature_types import primary_feature
-import numpy as np
-import pandas as pd
+from ..feature_types import primary_feature, log
+from ..raw.gps import gps
 from sklearn.cluster import KMeans
-from pprint import pprint
+import pandas as pd
+import numpy as np
 
 @primary_feature(
-    name='cortex.feature.significant_locations',
-    dependencies=['lamp.gps']
+    name='cortex.significant_locations',
+    dependencies=[gps]
 )
 def significant_locations(k_max=10, **kwargs):
     """
@@ -17,11 +17,13 @@ def significant_locations(k_max=10, **kwargs):
     NOTE: This algorithm does NOT return the centroid radius and thus cannot be used
     to coalesce multiple SigLocs into one. 
 
+    :param k_max (int): The maximum KMeans clusters to test (FIXME).
     :return latitude (float): The latitude of the SigLoc centroid.
     :return longitude (float): The longitude of the SigLoc centroid.
     :return radius (float): The radius of the SigLoc centroid (in meters).
     :return proportion (float): The proportion of GPS events located within this 
     centeroid compared to all GPS events over the entire time window.
+    :return duration (int): The duration of time spent by the participant in the centroid.
     """
 
     # Calculates straight-line (not great-circle) distance between two GPS points on 
@@ -35,13 +37,13 @@ def significant_locations(k_max=10, **kwargs):
         return _euclid(g0[0], g0[1], g1[0], g1[1])
 
     # Prepare input parameters.
-    df = pd.DataFrame.from_dict(kwargs['sensor_data']['lamp.gps'])
-    df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
+    df = pd.DataFrame.from_dict(gps(**kwargs))
     df2 = df[['latitude', 'longitude']].values
     K_clusters = range(1, min(k_max, len(df)))
     kmeans = [KMeans(n_clusters=i) for i in K_clusters]
 
     # Determine number of clusters to score.
+    log.info(f'Calculating number of clusters to score with k_max={k_max}...')
     score = [kmeans[i].fit(df2).score(df2) for i in range(len(kmeans))]
     for i in range(len(score)):
         if i == len(score) - 1:
@@ -52,6 +54,7 @@ def significant_locations(k_max=10, **kwargs):
             break
 
     # Compute KMeans clusters. 
+    log.info(f'Computing KMeans++ with k={k}...')
     kmeans = KMeans(n_clusters=k, init='k-means++')
     kmeans.fit(df2)
     props = kmeans.fit_predict(df2)
@@ -67,6 +70,7 @@ def significant_locations(k_max=10, **kwargs):
             np.transpose(df2[np.argwhere(props == idx)].reshape((-1, 2)))
         ) * 1000),
         'proportion': props[props == idx].size / props.size,
+        'duration': 0,
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
 # Example: SigLocs computed over an entire ~1 month period for a (sample) patient.

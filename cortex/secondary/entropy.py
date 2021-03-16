@@ -17,4 +17,3 @@ def entropy(resolution=MS_IN_A_DAY, **kwargs):
     _significant_locations = significant_locations(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     _entropy = sum([loc['proportion'] * math.log(loc['proportion']) for loc in _significant_locations])
     return {'entropy': _entropy}
-    
