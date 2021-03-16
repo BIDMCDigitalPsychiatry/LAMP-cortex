@@ -2,10 +2,10 @@ from ..feature_types import primary_feature
 from ..raw.accelerometer import accelerometer
 
 @primary_feature(
-    name="cortex.screen_state",
+    name="cortex.survey_scores",
     dependencies=[accelerometer]
 )
-def screen_state(**kwargs):
+def survey_scores(**kwargs):
     """
     TODO
     """

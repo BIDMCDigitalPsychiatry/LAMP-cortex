@@ -1,6 +1,17 @@
 import os
+import sys
+import json
+import yaml
 import LAMP
+import logging
+import argparse
+import pandas as pd
+from pprint import pprint
 from inspect import getargspec
+
+# Get a universal logger to share with all feature functions.
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
+log = logging.getLogger('cortex')
 
 # List all registered features (raw, primary, secondary).
 __features__ = []
@@ -13,8 +24,6 @@ def raw_feature(name, dependencies):
     Some explanation of how to use this decorator goes here.
     """
     def _wrapper1(func):
-        __features__.append({ 'name': name, 'type': 'raw', 'dependencies': dependencies, 'callable': func })
-
         def _wrapper2(*args, **kwargs):
 
             # Verify all required parameters for the primary feature function.
@@ -28,26 +37,22 @@ def raw_feature(name, dependencies):
                 *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
             ]
             for param in params:
-                assert kwargs.get(param, None) is not None, "parameter `" + param + "` is required but missing"
-            print(f"-> Processing raw feature \"{name}\"...")
+                if kwargs.get(param, None) is None:
+                    raise Exception(f"parameter `{param}` is required but missing")
 
             # Connect to the LAMP API server.
-            assert 'LAMP_ACCESS_KEY' in os.environ and 'LAMP_SECRET_KEY' in os.environ, "You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` to use Cortex."
-            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'))
+            if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
+                raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
-            # Get all sensor data bounded by time interval per dependency to calculate new primary features.
-            assert check_something(), "Incorrect data"
-            sensor_data = { sensor: LAMP.SensorEvent.all_by_participant(
-                kwargs['id'],
-                origin=sensor,
-                _from=kwargs['start'],
-                to=kwargs['end'],
-                _limit=2147483647 # INT_MAX
-            )['data'] for sensor in dependencies }
-            _result = func(*args, **{**kwargs, 'sensor_data': sensor_data})
-            _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
+            log.info(f"Processing raw feature \"{name}\"...")
+            _result = func(*args, **kwargs)
+            return _result
 
-            return _event
+        # When we register/save the function, make sure we save the decorated and not the RAW function.
+        _wrapper2.__name__ = func.__name__
+        __features__.append({ 'name': name, 'type': 'raw', 'dependencies': dependencies, 'callable': _wrapper2 })
         return _wrapper2
     return _wrapper1
 
@@ -57,8 +62,6 @@ def primary_feature(name, dependencies):
     Some explanation of how to use this decorator goes here.
     """
     def _wrapper1(func):
-        __features__.append({ 'name': name, 'type': 'primary', 'dependencies': dependencies, 'callable': func })
-
         def _wrapper2(*args, **kwargs):
 
             # Verify all required parameters for the primary feature function.
@@ -72,12 +75,9 @@ def primary_feature(name, dependencies):
                 *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
             ]
             for param in params:
-                assert kwargs.get(param, None) is not None, "parameter `" + param + "` is required but missing"
-            print(f"-> Processing primary feature \"{name}\"...")
-
-            # Connect to the LAMP API server.
-            assert 'LAMP_ACCESS_KEY' in os.environ and 'LAMP_SECRET_KEY' in os.environ, "You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` to use Cortex."
-            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'))
+                if kwargs.get(param, None) is None:
+                    raise Exception(f"parameter `{param}` is required but missing")
+            log.info(f"Processing primary feature \"{name}\"...")
 
             # TODO: Require primary feature dependencies to be raw features!
 
@@ -91,15 +91,7 @@ def primary_feature(name, dependencies):
             #    attachments = []
             #    _from = 0
 
-            # Get all sensor data bounded by time interval per dependency to calculate new primary features.
-            sensor_data = { sensor: LAMP.SensorEvent.all_by_participant(
-                kwargs['id'],
-                origin=sensor,
-                _from=kwargs['start'],
-                to=kwargs['end'],
-                _limit=2147483647 # INT_MAX
-            )['data'] for sensor in dependencies }
-            _result = func(*args, **{**kwargs, 'sensor_data': sensor_data})
+            _result = func(*args, **kwargs)
             _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
 
             # Upload new features as attachment.
@@ -108,6 +100,10 @@ def primary_feature(name, dependencies):
             #LAMP.Type.set_attachment(participant, 'me', attachment_key=name, body=body_new)
 
             return _event
+
+        # When we register/save the function, make sure we save the decorated and not the RAW function.
+        _wrapper2.__name__ = func.__name__
+        __features__.append({ 'name': name, 'type': 'primary', 'dependencies': dependencies, 'callable': _wrapper2 })
         return _wrapper2
     return _wrapper1
 
@@ -117,8 +113,6 @@ def secondary_feature(name, dependencies):
     Some explanation of how to use this decorator goes here.
     """
     def _wrapper1(func):
-        __features__.append({ 'name': name, 'type': 'secondary', 'dependencies': dependencies, 'callable': func })
-
         def _wrapper2(*args, **kwargs):
 
             # Verify all required parameters for the primary feature function.
@@ -132,12 +126,9 @@ def secondary_feature(name, dependencies):
                 *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
             ]
             for param in params:
-                assert kwargs.get(param, None) is not None, "parameter `" + param + "` is required but missing"
-            print(f"-> Processing secondary feature \"{name}\"...")
-
-            # Connect to the LAMP API server.
-            assert 'LAMP_ACCESS_KEY' in os.environ and 'LAMP_SECRET_KEY' in os.environ, "You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` to use Cortex."
-            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'))
+                if kwargs.get(param, None) is None:
+                    raise Exception(f"parameter `{param}` is required but missing")
+            log.info(f"Processing secondary feature \"{name}\"...")
 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
 
@@ -168,5 +159,69 @@ def secondary_feature(name, dependencies):
             #LAMP.Type.set_attachment(participant, 'me', attachment_key=name, body=body_new)
 
             return _event
+
+        # When we register/save the function, make sure we save the decorated and not the RAW function.
+        _wrapper2.__name__ = func.__name__
+        __features__.append({ 'name': name, 'type': 'secondary', 'dependencies': dependencies, 'callable': _wrapper2 })
         return _wrapper2
     return _wrapper1
+
+# Allows execution of feature functions from the command line, with argument parsing.
+def _main():
+    superparser = argparse.ArgumentParser(prog="cortex",
+                                          description='Cortex data analysis pipeline for the LAMP Platform')
+    superparser.add_argument('--version', action='version', version='Cortex 2021.3.1')
+    superparser.add_argument('--format', dest='_format', choices=['json', 'csv', 'yaml'],
+                             help='the output format type (can also be set using the environment variable CORTEX_OUTPUT_FORMAT)')
+    superparser.add_argument('--access-key', dest='_access_key',
+                             help='the access key for the LAMP API Server (can also be set using the environment variable LAMP_ACCESS_KEY)')
+    superparser.add_argument('--secret-key', dest='_secret_key',
+                             help='the secret key for the LAMP API Server (can also be set using the environment variable LAMP_SECRET_KEY)')
+    superparser.add_argument('--server-address', dest='_server_address',
+                             help='the server address for the LAMP API Server (can also be set using the environment variable LAMP_SERVER_ADDRESS)')
+    subparsers = superparser.add_subparsers(title="features", dest='_feature', required=True,
+                                            description="Available features for processing")
+    funcs = {f['callable'].__name__: f['callable'] for f in all_features()}
+    for name, func in funcs.items():
+
+        # Add a sub-parser for this feature with the required (id, start, end).
+        parser = subparsers.add_parser(name)
+        parser.add_argument(f"--id", dest='id', type=str, required=True,
+                            help='Participant ID')
+        parser.add_argument(f"--start", dest='start', type=int, required=True,
+                            help='time window start in UTC epoch milliseconds')
+        parser.add_argument(f"--end", dest='end', type=int, required=True,
+                            help='time window end in UTC epoch milliseconds')
+
+        # Add feature-specific parameters and mark the parameter as required 
+        # if no default value is provided. Use the function docstring to get 
+        # the parameter's description.
+        opt_idx = len(getargspec(func)[0]) - len(getargspec(func)[3] or ())
+        for idx, param in enumerate(getargspec(func)[0]):
+            desc = 'missing parameter description'
+            parser.add_argument(f"--{param}", dest=param, required=idx < opt_idx,
+                                help=desc + (' (required)' if idx < opt_idx else ''))
+
+    # Dynamically execute the specific feature function with the parsed arguments (removing all '_'-prefixed ones).
+    kwargs = vars(superparser.parse_args())
+    _format = os.getenv('CORTEX_OUTPUT_FORMAT', kwargs.pop('_format') or 'csv')
+    if kwargs['_access_key'] is not None:
+        os.environ['LAMP_ACCESS_KEY'] = kwargs.pop('_access_key')
+    if kwargs['_secret_key'] is not None:
+        os.environ['LAMP_SECRET_KEY'] = kwargs.pop('_secret_key')
+    if kwargs['_server_address'] is not None:
+        os.environ['LAMP_SERVER_ADDRESS'] = kwargs.pop('_server_address')
+    _result = funcs[kwargs['_feature']](**{k: v for k, v in kwargs.items() if not k.startswith('_')})
+    
+    # Format and print the result to console (use bash redirection to output to a file).
+    if _format == 'csv':
+
+        # Use Pandas to auto-convert a list of dicts to a CSV string. This may result in unexpected output
+        # if the function returns something other than a dataframe-style object!
+        print(pd.DataFrame.from_dict(_result).to_csv(index=False))
+    elif _format == 'yaml':
+        print(yaml.safe_dump(json.loads(json.dumps(_result)), indent=2, sort_keys=False, default_flow_style=False))
+    elif _format == 'json':
+        print(json.dumps(_result, indent=2))
+    else:
+        pprint(_result)
