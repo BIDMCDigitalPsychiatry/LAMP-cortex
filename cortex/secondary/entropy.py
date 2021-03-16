@@ -1,6 +1,4 @@
 import lamp_cortex
-from primary import sigloc_bouts
-
 
 def entropy(df, dates, resolution, k_max=10):
     """

@@ -1,6 +1,7 @@
 import lamp_cortex
+import datetime
 
-def travel_distance(dates, freq=datetime.timedelta(days=1), **kwargs):
+def travel_duration(dates, freq=datetime.timedelta(days=1), **kwargs):
     '''
     Distance Traveled - Meters
     '''
@@ -22,10 +23,9 @@ def travel_distance(dates, freq=datetime.timedelta(days=1), **kwargs):
             date, next_date = dates[i], dates[i+1]
         for idx, trip in trips.iterrows():
             if date <= trip['Trip Start'] and next_date >= trip['Trip End']:
-                trip_duration = trip['Trip End'] - trip['Trip Start']
-                trip_dict[date]['Duration'] = (trip_duration.days * 24) + (trip_duration.seconds / 60)
+                trip_dict[date]['Distance Traveled'] = trip['Distance']
 
-    distTravelledDf = pd.DataFrame([[t, trip_dict[t]['Duration']] for t in trip_dict],
-                          columns=['Date', 'Duration'])
+    distTravelledDf = pd.DataFrame([[t, trip_dict[t]['Distance Traveled']] for t in trip_dict],
+                          columns=['Date', 'Distance Traveled'])
 
     return distTravelledDf

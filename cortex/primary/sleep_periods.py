@@ -1,9 +1,13 @@
 import numpy as np
 import pandas as pd 
-from lamp_cortex.features.primary.primary import primary_feature
+import math 
+import datetime
+from geopy import distance
+from functools import reduce
+from ..feature_types import primary_feature
 
 @primary_feature(
-    name="cortex.feature.sleep_periods"
+    name="cortex.feature.sleep_periods",
     dependencies=['lamp.accelerometer']
 )
 def sleep_periods(sensor_data):
@@ -30,19 +34,6 @@ def sleep_periods(sensor_data):
         
     return pd.DataFrame([[t0, t1, sel_act]], columns=['Bed', 'Wake', 'Accelerometer Mag'])
     
-
-
-
-
-
-
-import math 
-import pandas as pd
-import numpy as np
-import datetime
-from geopy import distance
-from functools import reduce
-
 def sleep_time_mean(sensor_data, dates):
     """
     Return mean expected bed and wake time

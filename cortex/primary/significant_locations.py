@@ -1,4 +1,4 @@
-from lamp_cortex.features.primary.primary import primary_feature
+from ..feature_types import primary_feature
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -19,6 +19,7 @@ def significant_locations(k_max=10, **kwargs):
 
     :return latitude (float): The latitude of the SigLoc centroid.
     :return longitude (float): The longitude of the SigLoc centroid.
+    :return radius (float): The radius of the SigLoc centroid (in meters).
     :return proportion (float): The proportion of GPS events located within this 
     centeroid compared to all GPS events over the entire time window.
     """
