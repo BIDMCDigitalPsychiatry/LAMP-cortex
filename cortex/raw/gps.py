@@ -5,11 +5,12 @@ import LAMP
     name="lamp.gps",
     dependencies=["lamp.gps", "lamp.gps.contextual"]
 )
-def gps(resolution=None, **kwargs):
+def gps(resolution=None, limit=2147483647, **kwargs):
     """
     Get all GPS data bounded by time interval and optionally subsample the data.
 
     :param resolution (int): The subsampling resolution (TODO).
+    :param limit (int): The maximum number of GPS events to query for (defaults to INT_MAX).
     :return timestamp (int): The UTC timestamp for the GPS event.
     :return latitude (float): The latitude for the GPS event.
     :return longitude (float): The longitude for the GPS event.
@@ -22,6 +23,6 @@ def gps(resolution=None, **kwargs):
         origin="lamp.gps",
         _from= kwargs['start'],
         to= kwargs['end'],
-        _limit=2147483647 # INT_MAX
+        _limit=limit
     )['data']
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
