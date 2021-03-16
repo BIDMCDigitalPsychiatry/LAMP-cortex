@@ -142,11 +142,15 @@ def secondary_feature(name, dependencies):
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'))
 
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
+            data = []
+            for window in zip(timestamp_list[:-1], timestamp_list[1:]):
+                window_start, window_end = window[0], window[1]
+                _event = func(*args, **{**kwargs, 'start':window_start, 'end':window_end})
+                data.append(_event)
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
 
-            _result = func(*args, **{**kwargs, 'timestamp_list':timestamp_list})
-            #_event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
-
+            _result = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
+    
             return _result
         return _wrapper2
     return _wrapper1
