@@ -2,6 +2,8 @@ from ..feature_types import primary_feature
 from ..raw.gps import gps
 import numpy as np
 import pandas as pd
+import time
+from geopy import distance
 
 @primary_feature(
     name="cortex.trips",
@@ -9,7 +11,11 @@ import pandas as pd
 )
 def trips(**kwargs):
     """
-    Create primary features for trips.
+    
+    :param id (string):
+    :param start (int):
+    :param end (int):
+    :return trip_list (list): all trips in the given timeframe; each one has (start, end)
     """
     ### Helper functions ###
     def label_gps_points(gps_data):
@@ -18,7 +24,7 @@ def trips(**kwargs):
 
         :param sensor_data (dict): maps LAMP sensor to sensor events
         
-        :return (pd.DataFrame): columns ['local_timestamp', 'latitude', 'longitude', 'stationary'], where 'stationary' is bool indicating whether GPS point is stationary/nonstationary
+        :return (pd.DataFrame): columns ['timestamp', 'latitude', 'longitude', 'stationary'], where 'stationary' is bool indicating whether GPS point is stationary/nonstationary
         """
 
         SPEED_THRESHOLD = 1.0
@@ -27,7 +33,7 @@ def trips(**kwargs):
         labeled_data = gps_data.copy()
         for (_, point1), (_, point2) in zip(gps_data.iterrows(), gps_data.shift(-1).iterrows()):
             #If last timestamp in df, carry over label from previous point
-            if point1['local_timestamp'] == labeled_data.loc[labeled_data.index[-1], 'local_timestamp']:
+            if point1['timestamp'] == labeled_data.loc[labeled_data.index[-1], 'timestamp']:
                 labeled_data.loc[labeled_data.index[-1], 'stationary'] = labeled_data.loc[labeled_data.index[-2], 'stationary']
                 
             else:
@@ -40,14 +46,14 @@ def trips(**kwargs):
                     pass
                 else:
                     dist = distance.distance((point1['latitude'], point1['longitude']), (point2['latitude'], point2['longitude'])).km 
-                    elapsed_time = ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)            
+                    elapsed_time = ((datetime.datetime.utcfromtimestamp(point2['timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['timestamp'] / 1000)).seconds / 3600)            
                     #update stationary if points are separated temporally (elaped time non-zero)
                     if elapsed_time > 0.0:
-                        speed =  dist / ((datetime.datetime.utcfromtimestamp(point2['local_timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['local_timestamp'] / 1000)).seconds / 3600)
+                        speed =  dist / ((datetime.datetime.utcfromtimestamp(point2['timestamp'] / 1000) - datetime.datetime.utcfromtimestamp(point1['timestamp'] / 1000)).seconds / 3600)
                         if speed >= SPEED_THRESHOLD: stationary = False
                         else: stationary = True
 
-                labeled_data.loc[labeled_data['local_timestamp'] == point1['local_timestamp'], 'stationary'] = stationary
+                labeled_data.loc[labeled_data['timestamp'] == point1['timestamp'], 'stationary'] = stationary
 
         return labeled_data
 
@@ -72,51 +78,36 @@ def trips(**kwargs):
         Returns: list of trips (tuples of start and end timestamps)
         '''
         
-        df['local_timestamp'] = pd.to_datetime(df['local_timestamp'], unit='ms')
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         arr = np.array(df['stationary'])
         arr_ext = np.r_[False, arr == state, False]
         idx = np.flatnonzero(arr_ext[:-1] != arr_ext[1:])
         idx_list = list(zip(idx[:-1:2], idx[1::2] - int(inclusive)))
 
         trip_list = []
-        for tup in idx_list:
-            dist = get_total_distance(df, tup[0], tup[1])
-            trip = (df['local_timestamp'][tup[0]], df['local_timestamp'][tup[1]],dist)
-            trip_list.append(trip)
-
-        tripDf = pd.DataFrame(trip_list, columns=["Trip Start", "Trip End", "Distance"])
-        return tripDf
-
-    def get_trips(df, state=False, inclusive=True):
-        '''
-        Input:
-        df (Pandas Dataframe)
-        state (bool)
-        inclusive (bool)
-
-        Returns: list of trips (tuples of start and end timestamps)
-        '''
         
-        df['local_timestamp'] = pd.to_datetime(df['local_timestamp'], unit='ms')
-        arr = np.array(df['stationary'])
-        arr_ext = np.r_[False, arr == state, False]
-        idx = np.flatnonzero(arr_ext[:-1] != arr_ext[1:])
-        idx_list = list(zip(idx[:-1:2], idx[1::2] - int(inclusive)))
-
-        trip_list = []
         for tup in idx_list:
+            if tup[0] == tup[1]:
+                continue
             dist = get_total_distance(df, tup[0], tup[1])
-            trip = (df['local_timestamp'][tup[0]], df['local_timestamp'][tup[1]],dist)
+            trip = {'start': {'timestamp': time.mktime(df['timestamp'][tup[0]].timetuple()) * 1000,
+                            'latitude': df['latitude'][tup[0]],
+                            'longitude': df['longitude'][tup[0]]},
+                    'end': {'timestamp': time.mktime(df['timestamp'][tup[1]].timetuple()) * 1000,
+                            'latitude':df['latitude'][tup[1]],
+                            'longitude':df['longitude'][tup[1]]},
+                    'distance': dist}
+            
             trip_list.append(trip)
 
-        tripDf = pd.DataFrame(trip_list, columns=["Trip Start", "Trip End", "Distance"])
-        return tripDf
+        return trip_list
 
     ### ####
 
+    gps_data = kwargs['data']
     df = pd.DataFrame.from_dict(gps(**kwargs))
     df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
 
     labeled_gps = label_gps_points(df)
-    trip_dict = get_trips(labeled_gps)
-    return trip_dict
+    trip_list = get_trips(labeled_gps)
+    return trip_list
