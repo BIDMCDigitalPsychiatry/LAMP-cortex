@@ -104,7 +104,6 @@ def trips(**kwargs):
 
     ### ####
 
-    gps_data = kwargs['data']
     df = pd.DataFrame.from_dict(gps(**kwargs))
     df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
 

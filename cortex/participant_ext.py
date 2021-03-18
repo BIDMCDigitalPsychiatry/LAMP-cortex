@@ -5,13 +5,18 @@ import os
 import math
 import LAMP 
 import sys
-import lamp_cortex
+import cortex
 import itertools
 from functools import reduce
 from tzwhere import tzwhere
 import pytz
 from dateutil.tz import tzlocal
 
+
+from .raw.results import results as sensor_results
+from .raw.cognitive_games import results as cg_results
+from .raw.surveys import survey_results as survey_results
+from .feature_types import all_features
 
 
 class ParticipantExt():
@@ -155,83 +160,113 @@ class ParticipantExt():
             results[dom].reset_index(drop=True, inplace=True)
 
     def create_df(self, 
-                  days_cap=120, 
-                  day_first=None, 
-                  day_last=None, 
-                  resolution=datetime.timedelta(days=1), 
-                  start_monday=False, 
-                  start_morning=True, 
-                  time_centered=False, 
+                  start=None,
+                  end=None,
+                  resolution=86400000,
                   question_categories=None):
         """
         Create participant dataframe
         :param day_first (datetime.Date)
         """
-
-        sensors = lamp_cortex.ParticipantExt.sensors_results(self.id) # sensor SensorEvents
-        cognitive_games = lamp_cortex.ParticipantExt.cognitive_games_results(self.id) #cognitive game ActivityEvents
-        surveys = lamp_cortex.ParticipantExt.survey_results(self.id, question_categories=question_categories) #survey ActivityEvents
+        LAMP_SENSORS = ["lamp.accelerometer", "lamp.accelerometer.motion", #"lamp.analytics", 
+                    "lamp.blood_pressure", "lamp.bluetooth", "lamp.calls", "lamp.distance",
+                    "lamp.flights", "lamp.gps", "lamp.gps.contextual", "lamp.gyroscope",
+                    "lamp.heart_rate", "lamp.height", "lamp.magnetometer", "lamp.respiratory_rate",
+                    "lamp.screen_state","lamp.segment", "lamp.sleep", "lamp.sms", "lamp.steps",
+                    "lamp.weight", "lamp.wifi"]
         
-        results = {**surveys, **sensors, **cognitive_games} 
-        
-        self.timezone_correct(results)
-
-        #Save data
-        self.survey_events = surveys
-        self.sensor_events = sensors
-        self.result_events = results
-        
-        #If no data, return empty dataframe
-        if len(results) == 0: return pd.DataFrame({})
-
-        #Find the first, last date
-        concat_datetimes = pd.concat([results[dom] for dom in results])['local_datetime'].sort_values()
-        if day_first is None: day_first = concat_datetimes.min()
-        else: day_first = datetime.datetime.combine(day_first, datetime.time.min) #convert to datetime
-
-        if day_last is None: day_last = concat_datetimes.max()
-        else: day_last = datetime.datetime.combine(day_last, datetime.time.min) #convert to datetime
-
-        #Clip days based on morning and weekday parameters
-        if start_monday:
-            if day_first.weekday() > 0: 
-                day_first += datetime.timedelta(days = - day_first.weekday())
-
-        if start_morning: 
-            day_first, day_last = day_first.replace(hour=9, minute=0, second=0), day_last.replace(hour=9, minute=0, second=0)
+        LAMP_COGNITIVE_GAMES = ['lamp.jewels_a', 'lamp.jewels_b']
+        #Set start, end if not already
+        if start is None: 
+            start_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=-1), 
+                             **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=-1),
+                             **survey_results(self.id, _limit=-1)}
             
-        days_elapsed = (day_last - day_first).days 
+            start = pd.concat([pd.DataFrame.from_dict(start_results[res]) for res in start_results])['timestamp'].min()
+        if end is None:
+            end_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=1), 
+                             **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=1),
+                             **survey_results(self.id, _limit=1)}
+            
+            end = pd.concat([pd.DataFrame.from_dict(end_results[res]) for res in end_results])['timestamp'].max()
+
+        #Create all secondary features given 
+        _all_features = all_features()
+        _secondary_features = [(f['name'], f['callable']) for f in _all_features if f['type'] == 'secondary']
+        data = []
+        for name, feature_func in _secondary_features:
+            print(name, feature_func)
+            #_result = feature_func(id=self.id, start=start, end=end, resolution=resolution)
+            #data.append({'feature': feature_func.__name__, 'data':_result})
+
         
-        #Create based on resolution
-        date_list = [day_first + (resolution * x) for x in range(0, math.ceil(min(days_elapsed, days_cap) * datetime.timedelta(days=1) / resolution))]
+        #Put into dictionary
 
-        #Create dateframe for the number of time units that have data; limited by days; cap at 'days_cap' if this number is large
-        df = pd.DataFrame({'Date': date_list, 'id':self.id})
 
-        # Short circuit if no dates to parse
-        if len(df['Date']) == 0: return df
-
-        ### Featurize result events and add to df
-        #Surveys
-        surveyDf = lamp_cortex.activities.survey_features.featurize(surveys, date_list, resolution=resolution)
+        # sensors = lamp_cortex.ParticipantExt.sensors_results(self.id) # sensor SensorEvents
+        # cognitive_games = lamp_cortex.ParticipantExt.cognitive_games_results(self.id) #cognitive game ActivityEvents
+        # surveys = lamp_cortex.ParticipantExt.survey_results(self.id, question_categories=question_categories) #survey ActivityEvents
         
-        #Jewels
-        jewelsDf = lamp_cortex.activities.jewels_features.featurize(results, date_list, resolution=resolution)
+        # results = {**surveys, **sensors, **cognitive_games} 
+        
+        # self.timezone_correct(results)
 
-        #Parse sensors and convert them into passive features
-        #Single sensor features
-        callTextDf = lamp_cortex.sensors.call_text_features.all(results, date_list, resolution=resolution)
-        accelDf = lamp_cortex.sensors.accelerometer_features.all(results, date_list, resolution=resolution)
-        gpsDf = lamp_cortex.sensors.gps_features.all(sensors, date_list, resolution=resolution)
-        #screenDf = lamp_cortex.sensors.screen_features.all(sensors, date_list, resolution)
+        # #Save data
+        # self.survey_events = surveys
+        # self.sensor_events = sensors
+        # self.result_events = results
+        
+        # #If no data, return empty dataframe
+        # if len(results) == 0: return pd.DataFrame({})
 
-        # #Merge dfs
-        df = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), 
-                    [surveyDf, jewelsDf, accelDf, callTextDf, gpsDf]) #screenDf])
+        # #Find the first, last date
+        # concat_datetimes = pd.concat([results[dom] for dom in results])['local_datetime'].sort_values()
+        # if day_first is None: day_first = concat_datetimes.min()
+        # else: day_first = datetime.datetime.combine(day_first, datetime.time.min) #convert to datetime
 
-        #Trim columns if there are predetermined domains
-        if self.domains is not None: 
-            df = df.loc[:, ['Date', 'id'] + [d for d in self.domains if d in df.columns.values]]
+        # if day_last is None: day_last = concat_datetimes.max()
+        # else: day_last = datetime.datetime.combine(day_last, datetime.time.min) #convert to datetime
+
+        # #Clip days based on morning and weekday parameters
+        # if start_monday:
+        #     if day_first.weekday() > 0: 
+        #         day_first += datetime.timedelta(days = - day_first.weekday())
+
+        # if start_morning: 
+        #     day_first, day_last = day_first.replace(hour=9, minute=0, second=0), day_last.replace(hour=9, minute=0, second=0)
+            
+        # days_elapsed = (day_last - day_first).days 
+        
+        # #Create based on resolution
+        # date_list = [day_first + (resolution * x) for x in range(0, math.ceil(min(days_elapsed, days_cap) * datetime.timedelta(days=1) / resolution))]
+
+        # #Create dateframe for the number of time units that have data; limited by days; cap at 'days_cap' if this number is large
+        # df = pd.DataFrame({'Date': date_list, 'id':self.id})
+
+        # # Short circuit if no dates to parse
+        # if len(df['Date']) == 0: return df
+
+        # ### Featurize result events and add to df
+        # #Surveys
+        # surveyDf = lamp_cortex.activities.survey_features.featurize(surveys, date_list, resolution=resolution)
+        
+        # #Jewels
+        # jewelsDf = lamp_cortex.activities.jewels_features.featurize(results, date_list, resolution=resolution)
+
+        # #Parse sensors and convert them into passive features
+        # #Single sensor features
+        # callTextDf = lamp_cortex.sensors.call_text_features.all(results, date_list, resolution=resolution)
+        # accelDf = lamp_cortex.sensors.accelerometer_features.all(results, date_list, resolution=resolution)
+        # gpsDf = lamp_cortex.sensors.gps_features.all(sensors, date_list, resolution=resolution)
+        # #screenDf = lamp_cortex.sensors.screen_features.all(sensors, date_list, resolution)
+
+        # # #Merge dfs
+        # df = reduce(lambda left, right: pd.merge(left, right, on=["Date"], how='left'), 
+        #             [surveyDf, jewelsDf, accelDf, callTextDf, gpsDf]) #screenDf])
+
+        # #Trim columns if there are predetermined domains
+        # if self.domains is not None: 
+        #     df = df.loc[:, ['Date', 'id'] + [d for d in self.domains if d in df.columns.values]]
 
         return df
 

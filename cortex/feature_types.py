@@ -8,7 +8,7 @@ import argparse
 import pandas as pd
 from pprint import pprint
 from inspect import getargspec
-from ..raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
+#from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
@@ -82,18 +82,26 @@ def primary_feature(name, dependencies):
 
             # TODO: Require primary feature dependencies to be raw features!
 
+            # TODO: Determine attachment type and how to parse them given ambigious data type
+
             # Get previously calculated primary feature results from attachments.
-            #try: 
+            # try: 
             #    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
             #    # remove last in case interval still open 
             #    attachments.remove(max(attachments, key=lambda x: x['end']))
             #    _from = max(a['end'] for a in attachments)
-            #except LAMP.ApiException:
+            # except LAMP.ApiException:
             #    attachments = []
             #    _from = 0
 
-            _result = func(*args, **kwargs)
+
+            # TEMPORARY _from
+            _from = kwargs['start']
+            _result = func(*args, **{**kwargs, 'start':_from})
             _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
+
+            # TODO: Combine old and new attachments
+
 
             # Upload new features as attachment.
             #_result.loc[:,['start','end']]=_result.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
@@ -135,13 +143,13 @@ def secondary_feature(name, dependencies):
             data = []
             for window in zip(timestamp_list[:-1], timestamp_list[1:]):
                 window_start, window_end = window[0], window[1]
-                _event = func(*args, **{**kwargs, 'start':window_start, 'end':window_end})
-                data.append(_event)
+                _result = func(*args, **{**kwargs, 'start':window_start, 'end':window_end})
+                data.append(_result)
                 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
 
-            _result = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
-            return _result
+            _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
+            return _event
 
         # When we register/save the function, make sure we save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__

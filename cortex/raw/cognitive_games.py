@@ -34,25 +34,25 @@ def cognitive_games_results(func):
     return decorator
 
 @cognitive_games_results
-def results(participant_id, **kwargs):
-    print(kwargs, LAMP.ActivityEvent.all_by_participant(kwargs)['data'])
-    cognitive_game_results_new = [{'UTC_timestamp':res['timestamp'],
+def results(id, **kwargs):
+    
+    cognitive_game_results_new = [{'timestamp':res['timestamp'],
                                 'duration':res['duration'],
                                 'activity':res['activity'],
                                 'activity_name':LAMP.Activity.view(res['activity'])['spec'], 
                                 'static_data':res['static_data'], 
-                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(participant_id, **kwargs)['data']]
+                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(id, **kwargs)['data']]
 
     cognitive_game_results = []
     while cognitive_game_results_new: 
         cognitive_game_results += cognitive_game_results_new
         kwargs['to'] = cognitive_game_results_new[0]['UTC_timestamp']
-        cognitive_game_results_new = [{'UTC_timestamp':res['timestamp'],
+        cognitive_game_results_new = [{'timestamp':res['timestamp'],
                                 'duration':res['duration'],
                                 'activity':res['activity'],
                                 'activity_name':LAMP.Activity.view(res['activity'])['spec'], 
                                 'static_data':res['static_data'], 
-                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(participant_id, **kwargs)['data']]
+                                'temporal_slices':res['temporal_slices']} for res in LAMP.ActivityEvent.all_by_participant(id, **kwargs)['data']]
         
-    cognitiveGameDf = pd.DataFrame.from_dict(cognitive_game_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
+    cognitiveGameDf = pd.DataFrame.from_dict(cognitive_game_results).drop_duplicates(subset='timestamp') #remove duplicates
     return cognitiveGameDf
