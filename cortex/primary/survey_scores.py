@@ -1,7 +1,8 @@
-from ..feature_types import primary_feature
+from ..feature_types import primary_feature, log
 from ..raw.survey import survey
 import LAMP
 import numpy as np
+from itertools import groupby
 
 @primary_feature(
     name="cortex.survey_scores",
@@ -11,13 +12,20 @@ def survey_scores(question_categories=None, **kwargs):
     """
     Get survey scores
     """
-    participant_results = survey(**kwargs)
+
+    # Grab the list of surveys and ALL ActivityEvents which are filtered locally.
+    activities = LAMP.Activity.all_by_participant(kwargs['id'])['data']
+    surveys = {x['id']: x for x in activities if x['spec'] == 'lamp.survey'}
+    _grp = groupby(survey(replace_ids=False, **kwargs), lambda x: (x['timestamp'], x['survey']))
+    participant_results = [{
+        'timestamp': key[0],
+        'activity': key[1],
+        'temporal_slices': list(group)
+    } for key, group in _grp]
+
     _survey_scores = {} #maps survey_type to occurence of scores 
     for result in participant_results:
-        #Check if it's a survey event
-        
-        activity = LAMP.Activity.view(result['activity'])['data'][0]
-        result_settings = activity['settings']
+        result_settings = surveys[result['activity']]['settings']
 
         survey_time = result['timestamp']
         survey_result = {} #maps question domains to scores
@@ -55,7 +63,9 @@ def survey_scores(question_categories=None, **kwargs):
             # elif current_question_info['type'] == 'text':  #skip
             #     continue
             
-            else: continue #no valid score to be used
+            else:
+                log.info('skipping!!')
+                continue #no valid score to be used
                 
             #add event to a category, either user-defined or default activity
             if question_categories:
@@ -74,13 +84,13 @@ def survey_scores(question_categories=None, **kwargs):
                 else: survey_result[event_category] = [score]
 
             else:
-                if activity['name'] not in survey_result:
-                    survey_result[activity['name']] = []
+                if event['survey'] not in survey_result:
+                    survey_result[event['survey']] = []
 
                 if score:
-                    survey_result[activity['name']].append(score)
+                    survey_result[event['survey']].append(score)
                 
-
+        log.info(survey_result)
         #add mean to each cat to master dictionary           
         for category in survey_result: 
             survey_result[category] = np.mean(survey_result[category])

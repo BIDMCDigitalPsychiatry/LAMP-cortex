@@ -1,6 +1,5 @@
 from ..feature_types import raw_feature, log
 import LAMP
-import datetime 
 import pandas as pd 
 import numpy as np
 from functools import reduce
@@ -9,12 +8,17 @@ from functools import reduce
     name='lamp.survey',
     dependencies=['lamp.survey']
 )
-def survey(limit=2147483647, **kwargs):
+def survey(replace_ids=True, limit=2147483647, **kwargs):
     """
     Get survey events for participant
     
-    :param participant (str): the LAMP ID for participant. If not provided, then take participant id
-    :param question_categories (dict): maps text in active event responses to a domain (str) and reverse_scoring parameter (bool)
+    :param replace_ids (bool): TODO.
+    :param limit (int): TODO.
+    :return timestamp (int): TODO.
+    :return survey (str): TODO.
+    :return item (str): TODO.
+    :return value (any): TODO.
+    :return duration (int): TODO.
     """
     
     # FIXME: This is old code preserved here for use later.
@@ -52,7 +56,7 @@ def survey(limit=2147483647, **kwargs):
     return [
         {
             'timestamp': x['timestamp'],
-            'survey': surveys[x['activity']]['name'],
+            'survey': surveys[x['activity']]['name'] if replace_ids else x['activity'],
             **y
         }
         for x in raw

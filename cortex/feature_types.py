@@ -78,6 +78,13 @@ def primary_feature(name, dependencies):
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
+
+            # Connect to the LAMP API server.
+            if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
+                raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+            
             log.info(f"Processing primary feature \"{name}\"...")
 
             # TODO: Require primary feature dependencies to be raw features!
@@ -137,6 +144,13 @@ def secondary_feature(name, dependencies):
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
+
+            # Connect to the LAMP API server.
+            if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
+                raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+            
             log.info(f"Processing secondary feature \"{name}\"...")
 
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
