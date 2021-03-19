@@ -15,7 +15,7 @@ from dateutil.tz import tzlocal
 
 from .raw.results import results as sensor_results
 from .raw.cognitive_games import results as cg_results
-from .raw.surveys import survey_results as survey_results
+from .raw.survey import survey
 from .feature_types import all_features
 
 
@@ -180,13 +180,13 @@ class ParticipantExt():
         if start is None: 
             start_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=-1), 
                              **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=-1),
-                             **survey_results(self.id, _limit=-1)}
+                             **survey(self.id, _limit=-1)}
             
             start = pd.concat([pd.DataFrame.from_dict(start_results[res]) for res in start_results])['timestamp'].min()
         if end is None:
             end_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=1), 
                              **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=1),
-                             **survey_results(self.id, _limit=1)}
+                             **survey(self.id, _limit=1)}
             
             end = pd.concat([pd.DataFrame.from_dict(end_results[res]) for res in end_results])['timestamp'].max()
 

@@ -36,7 +36,7 @@ Or another example using the CLI arguments instead of environment variables (and
 ```bash
 python3 -m \
   cortex --format=csv --server-address=api.lamp.digital --access-key=XXX --secret-key=XXX \
-    gps --id=U26468383 --start=1583532346000 --end=1583618746000 \
+    survey --id=U26468383 --start=1583532346000 --end=1583618746000 \
     2>/dev/null 1>./my_cortex_output.csv
 ```
 
