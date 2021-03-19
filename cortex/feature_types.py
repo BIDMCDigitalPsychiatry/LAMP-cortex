@@ -216,3 +216,22 @@ def _main():
         print(json.dumps(_result, indent=2))
     else:
         pprint(_result)
+
+"""
+try:
+    from flask import Flask
+    app = Flask(__name__)
+    @app.route('/<feature_name>', methods=['GET', 'POST'])
+    def index(feature_name=None):
+        if feature_name is None:
+            
+            # No feature was provided; return the list of functions and help info.
+            return json.dumps({f['callable'].__name__: f['callable'] for f in all_features()}, indent=2)
+        else:
+
+            # A feature was selected; call it with query parameters as arguments.
+            return json.dumps({}, indent=2)
+    app.run()
+except ImportError:
+    raise Exception('Flask is not installed; cannot start web server!')
+"""
