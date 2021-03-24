@@ -116,7 +116,7 @@ class ParticipantExt():
         assert 'origin' not in kwargs 
         participant_sensors = {}
         for sensor in lamp_sensors:
-            if '_limit' not in kwargs: kwargs['_limit'] = 25000
+            if '_limit' not in kwargs: kwargs['_limit'] = 1000
             sens_results = lamp_cortex.ParticipantExt.sensor_results(participant_id, origin=sensor, **kwargs)
             if not sens_results.empty:
                 participant_sensors[sensor] = sens_results
@@ -139,9 +139,11 @@ class ParticipantExt():
         sens_results = []
         while sens_results_new: 
             sens_results += sens_results_new
-            kwargs['to'] = sens_results_new[-1]['UTC_timestamp']
-            #kwargs['to'] = sens_results_new[0]['UTC_timestamp']
-            sens_results_new = [{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant_id, **kwargs)['data']]
+            kwargs['to'] = sens_results_new[-1]['UTC_timestamp']                       
+            try:
+                sens_results_new = [{'UTC_timestamp':res['timestamp'], **res['data']} for res in LAMP.SensorEvent.all_by_participant(participant_id, **kwargs)['data']]
+            except:
+                break
             
         sensorDf = pd.DataFrame.from_dict(sens_results).drop_duplicates(subset='UTC_timestamp') #remove duplicates
         return sensorDf
@@ -374,7 +376,11 @@ class ParticipantExt():
                 converted_datetimes = pd.Series([datetime.datetime.fromtimestamp(t/1000, tz=pytz.timezone(matched_gps_readings[idx])) for idx, t in results[dom]['UTC_timestamp'].iteritems()])
 
             else:
-                tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) #pytz.timezone('America/New_York')
+                try:
+                    tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) #pytz.timezone('America/New_York')
+                except: #default to EST
+                    tz = pytz.timezone('America/New_York')
+                    
                 matched_gps_readings = pd.Series([tz] * len(results[dom]))
                 converted_datetimes = results[dom]['UTC_timestamp'].apply(lambda t: datetime.datetime.fromtimestamp(t/1000, tz=tz))
 
