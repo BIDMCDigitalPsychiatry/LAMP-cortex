@@ -110,46 +110,32 @@ class ParticipantExt():
 
 
     @staticmethod
-    def timezone_correct(results, gps_sensor='lamp.gps'):
+    def timezone_correct(results, step=24*60*60*1000):
         """
         Convert timestamps to appropriate local time; use GPS if it exists
+        :param step ms 
         """
-        for dom in results:
+        timezones=pd.DataFrame(columns=['UTC_timestamp','UTC_datetime','UTC_target','timezone'])
+        sensor_end=LAMP.SensorEvent.all_by_participant('U8867867767',_limit=1)['data'][0]['timestamp']
+        activity_end=LAMP.ActivityEvent.all_by_participant('U4242859528',_limit=1)['data'][0]['timestamp']
+        time_end=datetime.datetime.fromtimestamp(np.max((int(sensor_end/1000),int(activity_end/1000))))
+        time_end=datetime.datetime.combine(time_end.date(),datetime.time(12,0,0))
+        UTC_target=(int(time_end.timestamp()*1000))
 
-            if gps_sensor in results and len(results[gps_sensor].dropna(subset=['latitude', 'longitude'])) > 0:
-
-                if 'timezone' not in results[gps_sensor].columns: #Generate timezone for every gps readings and convert timestamps
-                    tz = tzwhere.tzwhere(forceTZ=True) #force timezone if ambigiuous
-                    try:
-                        results[gps_sensor].loc[:, 'timezone'] = results[gps_sensor].apply(lambda x: tz.tzNameAt(x['latitude'], 
-                                                                                                                x['longitude'], 
-                                                                                                                forceTZ=True), 
-                                                                                        axis=1)
-                    except:
-                        tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) 
-                        matched_gps_readings = pd.Series([tz] * len(results[dom]))
-                        results[gps_sensor].loc[:, 'timezone'] = matched_gps_readings
-
-                    gps_converted_datetimes = pd.Series([datetime.datetime.fromtimestamp(t/1000, tz=pytz.timezone(results[gps_sensor]['timezone'][idx])) for idx, t in results[gps_sensor]['UTC_timestamp'].iteritems()])
-                    gps_converted_timestamps = gps_converted_datetimes.apply(lambda t: t.timestamp() * 1000)
-                    
-                    results[gps_sensor].loc[:, 'local_timestamp'] = gps_converted_timestamps.values
-                    try:
-                        results[gps_sensor].loc[:, 'local_datetime'] = gps_converted_datetimes.dt.tz_localize(None).values
-                    except:
-                        results[gps_sensor].loc[:, 'local_datetime'] = pd.Series([dt.replace(tzinfo=None) for dt in gps_converted_datetimes.values])
-
-                    results[gps_sensor].reset_index(drop=True, inplace=True)
-
-                if dom == gps_sensor: continue
-                    
-                matched_gps_readings = results[dom]['UTC_timestamp'].apply(lambda t: results[gps_sensor].loc[(results[gps_sensor]['UTC_timestamp'] - t).idxmin, 'timezone'])
-                converted_datetimes = pd.Series([datetime.datetime.fromtimestamp(t/1000, tz=pytz.timezone(matched_gps_readings[idx])) for idx, t in results[dom]['UTC_timestamp'].iteritems()])
-
-            else:
-                tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) #pytz.timezone('America/New_York')
-                matched_gps_readings = pd.Series([tz] * len(results[dom]))
-                converted_datetimes = results[dom]['UTC_timestamp'].apply(lambda t: datetime.datetime.fromtimestamp(t/1000, tz=tz))
+        next_event=LAMP.SensorEvent.all_by_participant('U89170266',origin='lamp.gps',_limit=1,to=time_end.timestamp()*1000)['data']
+        while next_event :
+            UTC_timestamp=next_event[0]['timestamp']
+            UTC_datetime=datetime.datetime.fromtimestamp((int(UTC_timestamp/1000)))
+            x=next_event[0]['data']
+            timezone=tz.tzNameAt(x['latitude'], x['longitude'],forceTZ=True)
+            UTC_target_dt=datetime.datetime.fromtimestamp(int(UTC_target/1000))
+            timezones=timezones.append({'UTC_timestamp':UTC_timestamp,'UTC_datetime':UTC_datetime,'UTC_target':UTC_target_dt,'timezone':timezone}, ignore_index=True)
+            UTC_target-=step
+            next_event=LAMP.SensorEvent.all_by_participant('U4242859528',origin='lamp.gps',_limit=1,to=UTC_target)['data']
+        else:
+            tz = pytz.timezone(datetime.datetime.now(tzlocal()).tzname()) #pytz.timezone('America/New_York')
+            matched_gps_readings = pd.Series([tz] * len(results[dom]))
+            converted_datetimes = results[dom]['UTC_timestamp'].apply(lambda t: datetime.datetime.fromtimestamp(t/1000, tz=tz))
 
 
             converted_timestamps = converted_datetimes.apply(lambda t: t.timestamp() * 1000)
@@ -186,7 +172,7 @@ class ParticipantExt():
         if end is None:
             end_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=1), 
                              **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=1),
-                             **survey(self.id, _limit=1)}
+                             **survey(id=self.id, _limit=1)}
             
             end = pd.concat([pd.DataFrame.from_dict(end_results[res]) for res in end_results])['timestamp'].max()
 

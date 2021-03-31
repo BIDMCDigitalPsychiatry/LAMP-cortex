@@ -135,7 +135,7 @@ def secondary_feature(name, dependencies):
             params = [
                 
                 # These are universally required parameters for all feature functions.
-                'id', 'start', 'end', 'resolution'
+                'id', 'start', 'end', 'resolution',
                 
                 # These are the feature function's required parameters after removing parameters
                 # with provided default values, if any are provided.
