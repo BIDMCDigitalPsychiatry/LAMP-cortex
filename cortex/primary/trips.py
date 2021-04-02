@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import time
 from geopy import distance
+import datetime
+
 
 @primary_feature(
     name="cortex.trips",
@@ -85,7 +87,6 @@ def trips(**kwargs):
         idx_list = list(zip(idx[:-1:2], idx[1::2] - int(inclusive)))
 
         trip_list = []
-        
         for tup in idx_list:
             if tup[0] == tup[1]:
                 continue
@@ -105,8 +106,6 @@ def trips(**kwargs):
     ### ####
 
     df = pd.DataFrame.from_dict(gps(**kwargs))
-    df = df.drop('data', 1).assign(**df.data.dropna().apply(pd.Series))
-
     labeled_gps = label_gps_points(df)
     trip_list = get_trips(labeled_gps)
     return trip_list
