@@ -91,20 +91,20 @@ def primary_feature(name, dependencies):
 
             # TODO: Determine attachment type and how to parse them given ambigious data type
 
-            # Get previously calculated primary feature results from attachments.
-            # try: 
-            #    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-            #    # remove last in case interval still open 
-            #    attachments.remove(max(attachments, key=lambda x: x['end']))
-            #    _from = max(a['end'] for a in attachments)
-            # except LAMP.ApiException:
-            #    attachments = []
-            #    _from = 0
-
-
-            # TEMPORARY _from
-            _from = kwargs['start']
-            _result = func(*args, **{**kwargs, 'start':_from})
+            #Get previously calculated primary feature results from attachments.
+            try: 
+               attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
+               # remove last in case interval still open 
+               attachments['data'].remove(max(attachments['data'], key=lambda x: x['timestamp']+x['']))
+               _from = max(a['end'] for a in attachments)
+            except LAMP.ApiException:
+               attachments = []
+               #_from = LAMP.SensorEvent.all_by_participant(kwargs['id'],_limit=-1)['data'][0]['timestamp']
+               _from = 0 #TODO: is this ok?, because above call is slowish, esp when no origin
+            
+            start=kwargs.pop('start')
+            _result = func(*args, **{**kwargs, 'start':_from}) 
+            _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': _result }
             _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
 
             # TODO: Combine old and new attachments
