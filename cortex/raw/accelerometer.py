@@ -1,21 +1,22 @@
 from ..feature_types import raw_feature, log
-import math 
-import pandas as pd
-import numpy as np
-import datetime
-from geopy import distance
-from functools import reduce
+import LAMP
+# import math 
+# import pandas as pd
+# import numpy as np
+# import datetime
+# from geopy import distance
+# from functools import reduce
 
 @raw_feature(
     name="lamp.accelerometer",
     dependencies=["lamp.accelerometer"]
 )
-def accelerometer(resolution=None, limit=2147483647, **kwargs):
+def accelerometer(resolution=None, limit=20000, **kwargs):
     """
     Get all GPS data bounded by time interval and optionally subsample the data.
 
     :param resolution (int): The subsampling resolution (TODO).
-    :param limit (int): The maximum number of GPS events to query for (defaults to INT_MAX).
+    :param limit (int): The maximum number of sensor events to query for (defaults to INT_MAX).
     :return timestamp (int): The UTC timestamp for the GPS event.
     :return latitude (float): The latitude for the GPS event.
     :return longitude (float): The longitude for the GPS event.
@@ -24,12 +25,23 @@ def accelerometer(resolution=None, limit=2147483647, **kwargs):
     """
 
     data = LAMP.SensorEvent.all_by_participant(
-        kwargs['id'],
-        origin="lamp.accelerometer",
-        _from= kwargs['start'],
-        to= kwargs['end'],
-        _limit=limit
-    )['data']
+                kwargs['id'],
+                origin="lamp.accelerometer",
+                _from= kwargs['start'],
+                to= kwargs['end'],
+                _limit=limit
+            )['data']
+    while data:
+        to=data[-1]['timestamp']
+        data_next = LAMP.SensorEvent.all_by_participant(
+                kwargs['id'],
+                origin="lamp.accelerometer",
+                _from= kwargs['start'],
+                to= to,
+                _limit=limit
+            )['data']
+        if not data_next: break
+        data+=data_next
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
 
 # def sleep_time_mean(sensor_data, dates):
