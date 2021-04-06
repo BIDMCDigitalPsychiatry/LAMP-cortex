@@ -15,5 +15,9 @@ def entropy(resolution=MS_IN_A_DAY, **kwargs):
     Calculate entropy 
     """
     _significant_locations = significant_locations(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
-    _entropy = sum([loc['proportion'] * math.log(loc['proportion']) for loc in _significant_locations])
-    return {'entropy': _entropy}
+    if len(_significant_locations['data']) == 0:
+        _entropy = None
+    _entropy = sum([loc['proportion'] * math.log(loc['proportion']) for loc in _significant_locations['data']])
+    if _entropy == 0: #no sig locs
+        _entropy = None
+    return {'timetamp':kwargs['start'], 'entropy': _entropy}

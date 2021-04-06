@@ -49,6 +49,9 @@ def sleep_periods(**kwargs):
 
     ### ###
     accelerometer_data = accelerometer(**kwargs)
+    if len(accelerometer_data) == 0:
+        return []
+
     _sleep_period_expected = expected_sleep_period(accelerometer_data)
     if _sleep_period_expected['bed'] == None:
         return []
@@ -79,7 +82,6 @@ def sleep_periods(**kwargs):
     sleepStartFlexShifted = (datetime.datetime.combine(datetime.date.today(), sleepStartFlex) - (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)).time()
     sleepEndShifted = (datetime.datetime.combine(datetime.date.today(), sleepEnd) - (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)).time()
     sleepEndFlexShifted = (datetime.datetime.combine(datetime.date.today(), sleepEndFlex) - (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)).time()
-    
     
     _sleep_periods = []
     for day, df in accelDf.groupby('Shifted Day'):
