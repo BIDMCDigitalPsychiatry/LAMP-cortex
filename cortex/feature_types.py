@@ -87,33 +87,31 @@ def primary_feature(name, dependencies):
             
             log.info(f"Processing primary feature \"{name}\"...")
 
-            # TODO: Require primary feature dependencies to be raw features!
+            # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
-            # TODO: Determine attachment type and how to parse them given ambigious data type
-
-            # Get previously calculated primary feature results from attachments.
-            # try: 
-            #    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-            #    # remove last in case interval still open 
-            #    attachments.remove(max(attachments, key=lambda x: x['end']))
-            #    _from = max(a['end'] for a in attachments)
-            # except LAMP.ApiException:
-            #    attachments = []
-            #    _from = 0
-
-
-            # TEMPORARY _from
-            _from = kwargs['start']
+            #Get previously calculated primary feature results from attachments.
+            try: 
+               attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
+               # remove last in case interval still open 
+               attachments.remove(max(attachments, key=lambda x: x['end']))
+               _from = max(a['end'] for a in attachments)
+            except LAMP.ApiException:
+               attachments = []
+               _from = 0 
+            
+            start=kwargs.pop('start')
             _result = func(*args, **{**kwargs, 'start':_from})
-            _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
-
-            # TODO: Combine old and new attachments
 
 
+            _body_new=sorted((_result+attachments),key=lambda x: x['start'])
+
+            _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
+            [b for b in _body_new if b['start']>=start] } 
+            
+            log.info(f"Saving primary feature \"{name}\"...")
             # Upload new features as attachment.
-            #_result.loc[:,['start','end']]=_result.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
-            #body_new=list(_result.to_dict(orient='index').values())
-            #LAMP.Type.set_attachment(participant, 'me', attachment_key=name, body=body_new)
+            #LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=body_new)
+
 
             return _event
 
@@ -155,15 +153,15 @@ def secondary_feature(name, dependencies):
 
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
             data = []
-            for window in zip(timestamp_list[:-1], timestamp_list[1:]):
+            for window in reversed([*zip(timestamp_list[:-1], timestamp_list[1:])]):
+                print(window)
                 window_start, window_end = window[0], window[1]
-                _result = func(*args, **{**kwargs, 'start':window_start, 'end':window_end})
+                _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
                 data.append(_result)
                 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
-
+            data=sorted(data,key=lambda x: x['timestamp'])
             _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
-            return _event
 
         # When we register/save the function, make sure we save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__
