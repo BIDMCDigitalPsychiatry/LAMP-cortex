@@ -154,7 +154,6 @@ def secondary_feature(name, dependencies):
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
             data = []
             for window in reversed([*zip(timestamp_list[:-1], timestamp_list[1:])]):
-                print(window)
                 window_start, window_end = window[0], window[1]
                 _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
                 data.append(_result)
@@ -162,6 +161,7 @@ def secondary_feature(name, dependencies):
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
             data=sorted(data,key=lambda x: x['timestamp'])
             _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
+            return _event
 
         # When we register/save the function, make sure we save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__
