@@ -95,9 +95,11 @@ def primary_feature(name, dependencies):
                # remove last in case interval still open 
                attachments.remove(max(attachments, key=lambda x: x['end']))
                _from = max(a['end'] for a in attachments)
-            except LAMP.ApiException:
+               log.info(f"Using saved \"{name}\"...")
+            except LAMP.ApiException: 
                attachments = []
                _from = 0 
+               log.info(f"No saved \"{name}\" found...")
             
             start=kwargs.pop('start')
             _result = func(*args, **{**kwargs, 'start':_from})
@@ -110,8 +112,8 @@ def primary_feature(name, dependencies):
             
             log.info(f"Saving primary feature \"{name}\"...")
             # Upload new features as attachment.
-            #LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=body_new)
-
+            #TODO TEMPORARY: DONT SAVE UNTIL FINAL
+            # LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
 
             return _event
 
