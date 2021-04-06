@@ -105,7 +105,7 @@ def trips(**kwargs):
 
     ### ####
 
-    df = pd.DataFrame.from_dict(gps(**kwargs))
+    df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs))))
     labeled_gps = label_gps_points(df)
     trip_list = get_trips(labeled_gps)
     return trip_list
