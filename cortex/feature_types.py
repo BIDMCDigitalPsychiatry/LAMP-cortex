@@ -87,33 +87,31 @@ def primary_feature(name, dependencies):
             
             log.info(f"Processing primary feature \"{name}\"...")
 
-            # TODO: Require primary feature dependencies to be raw features!
-
-            # TODO: Determine attachment type and how to parse them given ambigious data type
+            # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
             #Get previously calculated primary feature results from attachments.
             try: 
                attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
                # remove last in case interval still open 
-               attachments['data'].remove(max(attachments['data'], key=lambda x: x['timestamp']+x['']))
+               attachments.remove(max(attachments, key=lambda x: x['end']))
                _from = max(a['end'] for a in attachments)
             except LAMP.ApiException:
                attachments = []
-               #_from = LAMP.SensorEvent.all_by_participant(kwargs['id'],_limit=-1)['data'][0]['timestamp']
-               _from = 0 #TODO: is this ok?, because above call is slowish, esp when no origin
+               _from = 0 
             
             start=kwargs.pop('start')
-            _result = func(*args, **{**kwargs, 'start':_from}) 
-            _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': _result }
-            _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result }
-
-            # TODO: Combine old and new attachments
+            _result = func(*args, **{**kwargs, 'start':_from})
 
 
+            _body_new=sorted((_result+attachments),key=lambda x: x['start'])
+
+            _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
+            [b for b in _body_new if b['start']>=start] } 
+            
+            log.info(f"Saving primary feature \"{name}\"...")
             # Upload new features as attachment.
-            #_result.loc[:,['start','end']]=_result.loc[:,['start','end']].applymap(lambda t: int(t.timestamp()*1000))
-            #body_new=list(_result.to_dict(orient='index').values())
-            #LAMP.Type.set_attachment(participant, 'me', attachment_key=name, body=body_new)
+            #LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=body_new)
+
 
             return _event
 
