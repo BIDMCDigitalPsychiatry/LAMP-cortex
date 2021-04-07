@@ -8,6 +8,7 @@ import datetime
 from geopy import distance
 from functools import reduce
 
+import LAMP
 @primary_feature(
     name="cortex.feature.sleep_periods",
     dependencies=[accelerometer]
@@ -16,7 +17,7 @@ def sleep_periods(**kwargs):
     """
     Generate sleep periods with given data
     """
-    def expected_sleep_period(accelerometer_data):
+    def _expected_sleep_period(accelerometer_data_reduced):
         """
         Return the expected sleep period for a set of accelerometer data
 
@@ -24,19 +25,17 @@ def sleep_periods(**kwargs):
 
         :return _sleep_period_expted (dict): list bed/wake timestamps and mean accel. magnitude for expected bedtime
         """
-        #Find maximum bout of inactivity; that's mean sleep period 
-        df = pd.DataFrame.from_dict(accelerometer_data)
-        df.loc[:, 'Time'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df = pd.DataFrame.from_dict(accelerometer_data_reduced)
         times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30] ]
         mean_activity = float('inf')
         for t0, t1 in times:
             if datetime.time(hour=18, minute=0) <= t0 <= datetime.time(hour=23, minute=30):
-                selection = pd.concat([df.loc[t0 <= df['Time'].dt.time, :], df.loc[df['Time'].dt.time <= t1, :]])
+                selection = pd.concat([df.loc[t0 <= df['time'].dt.time, :], df.loc[df['time'].dt.time <= t1, :]])
                 
             else:
-                selection = df.loc[(t0 <= df['Time'].dt.time) & (df['Time'].dt.time <= t1), :]
+                selection = df.loc[(t0 <= df['time'].dt.time) & (df['time'].dt.time <= t1), :]
 
-            sel_act = selection.apply(lambda row: np.linalg.norm([row['x'], row['y'], row['z']]), axis=1).abs().mean()
+            sel_act = np.average(selection['magnitude'], weights=selection['count'])
             if sel_act < mean_activity:
                 mean_activity = sel_act
                 _sleep_period_expected = {'bed':t0 ,'wake':t1, 'accelerometer_magnitude':sel_act} 
@@ -47,25 +46,65 @@ def sleep_periods(**kwargs):
         return _sleep_period_expected
 
 
-    ### ###
+    ### Data reduction ###
+    try:
+        reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.sleep_periods.reduced')['data']
+    except:
+        reduced_data = []
+
+    if len(reduced_data) == 0:
+       reduced_data_end = 0
+       new_reduced_data = []
+
+    else: 
+       reduced_data_end = reduced_data['end']
+       new_reduced_data = reduced_data['data'].copy()
+
+    if reduced_data_end < kwargs['end']: #update reduced data by getting new gps data and running dbscan
+        ### Accel binning ###
+        _accelerometer = accelerometer(**{**kwargs, 'start':reduced_data_end})
+        reduceDf = pd.DataFrame.from_dict(_accelerometer)
+
+        reduceDf.loc[:, 'Time'] = pd.to_datetime(reduceDf['timestamp'], unit='ms')
+        reduceDf.loc[:, 'magnitude'] = reduceDf.apply(lambda row: np.linalg.norm([row['x'], row['y'], row['z']]), axis=1)
+        #Get mean accel readings of 10min bins for participant
+        data_10min = []
+        for s, t in reduceDf.groupby(pd.Grouper(key='Time', freq='10min')):
+            res_10min = {'time': s.time(), 'magnitude': t['magnitude'].abs().mean(), 'count':len(t)}
+
+            #Update new reduced data
+            found = False
+            for accel_bin in new_reduced_data:
+                if accel_bin['time'] == t:
+                    accel_bin['magnitude'] = np.mean([accel_bin['magnitude']] * accel_bin['count'] + [res_10min['magnitude']] * res_10min['count'])
+                    accel_bin['count'] = accel_bin['count'] + res_10min['count']
+                    found = True
+                    break
+            
+            if not found: #if time not found, initialize it 
+                new_reduced_data.append(res_10min)
+
+        reduced_data = {'end':kwargs['end'], 'data':new_reduced_data}
+
+        #TODO: set attachment
+        #LAMP.Type.set_attachment()
+
+    ### ### 
+    _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
+
     accelerometer_data = accelerometer(**kwargs)
     if len(accelerometer_data) == 0:
         return []
 
-    _sleep_period_expected = expected_sleep_period(accelerometer_data)
     if _sleep_period_expected['bed'] == None:
         return []
 
     accelDf = pd.DataFrame.from_dict(accelerometer_data)
     accelDf.loc[:, 'Time'] = pd.to_datetime(accelDf['timestamp'], unit='ms')
     accelDf.loc[:, 'magnitude'] = accelDf.apply(lambda row: np.linalg.norm([row['x'], row['y'], row['z']]), axis=1)
+    
     #Get mean accel readings of 10min bins for participant
-    data_10min = []
-    for s, t in accelDf.groupby(pd.Grouper(key='Time', freq='10min')):
-        res_10min = {'time': s.time(), 'magnitude': t['magnitude'].abs().mean()}
-        data_10min.append(res_10min)
-
-    df10min = pd.DataFrame.from_dict(data_10min).sort_values(by='time')
+    df10min = pd.DataFrame.from_dict(reduced_data['data']).sort_values(by='time')
     
     bed_time, wake_time = _sleep_period_expected['bed'], _sleep_period_expected['wake']
     
@@ -87,7 +126,7 @@ def sleep_periods(**kwargs):
     for day, df in accelDf.groupby('Shifted Day'):
         
         #Keep track of how many 10min blocks are 1. inactive during "active" periods; or 2. active during "inactive periods"
-        night_activity_count, night_inactivity_count, day_inactivity_count = 0, 0, 0
+        night_activity_count, night_inactivity_count = 0, 0
         for t, tDf in df.groupby(pd.Grouper(key='Shifted Time', freq='10min')):
             #Have normal time for querying the 10 min for that block (df10min)
             normal_time = t + (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
