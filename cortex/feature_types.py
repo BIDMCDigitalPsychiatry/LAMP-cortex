@@ -100,20 +100,28 @@ def primary_feature(name, dependencies):
                attachments = []
                _from = 0 
                log.info(f"No saved \"{name}\" found...")
+            except Exception:
+                attachments = []
+                _from = 0 
+                log.info(f"Saved \"{name}\" could not be parsed, discarding...")
             
             start=kwargs.pop('start')
-            _result = func(*args, **{**kwargs, 'start':_from})
+            if _from > kwargs['end']:
+                _result=[]
+            else:
+                _result = func(*args, **{**kwargs, 'start':_from})
 
-
+            # Combine old attachments with new result
             _body_new=sorted((_result+attachments),key=lambda x: x['start'])
 
+            # Filter return based on input prarams
             _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
             [b for b in _body_new if b['start']>=start] } 
             
-            log.info(f"Saving primary feature \"{name}\"...")
             # Upload new features as attachment.
-            #TODO TEMPORARY: DONT SAVE UNTIL FINAL
-            # LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
+            log.info(f"Saving primary feature \"{name}\"...")
+            if name!='cortex.survey_scores':  
+                LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
 
             return _event
 
@@ -171,6 +179,20 @@ def secondary_feature(name, dependencies):
         __features__.append({ 'name': name, 'type': 'secondary', 'dependencies': dependencies, 'callable': _wrapper2 })
         return _wrapper2
     return _wrapper1
+
+def reset_features(participant, features=None):
+    """
+    Deletes all saved primary features for a participant (requires LAMP-core 2021.4.7 or later)
+    :param participant (str): LAMP id to reset for
+    :param features (list): features to reset, defaults to all features (optional)
+    """
+    attachments= LAMP.Type.list_attachments(participant)['data']
+    if features is None: features=attachments
+    for feature in attachments:
+        if feature.startswith('cortex'):
+            if feature in features:
+                LAMP.Type.set_attachment(participant, 'me', attachment_key=feature, body=None)
+                log.info(f"Reset \"{feature}\"...")
 
 # Allows execution of feature functions from the command line, with argument parsing.
 def _main():
