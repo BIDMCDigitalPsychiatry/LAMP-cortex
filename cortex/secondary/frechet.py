@@ -16,11 +16,21 @@ def frechet(LOOKBACK=MS_IN_A_DAY, **kwargs):
     """
     Calculate Frechet Distance between two trajectories
     """
-    arr1 = pd.DataFrame(gps(**kwargs))[['latitude', 'longitude']].to_numpy()
+    gps1 = gps(**kwargs)
+    if gps1:
+        arr1 = pd.DataFrame(gps1)[['latitude', 'longitude']].to_numpy()
+    else:
+        return None    
     start2 = kwargs['start'] - LOOKBACK
     end2 = kwargs['end'] - LOOKBACK
-    #arr2 = pd.DataFrame(gps(id = kwargs['id'], start = start2, end = end2))[['latitude', 'longitude']].to_numpy()
-    return arr1
+    gps2 = gps(id = kwargs['id'], start = start2, end = end2)
+    if gps2:
+        arr2 = pd.DataFrame(gps2)[['latitude', 'longitude']].to_numpy()
+        discrete_frechet = similaritymeasures.frechet_dist(arr1, arr2)
+    else:
+        arr2 = None #testing 
     
-
+    return {'timestamp':kwargs['start'], 'frechet_distance': discrete_frechet}
+    
+    
 
