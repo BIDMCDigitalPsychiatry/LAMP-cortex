@@ -1,4 +1,14 @@
+from ..feature_types import secondary_feature
+from ..primary.significant_locations import significant_locations
 
+import math
+import datetime
+import pandas as pd
+
+@secondary_feature(
+    name='cortex.feature.hometime',
+    dependencies=[significant_locations]
+)
 
 def hometime(df, dates, resolution, k_max=10):
     _, df_sig_locs  = significant_locs(df, k_max=k_max)
