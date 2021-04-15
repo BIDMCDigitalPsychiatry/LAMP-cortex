@@ -1,16 +1,6 @@
 # coding: utf-8
-
-"""
-    LAMP Cortex 
-
-    Data anlysis pipeline for the LAMP platform
-    Contact: team@digitalpsych.org
-"""
-
 from setuptools import setup, find_packages
-
 __version__ = "develop"
-
 setup(
     name="LAMP_cortex",
     version=__version__,
@@ -39,5 +29,10 @@ setup(
     include_package_data=True,
     long_description="""\
     The LAMP Analysis Pipeline.
-    """
+    """,
+    entry_points={
+      'console_scripts': [
+        'cortex=cortex.feature_types:_main'
+      ]
+    }
 )
