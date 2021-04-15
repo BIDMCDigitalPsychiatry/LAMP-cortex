@@ -8,11 +8,11 @@ from scipy.spatial.distance import euclidean
 
 MS_IN_A_DAY = 86400000
 
-'''
+
 @secondary_feature(
     name='cortex.feature.frechet',
     dependencies=[gps]
-'''
+)
 def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
     """
     Calculate Frechet Distance between two trajectories
@@ -21,7 +21,13 @@ def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
     if gps1:
         arr1 = pd.DataFrame(gps1)[['latitude', 'longitude']].to_numpy()
     else:
-        return None    
+        return {'timestamp':kwargs['start'], 
+                'frechet_distance': None, 
+                'area_between': None, 
+                'partial_curve_mapping': None, 
+                'curve_length_similarity': None, 
+                'fastDTW_score': None}   
+    
     start2 = kwargs['start'] - LOOKBACK
     end2 = kwargs['end'] - LOOKBACK
     gps2 = gps(id = kwargs['id'], start = start2, end = end2)
@@ -34,7 +40,12 @@ def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
         fastDTW_score, _ = fastdtw(arr1, arr2, dist=euclidean)
         
     else:
-        arr2 = None #testing 
+        return {'timestamp':kwargs['start'], 
+                'frechet_distance': None, 
+                'area_between': None, 
+                'partial_curve_mapping': None, 
+                'curve_length_similarity': None, 
+                'fastDTW_score': None}
     
     return {'timestamp':kwargs['start'], 
             'frechet_distance': discrete_frechet, 
