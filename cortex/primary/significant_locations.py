@@ -44,7 +44,11 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
 
 
     #Get DB scan metadata fir
-    reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.significant_locations.reduced')['data']
+    try:
+        reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.significant_locations.reduced')['data']
+    except:
+        reduced_data = []
+        
     if len(reduced_data) == 0:
        reduced_data_end = 0
        new_reduced_data = []
@@ -57,6 +61,7 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
        ### DBSCAN ###
        _gps = gps(**{**kwargs, 'start':reduced_data_end})
        df = pd.DataFrame.from_dict(_gps)
+       if len(df) == 0: return []
        df2 = df[['latitude', 'longitude']].values
        dbscan = DBSCAN(eps=eps)
 
