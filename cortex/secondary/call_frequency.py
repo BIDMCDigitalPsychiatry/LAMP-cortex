@@ -8,3 +8,5 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.call_frequency',
     dependencies=[calls]
 )
+def call_frequency():
+    pass

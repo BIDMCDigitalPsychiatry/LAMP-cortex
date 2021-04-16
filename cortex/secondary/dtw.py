@@ -9,3 +9,5 @@ import similaritymeasures
     name='cortex.feature.dtw',
     dependencies=[gps]
 )
+def dtw():
+    pass

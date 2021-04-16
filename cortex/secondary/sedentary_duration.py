@@ -5,3 +5,5 @@ from ..raw.accelerometer import accelerometer
     name='cortex.feature.sedentary_duration',
     dependencies=[accelerometer]
 )
+def sedentary_duration():
+    pass
