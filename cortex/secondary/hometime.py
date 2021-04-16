@@ -5,8 +5,6 @@ import math
 import datetime
 import pandas as pd
 
-import datetime
-
 MS_IN_A_DAY = 86400000
 @secondary_feature(
     name='cortex.feature.hometime',
