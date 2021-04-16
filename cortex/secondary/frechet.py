@@ -30,7 +30,7 @@ def frechet(LOOKBACK=MS_IN_A_DAY, **kwargs):
         arr2 = pd.DataFrame(gps2)[['latitude', 'longitude']].to_numpy()
         discrete_frechet = similaritymeasures.frechet_dist(arr1, arr2)
     else:
-        arr2 = None #testing 
+        arr2 = None #testing
     
     return {'timestamp':kwargs['start'], 'frechet_distance': discrete_frechet}
     
