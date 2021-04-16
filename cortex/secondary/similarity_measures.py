@@ -1,4 +1,4 @@
-from ..feature_types import secondary_feature
+from ..feature_types import secondary_feature, log
 from ..raw.gps import gps
 import pandas as pd
 import numpy as np
@@ -17,6 +17,7 @@ def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
     """
     Calculate Frechet Distance between two trajectories
     """
+    log.info(f'Loading GPS data for 1st trajectory...')
     gps1 = gps(**kwargs)
     if gps1:
         arr1 = pd.DataFrame(gps1)[['latitude', 'longitude']].to_numpy()
@@ -27,10 +28,12 @@ def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
                 'partial_curve_mapping': None, 
                 'curve_length_similarity': None, 
                 'fastDTW_score': None}   
-    
+    log.info(f'Loading GPS data for 2nd trajectory...')
     start2 = kwargs['start'] - LOOKBACK
     end2 = kwargs['end'] - LOOKBACK
     gps2 = gps(id = kwargs['id'], start = start2, end = end2)
+    
+    log.info(f'Calculating all similarity measures...')
     if gps2:
         arr2 = pd.DataFrame(gps2)[['latitude', 'longitude']].to_numpy()
         discrete_frechet = similaritymeasures.frechet_dist(arr1, arr2)

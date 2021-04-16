@@ -1,9 +1,13 @@
-from ..feature_types import secondary_feature
+from ..feature_types import secondary_feature, log
 from ..primary.significant_locations import significant_locations
 
 import math
 import datetime
 import pandas as pd
+import logging
+
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
+log = logging.getLogger('cortex')
 
 MS_IN_A_DAY = 86400000
 @secondary_feature(

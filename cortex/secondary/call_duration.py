@@ -1,4 +1,4 @@
-from ..feature_types import secondary_feature
+from ..feature_types import secondary_feature, log
 from ..raw.calls import calls
 
 import numpy as np
