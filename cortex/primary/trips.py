@@ -9,7 +9,8 @@ import datetime
 
 @primary_feature(
     name="cortex.trips",
-    dependencies=[gps]
+    dependencies=[gps],
+    attach=True
 )
 def trips(**kwargs):
     """

@@ -6,7 +6,8 @@ from itertools import groupby
 
 @primary_feature(
     name="cortex.survey_scores",
-    dependencies=[survey]
+    dependencies=[survey],
+    attach=False
 )
 def survey_scores(question_categories=None, **kwargs):
     """
