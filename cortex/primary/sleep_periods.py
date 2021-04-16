@@ -11,7 +11,8 @@ from functools import reduce
 import LAMP
 @primary_feature(
     name="cortex.feature.sleep_periods",
-    dependencies=[accelerometer]
+    dependencies=[accelerometer],
+    attach=True
 )
 def sleep_periods(**kwargs):
     """
