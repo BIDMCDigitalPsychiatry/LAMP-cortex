@@ -25,7 +25,7 @@ def entropy(resolution=MS_IN_A_DAY, **kwargs):
 
 @secondary_feature(
     name='cortex.feature.hometime',
-    dependencies[significant_locations]
+    dependencies=[significant_locations]
 )
 def hometime():
     _significant_locations = significant_locations(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])

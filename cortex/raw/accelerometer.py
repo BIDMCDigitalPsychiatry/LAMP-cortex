@@ -11,7 +11,7 @@ import LAMP
     name="lamp.accelerometer",
     dependencies=["lamp.accelerometer"]
 )
-def accelerometer(resolution=None, limit=20000, **kwargs):
+def accelerometer(resolution=None, limit=100000, **kwargs):
     """
     Get all GPS data bounded by time interval and optionally subsample the data.
 
@@ -33,6 +33,7 @@ def accelerometer(resolution=None, limit=20000, **kwargs):
             )['data']
     while data:
         to=data[-1]['timestamp']
+        print(to)
         data_next = LAMP.SensorEvent.all_by_participant(
                 kwargs['id'],
                 origin="lamp.accelerometer",

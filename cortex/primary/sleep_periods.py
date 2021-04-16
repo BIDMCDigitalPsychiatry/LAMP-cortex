@@ -1,4 +1,4 @@
-from ..feature_types import primary_feature
+from ..feature_types import primary_feature, log
 from ..raw.accelerometer import accelerometer
 
 import numpy as np
@@ -26,10 +26,11 @@ def sleep_periods(**kwargs):
         :return _sleep_period_expted (dict): list bed/wake timestamps and mean accel. magnitude for expected bedtime
         """
         df = pd.DataFrame.from_dict(accelerometer_data_reduced)
-        times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30] ]
+        times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30]]
         mean_activity = float('inf')
         for t0, t1 in times:
             if datetime.time(hour=18, minute=0) <= t0 <= datetime.time(hour=23, minute=30):
+                print(df.time)
                 selection = pd.concat([df.loc[t0 <= df['time'].dt.time, :], df.loc[df['time'].dt.time <= t1, :]])
                 
             else:
@@ -49,18 +50,23 @@ def sleep_periods(**kwargs):
     ### Data reduction ###
     try:
         reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.sleep_periods.reduced')['data']
-    except:
+        for i,x in enumerate(reduced_data['data']):
+            reduced_data['data'][i]['time']=datetime.time(x['time']['hour'],
+                                                          x['time']['minute'])
+        log.info("Using saved reduced data...")
+    except Exception:
         reduced_data = []
+        log.info("No saved reduced data found, starting new...")
 
     if len(reduced_data) == 0:
-       reduced_data_end = 0
-       new_reduced_data = []
+        reduced_data_end = 0
+        new_reduced_data = []
 
     else: 
-       reduced_data_end = reduced_data['end']
-       new_reduced_data = reduced_data['data'].copy()
+        reduced_data_end = reduced_data['end']
+        new_reduced_data = reduced_data['data'].copy()
 
-    if reduced_data_end < kwargs['end']: #update reduced data by getting new gps data and running dbscan
+    if reduced_data_end < kwargs['end']: #update reduced data
         ### Accel binning ###
         _accelerometer = accelerometer(**{**kwargs, 'start':reduced_data_end})
         reduceDf = pd.DataFrame.from_dict(_accelerometer)
@@ -71,11 +77,10 @@ def sleep_periods(**kwargs):
         data_10min = []
         for s, t in reduceDf.groupby(pd.Grouper(key='Time', freq='10min')):
             res_10min = {'time': s.time(), 'magnitude': t['magnitude'].abs().mean(), 'count':len(t)}
-
             #Update new reduced data
             found = False
             for accel_bin in new_reduced_data:
-                if accel_bin['time'] == t:
+                if accel_bin['time'] == res_10min['time']:
                     accel_bin['magnitude'] = np.mean([accel_bin['magnitude']] * accel_bin['count'] + [res_10min['magnitude']] * res_10min['count'])
                     accel_bin['count'] = accel_bin['count'] + res_10min['count']
                     found = True
@@ -83,11 +88,22 @@ def sleep_periods(**kwargs):
             
             if not found: #if time not found, initialize it 
                 new_reduced_data.append(res_10min)
-
+        
+        # convert to time dicts for saving 
+        save_reduced_data=[]
+        for x in new_reduced_data.copy():
+            if x['magnitude'] and x['count']:
+                save_reduced_data.append({'time':{'hour':x['time'].hour,
+                                                  'minute':x['time'].minute},
+                                          'magnitude':x['magnitude'],
+                                          'count':x['count']})
         reduced_data = {'end':kwargs['end'], 'data':new_reduced_data}
-
-        #TODO: set attachment
-        #LAMP.Type.set_attachment()
+        # set attachment
+        LAMP.Type.set_attachment(kwargs['id'], 'me',
+                                 attachment_key='cortex.sleep_periods.reduced',
+                                 body={'end':kwargs['end'],
+                                       'data':save_reduced_data})
+        log.info("Saving reduced data...")
 
     ### ### 
     _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
