@@ -30,11 +30,10 @@ def sleep_periods(**kwargs):
         mean_activity = float('inf')
         for t0, t1 in times:
             if datetime.time(hour=18, minute=0) <= t0 <= datetime.time(hour=23, minute=30):
-                print(df.time)
-                selection = pd.concat([df.loc[t0 <= df['time'].dt.time, :], df.loc[df['time'].dt.time <= t1, :]])
+                selection = pd.concat([df.loc[t0 <= df.time, :], df.loc[df.time <= t1, :]])
                 
             else:
-                selection = df.loc[(t0 <= df['time'].dt.time) & (df['time'].dt.time <= t1), :]
+                selection = df.loc[(t0 <= df.time) & (df.time <= t1), :]
 
             sel_act = np.average(selection['magnitude'], weights=selection['count'])
             if sel_act < mean_activity:
