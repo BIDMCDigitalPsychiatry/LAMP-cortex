@@ -5,7 +5,8 @@ import pandas as pd
 
 @primary_feature(
     name="cortex.screen_active",
-    dependencies=[screen_state]
+    dependencies=[screen_state],
+    attach=True
 )
 def screen_active(**kwargs):
     """
