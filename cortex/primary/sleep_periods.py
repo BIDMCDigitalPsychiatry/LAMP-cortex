@@ -163,12 +163,16 @@ def sleep_periods(**kwargs):
 
         #Calculate day's sleep duration using these activity account
         daily_sleep = (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=8)) - datetime.timedelta(minutes = night_activity_count * 10) + datetime.timedelta(minutes = night_inactivity_count * 10)).time()
-      
+        
+        daily_sleep=daily_sleep.hour+daily_sleep.minute/60
         #Set sleep start time 
         if day_sleep_period_start is None: continue
         if day_sleep_period_start.time() < datetime.time(hour=8): sleep_period_timestamp = datetime.datetime.combine(day + datetime.timedelta(days=1), day_sleep_period_start).timestamp() * 1000
         else: sleep_period_timestamp = datetime.datetime.combine(day, day_sleep_period_start.time()).timestamp() * 1000
-        _sleep_period = {'start': sleep_period_timestamp, 'duration': daily_sleep}
+        _sleep_period = {'timestamp': sleep_period_timestamp,
+                         'start': sleep_period_timestamp,
+                         'duration': daily_sleep}
         _sleep_periods.append(_sleep_period)
-
+    
+    print(daily_sleep)
     return _sleep_periods
