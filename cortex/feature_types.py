@@ -49,7 +49,8 @@ def raw_feature(name, dependencies):
 
             log.info(f"Processing raw feature \"{name}\"...")
             _result = func(*args, **kwargs)
-            return _result
+            _event = {'timestamp':kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
+            return _event
 
         # When we register/save the function, make sure we save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__

@@ -17,7 +17,7 @@ def survey_scores(question_categories=None, **kwargs):
     # Grab the list of surveys and ALL ActivityEvents which are filtered locally.
     activities = LAMP.Activity.all_by_participant(kwargs['id'])['data']
     surveys = {x['id']: x for x in activities if x['spec'] == 'lamp.survey'}
-    _grp = groupby(survey(replace_ids=False, **kwargs), lambda x: (x['timestamp'], x['survey']))
+    _grp = groupby(survey(replace_ids=False, **kwargs)['data'], lambda x: (x['timestamp'], x['survey']))
     participant_results = [{
         'timestamp': key[0],
         'activity': key[1],
