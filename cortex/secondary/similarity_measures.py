@@ -15,7 +15,7 @@ MS_IN_A_DAY = 86400000
 )
 def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
     """
-    Calculate Frechet Distance between two trajectories
+    Calculate all similarity measures between two trajectories
     """
     log.info(f'Loading GPS data for 1st trajectory...')
     gps1 = gps(**kwargs)
