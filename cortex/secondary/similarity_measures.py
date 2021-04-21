@@ -10,7 +10,7 @@ MS_IN_A_DAY = 86400000
 
 
 @secondary_feature(
-    name='cortex.feature.frechet',
+    name='cortex.feature.similarity_measures',
     dependencies=[gps]
 )
 def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
