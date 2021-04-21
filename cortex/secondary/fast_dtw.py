@@ -2,18 +2,19 @@ from ..feature_types import secondary_feature, log
 from ..raw.gps import gps
 import pandas as pd
 import numpy as np
-import similaritymeasures
+from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
 
 MS_IN_A_DAY = 86400000
 
 
 @secondary_feature(
-    name='cortex.feature.curve_length_similarity ',
+    name='cortex.feature.fast_dtw',
     dependencies=[gps]
 )
-def curve_length_similarity(LOOKBACK=MS_IN_A_DAY, **kwargs):
+def fast_dtw(LOOKBACK=MS_IN_A_DAY, **kwargs):
     """
-    Calculate Curve Length Similarity between two trajectories
+    Calculate FastDTW score between two trajectories
     """
     log.info(f'Loading GPS data for 1st trajectory...')
     gps1 = gps(**kwargs)
@@ -25,12 +26,12 @@ def curve_length_similarity(LOOKBACK=MS_IN_A_DAY, **kwargs):
     start2 = kwargs['start'] - LOOKBACK
     end2 = kwargs['end'] - LOOKBACK
     gps2 = gps(id = kwargs['id'], start = start2, end = end2)
-    log.info(f'Calculating Curve Length Similarity...')
+    log.info(f'Calculating fastDTW Distance...')
     if gps2:
         arr2 = pd.DataFrame(gps2)[['latitude', 'longitude']].to_numpy()
-        curve_length = similaritymeasures.curve_length_measure(arr1, arr2)
+        fastDTW_score, _ = fastdtw(arr1, arr2, dist=euclidean)
     else:
         arr2 = None #testing
     
-    return {'timestamp':kwargs['start'], 'curve_length_similarity': curve_length}
+    return {'timestamp':kwargs['start'], 'fastDTW_score': fastDTW_score}
     
