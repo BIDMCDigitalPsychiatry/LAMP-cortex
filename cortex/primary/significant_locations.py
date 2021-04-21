@@ -3,8 +3,6 @@ from ..raw.gps import gps
 from sklearn.cluster import KMeans
 import pandas as pd
 import numpy as np
-import math
-
 
 from sklearn.cluster import DBSCAN
 import LAMP 
@@ -64,11 +62,6 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
         
         #To prevent memory issues, limit size of db scan and perform iteratively
         cut_df = np.split(df, [30000*i for i in range(math.ceil(len(df) / 30000))])
-        
-        ### test time ###
-        import time 
-        start_time = time.time()
-        ### ###
         for d in cut_df:
             
             if len(d) == 0: continue
@@ -106,7 +99,6 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
             new_reduced_data += db_points
             reduced_data = {'end':kwargs['end'], 'data':new_reduced_data}
 
-        print(len(df), time.time() - start_time)
         LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key='cortex.significant_locations.reduced', body=reduced_data)
                             
        ### ###
