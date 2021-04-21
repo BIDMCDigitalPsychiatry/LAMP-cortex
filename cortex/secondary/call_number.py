@@ -14,6 +14,6 @@ def call_number(resolution=MS_IN_A_DAY, incoming=True, **kwargs):
     """
     INCOMING_DICT = {True: 1, False:2}
     label = INCOMING_DICT[incoming] 
-    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
+    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
     _call_number = len([call for call in _calls if call['call_type'] == label])
     return {'timestamp':kwargs['start'], 'call_number': _call_number}

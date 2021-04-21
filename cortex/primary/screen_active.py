@@ -12,7 +12,7 @@ def screen_active(**kwargs):
     """
     Builds bout of screen activitty
     """
-    _screen_state = list(reversed(screen_state(**kwargs)))
+    _screen_state = list(reversed(screen_state(**kwargs)['data']))
 
     on_events = [1, 3]
     off_events = [0, 2]

@@ -12,6 +12,6 @@ def call_degree(resolution=MS_IN_A_DAY, **kwargs):
     """
     How many phone numbers you were connecting with
     """
-    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
+    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
     _call_degree = np.unique([call['call_trace'] for call in _calls]).size
     return {'timestamp':kwargs['start'], 'call_degree': _call_degree}

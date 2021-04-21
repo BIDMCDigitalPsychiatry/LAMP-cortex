@@ -60,7 +60,7 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
 
     if reduced_data_end < kwargs['end']: #update reduced data by getting new gps data and running dbscan
         ### DBSCAN ###
-        _gps = gps(**{**kwargs, 'start':reduced_data_end})
+        _gps = gps(**{**kwargs, 'start':reduced_data_end})['data']
         df = pd.DataFrame.from_dict(_gps)
         if len(df) == 0: return []
         df2 = df[['latitude', 'longitude']].values
@@ -129,7 +129,7 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
     kmeans.fit(df2)
 
     #Get gps data for this window 
-    _gps = gps(**kwargs)
+    _gps = gps(**kwargs)['data']
     newdf = pd.DataFrame.from_dict(_gps)
     newdf_coords = newdf[['latitude', 'longitude']].values
     props = kmeans.predict(newdf_coords)
@@ -138,6 +138,8 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
     # Add proportion of GPS within each centroid and return output.
 
     return [{
+        'start':kwargs['start'], 
+        'end':kwargs['end'],
         'latitude': center[0],
         'longitude': center[1],
         'rank': idx, #significant locations in terms of prevelance (0 being home)
