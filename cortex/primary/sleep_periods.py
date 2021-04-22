@@ -162,14 +162,11 @@ def sleep_periods(**kwargs):
 
     _sleep_periods = []
     for day, df in accelDf.groupby('Shifted Day'):
-
         # Keep track of how many 10min blocks are 1. inactive during "active" periods; or 2. active during "inactive periods"
         night_activity_count, night_inactivity_count = 0, 0
         for t, tDf in df.groupby(pd.Grouper(key='Shifted Time', freq='10min')):
-
             # Have normal time for querying the 10 min for that block (df10min)
             normal_time = t + (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
-
             # Ignore block if can't map to mean value
             if len(df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values) == 0:
                 continue 
@@ -200,11 +197,9 @@ def sleep_periods(**kwargs):
         else:
             sleep_period_timestamp = datetime.datetime.combine(day, day_sleep_period_start.time()).timestamp() * 1000
 
-        print('SPT:',sleep_period_timestamp)
-        _sleep_period = {'timestamp': sleep_period_timestamp,
-                         'start': sleep_period_timestamp,
-                         'duration': daily_sleep}
+        _sleep_period = {'start': sleep_period_timestamp,
+                         'end': sleep_period_timestamp + daily_sleep}
         _sleep_periods.append(_sleep_period)
 
-    print(daily_sleep)
+        print(daily_sleep)
     return _sleep_periods
