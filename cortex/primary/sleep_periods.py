@@ -9,7 +9,8 @@ import LAMP
 
 @primary_feature(
     name="cortex.feature.sleep_periods",
-    dependencies=[accelerometer]
+    dependencies=[accelerometer],
+    attach=True
 )
 def sleep_periods(**kwargs):
     """
@@ -67,10 +68,10 @@ def sleep_periods(**kwargs):
         new_reduced_data = reduced_data['data'].copy()
 
     if reduced_data_end < kwargs['end']:  # update reduced data
-        # Accel binning
-        _accelerometer = accelerometer(**{**kwargs, 'start': reduced_data_end})
-        reduceDf = pd.DataFrame.from_dict(_accelerometer)
 
+        # Accel binning
+        _accelerometer = accelerometer(**{**kwargs, 'start': reduced_data_end})['data']
+        reduceDf = pd.DataFrame.from_dict(_accelerometer)
         reduceDf.loc[:, 'Time'] = pd.to_datetime(reduceDf['timestamp'], unit='ms')
         reduceDf.loc[:, 'magnitude'] = reduceDf.apply(lambda row: np.linalg.norm([row['x'],
                                                                                   row['y'],
@@ -112,7 +113,7 @@ def sleep_periods(**kwargs):
     # Calculate sleep periods 
     _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
 
-    accelerometer_data = accelerometer(**kwargs)
+    accelerometer_data = accelerometer(**kwargs)['data']
     if len(accelerometer_data) == 0:
         return []
 
