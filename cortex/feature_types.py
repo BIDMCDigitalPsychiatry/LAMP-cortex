@@ -168,7 +168,6 @@ def secondary_feature(name, dependencies):
             for window in reversed([*zip(timestamp_list[:-1], timestamp_list[1:])]):
                 window_start, window_end = window[0], window[1]
                 _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
-                print(_result)
                 data.append(_result)
                 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
