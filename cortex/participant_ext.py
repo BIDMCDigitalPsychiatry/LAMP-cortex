@@ -161,27 +161,29 @@ class ParticipantExt():
                     "lamp.screen_state","lamp.segment", "lamp.sleep", "lamp.sms", "lamp.steps",
                     "lamp.weight", "lamp.wifi"]
         
-        LAMP_COGNITIVE_GAMES = ['lamp.jewels_a', 'lamp.jewels_b']
-        #Set start, end if not already
-        if start is None: 
-            start_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=-1), 
-                             **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=-1),
-                             **survey(self.id, _limit=-1)}
+        pass
+        
+#         LAMP_COGNITIVE_GAMES = ['lamp.jewels_a', 'lamp.jewels_b']
+#         #Set start, end if not already
+#         if start is None: 
+#             start_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=-1), 
+#                              **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=-1),
+#                              **survey(self.id, _limit=-1)}
             
-            start = pd.concat([pd.DataFrame.from_dict(start_results[res]) for res in start_results])['timestamp'].min()
-        if end is None:
-            end_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=1), 
-                             **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=1),
-                             **survey(id=self.id, _limit=1)}
+#             start = pd.concat([pd.DataFrame.from_dict(start_results[res]) for res in start_results])['timestamp'].min()
+#         if end is None:
+#             end_results = {**sensor_results(self.id, origin=LAMP_SENSORS, _limit=1), 
+#                              **cg_results(self.id, origin=LAMP_COGNITIVE_GAMES, _limit=1),
+#                              **survey(id=self.id, _limit=1)}
             
-            end = pd.concat([pd.DataFrame.from_dict(end_results[res]) for res in end_results])['timestamp'].max()
+#             end = pd.concat([pd.DataFrame.from_dict(end_results[res]) for res in end_results])['timestamp'].max()
 
-        #Create all secondary features given 
-        _all_features = all_features()
-        _secondary_features = [(f['name'], f['callable']) for f in _all_features if f['type'] == 'secondary']
-        data = []
-        for name, feature_func in _secondary_features:
-            print(name, feature_func)
+#         #Create all secondary features given 
+#         _all_features = all_features()
+#         _secondary_features = [(f['name'], f['callable']) for f in _all_features if f['type'] == 'secondary']
+#         data = []
+#         for name, feature_func in _secondary_features:
+#             print(name, feature_func)
             #_result = feature_func(id=self.id, start=start, end=end, resolution=resolution)
             #data.append({'feature': feature_func.__name__, 'data':_result})
 

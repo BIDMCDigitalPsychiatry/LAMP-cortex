@@ -11,7 +11,8 @@ import LAMP
 
 @primary_feature(
     name='cortex.significant_locations',
-    dependencies=[gps]
+    dependencies=[gps],
+    attach=False
 )
 def significant_locations(k_max=10, eps=1e-5, **kwargs):
     """
@@ -48,56 +49,56 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
         reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.significant_locations.reduced')['data']
     except:
         reduced_data = []
-        
+
     if len(reduced_data) == 0:
-       reduced_data_end = 0
-       new_reduced_data = []
+        reduced_data_end = 0
+        new_reduced_data = []
 
     else: 
-       reduced_data_end = reduced_data['end']
-       new_reduced_data = reduced_data['data'].copy()
+        reduced_data_end = reduced_data['end']
+        new_reduced_data = reduced_data['data'].copy()
 
     if reduced_data_end < kwargs['end']: #update reduced data by getting new gps data and running dbscan
-       ### DBSCAN ###
-       _gps = gps(**{**kwargs, 'start':reduced_data_end})
-       df = pd.DataFrame.from_dict(_gps)
-       if len(df) == 0: return []
-       df2 = df[['latitude', 'longitude']].values
-       dbscan = DBSCAN(eps=eps)
+        ### DBSCAN ###
+        _gps = gps(**{**kwargs, 'start':reduced_data_end})['data']
+        df = pd.DataFrame.from_dict(_gps)
+        if len(df) == 0: return []
+        df2 = df[['latitude', 'longitude']].values
+        dbscan = DBSCAN(eps=eps)
 
-       props = dbscan.fit_predict(df2)
+        props = dbscan.fit_predict(df2)
 
-       db_points = []
-       for l in np.unique(props):
-              
-              db_lats, db_longs = [_gps[i]['latitude'] for i in range(len(_gps)) if props[i] == l], [_gps[i]['longitude'] for i in range(len(_gps)) if props[i] == l]
-              db_duration = [_gps[i]['duration'] for i in range(len(_gps)) if props[i] == l]
-              if l == -1:
-                     db_points += [{'latitude':_gps[i]['latitude'],
-                     'longitude':_gps[i]['longitude'],
-                     'count':1} for i in range(len(_gps))]
-              else:
-                     lat_mean, long_mean = np.mean(db_lats), np.mean(db_longs)
-                     if len(new_reduced_data) == 0:
-                            db_points += [{'latitude':lat_mean, 
-                                          'longitude':long_mean, 
-                                          'count':len(db_lats)}]
+        db_points = []
+        for l in np.unique(props):
 
-                     min_dist_index = np.argmin([euclid((loc['latitude'], loc['longitude']), (lat_mean, long_mean)) for loc in reduced_data['data']])
-                     if euclid((reduced_data[min_dist_index]['latitude'], reduced_data[min_dist_index]['longitude']), 
-                              (lat_mean, long_mean)) < 20:
-                              new_reduced_data[min_dist_index]['count'] += len(db_lats)
-                     else:
-                            db_points += [{'latitude':lat_mean, 
-                                          'longitude':long_mean, 
-                                          'count':len(db_lats)}]
+            db_lats, db_longs = [_gps[i]['latitude'] for i in range(len(_gps)) if props[i] == l], [_gps[i]['longitude'] for i in range(len(_gps)) if props[i] == l]
+            db_duration = [_gps[i]['timestamp'] for i in range(len(_gps)) if props[i] == l]
+            if l == -1:
+                db_points += [{'latitude':_gps[i]['latitude'],
+                'longitude':_gps[i]['longitude'],
+                'count':1} for i in range(len(_gps))]
+            else:
+                lat_mean, long_mean = np.mean(db_lats), np.mean(db_longs)
+                if len(reduced_data) == 0:
+                    db_points += [{'latitude':lat_mean, 
+                                  'longitude':long_mean, 
+                              'count':len(db_lats)}]
 
-       #Add new db points
-       new_reduced_data += db_points
-       reduced_data = {'end':kwargs['end'], 'data':new_reduced_data}
+                else:
+                    min_dist_index = np.argmin([euclid((loc['latitude'], loc['longitude']), (lat_mean, long_mean)) for loc in reduced_data])
+                    if euclid((reduced_data[min_dist_index]['latitude'], reduced_data[min_dist_index]['longitude']), 
+                          (lat_mean, long_mean)) < 20:
+                          new_reduced_data[min_dist_index]['count'] += len(db_lats)
+                    else:
+                        db_points += [{'latitude':lat_mean, 
+                                      'longitude':long_mean, 
+                                  'count':len(db_lats)}]
 
-       #TODO: set attachment
-       #LAMP.Type.set_attachment()
+        #Add new db points
+        new_reduced_data += db_points
+        reduced_data = {'end':kwargs['end'], 'data':new_reduced_data}
+
+        LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key='cortex.significant_locations.reduced', body=reduced_data)
                             
        ### ###
     
@@ -128,71 +129,28 @@ def significant_locations(k_max=10, eps=1e-5, **kwargs):
     kmeans.fit(df2)
 
     #Get gps data for this window 
-    _gps = gps(**kwargs)
+    _gps = gps(**kwargs)['data']
     newdf = pd.DataFrame.from_dict(_gps)
-    newdf2 = newdf[['latitude', 'longitude']].values
-    props = kmeans.predict(newdf2)
+    newdf_coords = newdf[['latitude', 'longitude']].values
+    props = kmeans.predict(newdf_coords)
+    newdf.loc[:, 'cluster'] = props
 
     # Add proportion of GPS within each centroid and return output.
+
     return [{
+        'start':kwargs['start'], 
+        'end':kwargs['end'],
         'latitude': center[0],
         'longitude': center[1],
+        'rank': idx, #significant locations in terms of prevelance (0 being home)
         'radius': np.mean(euclid(center,
 
             # Transpose the points within the centroid and calculate the mean euclidean
             # distance (in km) from the center-point and convert that to meters.
-            np.transpose(newdf2[np.argwhere(props == idx)].reshape((-1, 2)))
-        ) * 1000),
+            np.transpose(newdf_coords[np.argwhere(props == idx)].reshape((-1, 2)))
+        ) * 1000) if props[props == idx].size > 0 else None,
         'proportion': props[props == idx].size / props.size,
-        'duration': 0,
+        # Set duration equal to the elapsed time (where readings >1 hour or floored to 1 hour)
+        'duration': newdf.loc[newdf['cluster'] == idx, 'timestamp'].diff().dropna().clip(3600000).sum() if props[props == idx].size > 0 else 0.0
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
-# Example: SigLocs computed over an entire ~1 month period for a (sample) patient.
-"""
-# _ = significant_locations(id="U26468383", start=1583532346000, end=1585363115000)
-array([[ 38.82011755, -65.25113325],
-       [ 38.83987899, -65.30446228],
-       [ 38.84322825, -65.2857992 ],
-       [ 38.80937655, -65.30578291],
-       [ 38.83444352, -65.25400716],
-       [ 38.82805236, -65.26600307]])
-"""
-
-# Example: SigLocs computed per-day over the ~1 month period for the same patient.
-"""
-# for i in range(1583532346000, 1585363115000, 86400000):
-#    _ = significant_locations(id="U26468383", start=i, end=i + 86400000)
-
-array([[ 38.82016175, -65.2510776 ],
-       [ 38.83856934, -65.30599289]])
-array([[ 38.82007812, -65.25102733]])
-array([[ 38.82448846, -65.26074402]])
-array([[ 38.82075185, -65.25395988]])
-array([[ 38.83979135, -65.30477587],
-       [ 38.82212767, -65.25193698]])
-array([[ 38.83981318, -65.3038989 ],
-       [ 38.82138312, -65.25295787]])
-array([[ 38.82123812, -65.25218815],
-       [ 38.8392549 , -65.30401214]])
-array([[ 38.82019111, -65.25118828],
-       [ 38.84656321, -65.29004538],
-       [ 38.84048674, -65.26239201]])
-array([[ 38.81980536, -65.2515454 ]])
-array([[ 38.82049219, -65.25114458]])
-array([[ 38.82007902, -65.25108851]])
-array([[ 38.82005604, -65.25103972]])
-array([[ 38.82153811, -65.25218648],
-       [ 38.8396881 , -65.30392909]])
-array([[ 38.82107608, -65.25172118],
-       [ 38.84007579, -65.30398997]])
-array([[ 38.83002289, -65.25896144],
-       [ 38.82021031, -65.25112548]])
-array([[ 38.80874184, -65.3086577 ],
-       [ 38.82024919, -65.25175284],
-       [ 38.8227823 , -65.28434095]])
-array([[ 38.82014529, -65.25111414]])
-array([[ 38.8201982 , -65.25113788]])
-array([[ 38.82067827, -65.25169023]])
-array([[ 38.82012319, -65.25110073]])
-array([[ 38.82077895, -65.25165099]])
-"""

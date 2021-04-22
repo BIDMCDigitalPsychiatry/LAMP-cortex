@@ -9,7 +9,8 @@ import datetime
 
 @primary_feature(
     name="cortex.trips",
-    dependencies=[gps]
+    dependencies=[gps],
+    attach=True
 )
 def trips(**kwargs):
     """
@@ -106,7 +107,7 @@ def trips(**kwargs):
 
     ### ####
 
-    df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs))))
+    df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs)['data'])))
     labeled_gps = label_gps_points(df)
     trip_list = get_trips(labeled_gps)
     return trip_list
