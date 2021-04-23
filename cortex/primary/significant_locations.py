@@ -3,7 +3,7 @@ from ..raw.gps import gps
 from sklearn.cluster import KMeans
 import pandas as pd
 import numpy as np
-
+import math
 from sklearn.cluster import DBSCAN
 import LAMP 
 
