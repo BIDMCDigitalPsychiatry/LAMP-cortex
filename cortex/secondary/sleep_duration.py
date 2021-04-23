@@ -15,4 +15,5 @@ from functools import reduce
 def sleep_duration(**kwargs):
     _sleep_periods = sleep_periods(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     _sleep_duration = sum([res['duration'] for res in _sleep_periods['data']])
-    return {'sleep_duration': _sleep_duration}
+    return {'timestamp':kwargs['start'],
+            'sleep_duration': _sleep_duration}
