@@ -26,7 +26,7 @@ def sleep_periods(**kwargs):
         """
         df = pd.DataFrame.from_dict(accelerometer_data_reduced)
 
-        # TODO: I have no clue what is hapening here...
+        # Creating possible times for expected sleep period, which will be checkede
         times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30]]
 
         mean_activity = float('inf')
@@ -37,7 +37,13 @@ def sleep_periods(**kwargs):
             else:
                 selection = df.loc[(t0 <= df.time) & (df.time <= t1), :]
 
-            sel_act = np.average(selection['magnitude'], weights=selection['count'])
+            if len(selection) == 0 or selection['count'].sum() == 0: 
+                continue
+                
+            nonnan_ind = np.where(np.logical_not(np.isnan(selection['magnitude'])))[0]
+            nonnan_sel = selection.iloc[nonnan_ind]
+            #sel_act = np.average(selection['magnitude'][nonnan_ind], weights=selection['count'][nonnan_ind])
+            sel_act = np.average(nonnan_sel['magnitude'], weights=nonnan_sel['count'])
             if sel_act < mean_activity:
                 mean_activity = sel_act
                 _sleep_period_expected = {'bed': t0, 'wake': t1, 'accelerometer_magnitude': sel_act} 
@@ -45,7 +51,6 @@ def sleep_periods(**kwargs):
         if mean_activity == float('inf'):
             _sleep_period_expected = {'bed': None, 'wake': None, 'accelerometer_magnitude': None}
 
-        print('expected:', _sleep_period_expected)
         return _sleep_period_expected
 
     # Data reduction
@@ -56,67 +61,66 @@ def sleep_periods(**kwargs):
                                                             x['time']['minute'])
         log.info("Using saved reduced data...")
     except Exception:
-        reduced_data = []
+        reduced_data = {'end':0, 'data':[]}
         log.info("No saved reduced data found, starting new...")
 
-    if len(reduced_data) == 0:
-        reduced_data_end = 0
-        new_reduced_data = []
 
-    else:
-        reduced_data_end = reduced_data['end']
-        new_reduced_data = reduced_data['data'].copy()
-
+    reduced_data_end = reduced_data['end']
+    
     if reduced_data_end < kwargs['end']:  # update reduced data
 
         # Accel binning
         _accelerometer = accelerometer(**{**kwargs, 'start': reduced_data_end})['data']
-        reduceDf = pd.DataFrame.from_dict(_accelerometer)
-        reduceDf.loc[:, 'Time'] = pd.to_datetime(reduceDf['timestamp'], unit='ms')
-        reduceDf.loc[:, 'magnitude'] = reduceDf.apply(lambda row: np.linalg.norm([row['x'],
-                                                                                  row['y'],
-                                                                                  row['z']]), axis=1)
+        if len(_accelerometer) > 0:
+            reduceDf = pd.DataFrame.from_dict(_accelerometer)
+            reduceDf.loc[:, 'Time'] = pd.to_datetime(reduceDf['timestamp'], unit='ms')
+            reduceDf.loc[:, 'magnitude'] = reduceDf.apply(lambda row: np.linalg.norm([row['x'],
+                                                                                      row['y'],
+                                                                                      row['z']]), axis=1)
 
-        # Get mean accel readings of 10min bins for participant
-        for s, t in reduceDf.groupby(pd.Grouper(key='Time', freq='10min')):
-            res_10min = {'time': s.time(), 'magnitude': t['magnitude'].abs().mean(), 'count': len(t)}
-            # Update new reduced data
-            found = False
-            for accel_bin in new_reduced_data:
-                if accel_bin['time'] == res_10min['time']:
-                    accel_bin['magnitude'] = np.mean([accel_bin['magnitude']] * accel_bin['count'] +
-                                                     [res_10min['magnitude']] * res_10min['count'])
-                    accel_bin['count'] = accel_bin['count'] + res_10min['count']
-                    found = True
-                    break
+            # Get mean accel readings of 10min bins for participant
+            new_reduced_data = []
+            for s, t in reduceDf.groupby(pd.Grouper(key='Time', freq='10min')):
+                res_10min = {'time': s.time(), 'magnitude': t['magnitude'].abs().mean(), 'count': len(t)}
+                # Update new reduced data
+                found = False
+                for accel_bin in reduced_data['data']:
+                    if accel_bin['time'] == res_10min['time']:
+                        accel_bin['magnitude'] = np.mean([accel_bin['magnitude']] * accel_bin['count'] +
+                                                         [res_10min['magnitude']] * res_10min['count'])
+                        accel_bin['count'] = accel_bin['count'] + res_10min['count']
+                        new_reduced_data.append(accel_bin)
+                        found = True
+                        break
 
-            if not found:  # if time not found, initialize it 
-                new_reduced_data.append(res_10min)
+                if not found:  # if time not found, initialize it
+                    new_reduced_data.append(res_10min)
 
-        # convert to time dicts for saving
-        save_reduced_data = []
-        for x in new_reduced_data.copy():
-            if x['magnitude'] and x['count']:
-                save_reduced_data.append({'time': {'hour': x['time'].hour,
-                                                   'minute': x['time'].minute},
-                                                   'magnitude': x['magnitude'],
-                                                   'count': x['count']})
-        reduced_data = {'end': kwargs['end'], 'data': new_reduced_data}
+            # convert to time dicts for saving
+            save_reduced_data = []
+            for x in new_reduced_data:
+                if x['magnitude'] and x['count']:
+                    save_reduced_data.append({'time': {'hour': x['time'].hour,
+                                                       'minute': x['time'].minute},
+                                               'magnitude': x['magnitude'],
+                                               'count': x['count']})
+            reduced_data = {'end': kwargs['end'], 'data': new_reduced_data}
 
-        # set attachment
-        LAMP.Type.set_attachment(kwargs['id'], 'me',
-                                 attachment_key='cortex.sleep_periods.reduced',
-                                 body={'end': kwargs['end'],
-                                       'data': save_reduced_data})
-        log.info("Saving reduced data...")
+            # set attachment
+            LAMP.Type.set_attachment(kwargs['id'], 'me',
+                                     attachment_key='cortex.sleep_periods.reduced',
+                                     body={'end': kwargs['end'],
+                                           'data': save_reduced_data})
+            log.info("Saving reduced data...")
 
-    # Calculate sleep periods 
-    _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
 
     accelerometer_data = accelerometer(**kwargs)['data']
-    if len(accelerometer_data) == 0:
+    if len(accelerometer_data) == 0: 
         return []
-
+    
+    # Calculate sleep periods 
+    _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
+    
     if _sleep_period_expected['bed'] is None:
         return []
 
@@ -171,13 +175,13 @@ def sleep_periods(**kwargs):
             # Ignore block if can't map to mean value
             if len(df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values) == 0:
                 continue 
-
+                
             day_sleep_period_start = None
             if (sleepStartFlexShifted <= t.time() < sleepStartShifted) or (sleepEndShifted <= t.time()):
                 if tDf['magnitude'].abs().mean() < df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]: 
                     night_inactivity_count += 1
                     if day_sleep_period_start is None:
-                        day_sleep_period_start = normal_time
+                        day_sleep_period_start = normal_time.time()
 
             elif sleepStartShifted <= t.time() < sleepEndShifted:
                 if tDf['magnitude'].abs().mean() > df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]: 
@@ -191,16 +195,16 @@ def sleep_periods(**kwargs):
         daily_sleep = daily_sleep.hour + daily_sleep.minute/60
 
         # Set sleep start time 
-        if day_sleep_period_start is None: continue
-        if day_sleep_period_start.time() < datetime.time(hour=8):
+        if day_sleep_period_start is None: #if None, default to expected
+            day_sleep_period_start = _sleep_period_expected['bed']# + (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
+        if day_sleep_period_start < datetime.time(hour=8):
             sleep_period_timestamp = datetime.datetime.combine(day + datetime.timedelta(days=1),
                                                                day_sleep_period_start).timestamp() * 1000
         else:
-            sleep_period_timestamp = datetime.datetime.combine(day, day_sleep_period_start.time()).timestamp() * 1000
+            sleep_period_timestamp = datetime.datetime.combine(day, day_sleep_period_start).timestamp() * 1000
 
-        _sleep_period = {'start': sleep_period_timestamp,
-                         'end': sleep_period_timestamp + daily_sleep}
+        _sleep_period = {'start': int(sleep_period_timestamp),
+                         'end': int(sleep_period_timestamp + (daily_sleep * 3600000))} #MS_IN_AN_HOUR
         _sleep_periods.append(_sleep_period)
 
-        print(daily_sleep)
     return _sleep_periods

@@ -33,7 +33,6 @@ def accelerometer(resolution=None, limit=100000, **kwargs):
             )['data']
     while data:
         to=data[-1]['timestamp']
-        print(to)
         data_next = LAMP.SensorEvent.all_by_participant(
                 kwargs['id'],
                 origin="lamp.accelerometer",
