@@ -20,20 +20,21 @@ def gps(resolution=None, limit=20000, **kwargs):
     data = LAMP.SensorEvent.all_by_participant(
             kwargs['id'],
             origin="lamp.gps",
-            _from= kwargs['start'],
-            to= kwargs['end'],
+            _from=kwargs['start'],
+            to=kwargs['end'],
             _limit=limit
         )['data']
     while data:
-        to=data[-1]['timestamp']
+        to = data[-1]['timestamp']
         data_next = LAMP.SensorEvent.all_by_participant(
                 kwargs['id'],
                 origin="lamp.gps",
-                _from= kwargs['start'],
-                to= to,
+                _from=kwargs['start'],
+                to=to,
                 _limit=limit
             )['data']
         if not data_next: break
-        data+=data_next
+        if data_next[-1]['timestamp'] == to: break
+        data += data_next
 
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
