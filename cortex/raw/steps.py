@@ -1,6 +1,7 @@
 from ..feature_types import raw_feature
 import LAMP
 
+
 @raw_feature(
     name="lamp.steps",
     dependencies=["lamp.steps"]
@@ -15,12 +16,11 @@ def sms(resolution=None, limit=2147483647, **kwargs):
     :return TODO 
     """
 
-    data = LAMP.SensorEvent.all_by_participant(
-        kwargs['id'],
-        origin="lamp.steps",
-        _from= kwargs['start'],
-        to= kwargs['end'],
-        _limit=limit
-    )['data']
+    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
+                                               origin="lamp.steps",
+                                               _from=kwargs['start'],
+                                               to=kwargs['end'],
+                                               _limit=limit)['data']
+
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
 

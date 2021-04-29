@@ -1,8 +1,6 @@
 from ..feature_types import raw_feature, log
 import LAMP
-import pandas as pd 
-import numpy as np
-from functools import reduce
+
 
 @raw_feature(
     name='lamp.survey',
@@ -11,7 +9,7 @@ from functools import reduce
 def survey(replace_ids=True, limit=2147483647, **kwargs):
     """
     Get survey events for participant
-    
+
     :param replace_ids (bool): TODO.
     :param limit (int): TODO.
     :return timestamp (int): TODO.
@@ -20,18 +18,16 @@ def survey(replace_ids=True, limit=2147483647, **kwargs):
     :return value (any): TODO.
     :return duration (int): TODO.
     """
-    
+
     # Grab the list of surveys and ALL ActivityEvents which are filtered locally.
-    # TODO: Once the API Server supports filtering origin by an ActivitySpec, we won't need this. 
+    # TODO: Once the API Server supports filtering origin by an ActivitySpec, we won't need this.
     activities = LAMP.Activity.all_by_participant(kwargs['id'])['data']
     surveys = {x['id']: x for x in activities if x['spec'] == 'lamp.survey'}
-    raw = LAMP.ActivityEvent.all_by_participant(
-        kwargs['id'],
-        #origin="lamp.survey", # TODO: not implemented in the backend yet!
-        _from= kwargs['start'],
-        to= kwargs['end'],
-        _limit=limit
-    )['data']
+    raw = LAMP.ActivityEvent.all_by_participant(kwargs['id'],
+                                                # origin="lamp.survey" TODO: backend not implemented
+                                                _from=kwargs['start'],
+                                                to=kwargs['end'],
+                                                _limit=limit)['data']
 
     # Unpack the temporal slices and flatten the dict, including the timestamp and survey.
     # Computing a per-event survey score requires a `groupby('timestamp', 'survey')` call.
