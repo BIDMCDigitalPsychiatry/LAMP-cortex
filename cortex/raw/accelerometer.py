@@ -41,6 +41,7 @@ def accelerometer(resolution=None, limit=20000, **kwargs):
                 _limit=limit
             )['data']
         if not data_next: break
+        if data_next[-1]['timestamp'] == to: break
         data+=data_next
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
 

@@ -49,7 +49,8 @@ def raw_feature(name, dependencies):
 
             log.info(f"Processing raw feature \"{name}\"...")
             _result = func(*args, **kwargs)
-            return _result
+            _event = {'timestamp':kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
+            return _event
 
         # When we register/save the function, make sure we save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__
@@ -58,7 +59,7 @@ def raw_feature(name, dependencies):
     return _wrapper1
 
 # Primary features.
-def primary_feature(name, dependencies):
+def primary_feature(name, dependencies, attach):
     """
     Some explanation of how to use this decorator goes here.
     """
@@ -89,39 +90,40 @@ def primary_feature(name, dependencies):
 
             # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
-            #Get previously calculated primary feature results from attachments.
-            try: 
-               attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-               # remove last in case interval still open 
-               attachments.remove(max(attachments, key=lambda x: x['end']))
-               _from = max(a['end'] for a in attachments)
-               log.info(f"Using saved \"{name}\"...")
-            except LAMP.ApiException: 
-               attachments = []
-               _from = 0 
-               log.info(f"No saved \"{name}\" found...")
-            except Exception:
-                attachments = []
-                _from = 0 
-                log.info(f"Saved \"{name}\" could not be parsed, discarding...")
-            
-            start=kwargs.pop('start')
-            if _from > kwargs['end']:
-                _result=[]
-            else:
-                _result = func(*args, **{**kwargs, 'start':_from})
+            #Get previously calculated primary feature results from attachments, if you do attach.
+            if attach:
+                try: 
+                   attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
+                   # remove last in case interval still open 
+                   attachments.remove(max(attachments, key=lambda x: x['end']))
+                   _from = max(a['end'] for a in attachments)
+                   log.info(f"Using saved \"{name}\"...")
+                except LAMP.ApiException: 
+                   attachments = []
+                   _from = 0 
+                   log.info(f"No saved \"{name}\" found...")
+                except Exception:
+                    attachments = []
+                    _from = 0 
+                    log.info(f"Saved \"{name}\" could not be parsed, discarding...")
 
-            # Combine old attachments with new result
-            _body_new=sorted((_result+attachments),key=lambda x: x['start'])
+                start=kwargs.pop('start')
+                if _from > kwargs['end']:
+                    _result=[]
+                else:
+                    _result = func(*args, **{**kwargs, 'start':_from})
 
-            # Filter return based on input prarams
-            _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
-            [b for b in _body_new if b['start']>=start] } 
-            
-            # Upload new features as attachment.
-            log.info(f"Saving primary feature \"{name}\"...")
-            if name!='cortex.survey_scores':  
+                # Combine old attachments with new result
+                _body_new=sorted((_result+attachments),key=lambda x: x['start'])
+                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
+                [b for b in _body_new if b['start']>=start] } 
+
+                # Upload new features as attachment.
+                log.info(f"Saving primary feature \"{name}\"...") 
                 LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
+            else:
+                _result = func(*args, **kwargs)
+                _event = {'timestamp':kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
 
             return _event
 
@@ -166,7 +168,6 @@ def secondary_feature(name, dependencies):
             for window in reversed([*zip(timestamp_list[:-1], timestamp_list[1:])]):
                 window_start, window_end = window[0], window[1]
                 _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
-                print(_result)
                 data.append(_result)
                 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!

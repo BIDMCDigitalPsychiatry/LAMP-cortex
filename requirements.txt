@@ -1,0 +1,11 @@
+LAMP-core
+datetime
+numpy
+pandas
+altair
+tzwhere
+geopy
+similaritymeasures
+fastdtw
+sklearn
+pytz

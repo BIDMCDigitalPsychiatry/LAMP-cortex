@@ -16,7 +16,7 @@ def frechet(LOOKBACK=MS_IN_A_DAY, **kwargs):
     Calculate Frechet Distance between two trajectories
     """
     log.info(f'Loading GPS data for 1st trajectory...')
-    gps1 = gps(**kwargs)
+    gps1 = gps(**kwargs)['data']
     if gps1:
         arr1 = pd.DataFrame(gps1)[['latitude', 'longitude']].to_numpy()
     else:

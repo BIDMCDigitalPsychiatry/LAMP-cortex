@@ -9,7 +9,8 @@ import datetime
 
 @primary_feature(
     name="cortex.trips",
-    dependencies=[gps]
+    dependencies=[gps],
+    attach=True
 )
 def trips(**kwargs):
     """
@@ -80,6 +81,7 @@ def trips(**kwargs):
         Returns: list of trips (tuples of start and end timestamps)
         '''
         
+        if len(df) == 0: return []
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         arr = np.array(df['stationary'])
         arr_ext = np.r_[False, arr == state, False]
@@ -105,7 +107,7 @@ def trips(**kwargs):
 
     ### ####
 
-    df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs))))
+    df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs)['data'])))
     labeled_gps = label_gps_points(df)
     trip_list = get_trips(labeled_gps)
     return trip_list
