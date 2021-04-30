@@ -1,11 +1,6 @@
 from ..feature_types import raw_feature, log
 import LAMP
-# import math 
-# import pandas as pd
-# import numpy as np
-# import datetime
-# from geopy import distance
-# from functools import reduce
+
 
 @raw_feature(
     name="lamp.accelerometer",
@@ -24,25 +19,21 @@ def accelerometer(resolution=None, limit=20000, **kwargs):
     :return accuracy (float): The accuracy (in meters) for the GPS event.
     """
 
-    data = LAMP.SensorEvent.all_by_participant(
-                kwargs['id'],
-                origin="lamp.accelerometer",
-                _from= kwargs['start'],
-                to= kwargs['end'],
-                _limit=limit
-            )['data']
+    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
+                                               origin="lamp.accelerometer",
+                                               _from=kwargs['start'],
+                                               to=kwargs['end'],
+                                               _limit=limit)['data']
     while data:
-        to=data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(
-                kwargs['id'],
-                origin="lamp.accelerometer",
-                _from= kwargs['start'],
-                to= to,
-                _limit=limit
-            )['data']
+        to = data[-1]['timestamp']
+        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
+                                                        origin="lamp.accelerometer",
+                                                        _from=kwargs['start'],
+                                                        to=to,
+                                                        _limit=limit)['data']
         if not data_next: break
         if data_next[-1]['timestamp'] == to: break
-        data+=data_next
+        data += data_next
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
 
 # def sleep_time_mean(sensor_data, dates):
