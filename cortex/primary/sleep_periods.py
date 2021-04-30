@@ -167,6 +167,7 @@ def sleep_periods(**kwargs):
 
     _sleep_periods = []
     for day, df in accelDf.groupby('Shifted Day'):
+        print(day)
         # Keep track of how many 10min blocks are 1. inactive during "active" periods; or 2. active during "inactive periods"
         night_activity_count, night_inactivity_count = 0, 0
         for t, tDf in df.groupby(pd.Grouper(key='Shifted Time', freq='10min')):
