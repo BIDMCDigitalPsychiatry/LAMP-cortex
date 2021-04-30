@@ -10,12 +10,12 @@ MS_IN_A_DAY = 86400000
 
 
 @secondary_feature(
-    name='cortex.feature.frechet',
+    name='cortex.feature.similarity_measures',
     dependencies=[gps]
 )
 def similarity_measures(LOOKBACK=MS_IN_A_DAY, **kwargs):
     """
-    Calculate Frechet Distance between two trajectories
+    Calculate all similarity measures between two trajectories
     """
     log.info(f'Loading GPS data for 1st trajectory...')
     gps1 = gps(**kwargs)
