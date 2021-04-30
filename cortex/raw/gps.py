@@ -1,4 +1,4 @@
-from ..feature_types import raw_feature
+from ..feature_types import raw_feature, log
 import LAMP
 
 @raw_feature(
@@ -26,6 +26,7 @@ def gps(resolution=None, limit=20000, **kwargs):
         )['data']
     while data:
         to = data[-1]['timestamp']
+        log.debug(f"Getting data to: {to}")
         data_next = LAMP.SensorEvent.all_by_participant(
                 kwargs['id'],
                 origin="lamp.gps",
