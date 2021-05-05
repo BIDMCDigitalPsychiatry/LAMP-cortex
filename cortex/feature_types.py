@@ -54,15 +54,15 @@ def raw_feature(name, dependencies):
             if kwargs.get('cache') is not None:
                 cache_dir = os.path.expanduser(kwargs['cache'])
                 assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
-            elif os.getenv('CORTEX_CACHE') is not None:
-                cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE'))
+            elif os.getenv('CORTEX_CACHE_DIR') is not None:
+                cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
                 assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
             if cache_dir is None: 
                 cache_dir = os.path.expanduser('~/.cache/cortex')
                 if not os.path.exists(cache_dir):
                     log.info(f"Caching directory does not yet exist, creating...")
                     os.makedirs(cache_dir)
-                assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE'"
+                assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
             log.info(f"Cortex caching directory set to: {cache_dir}")   
             cache_dir   
 
