@@ -28,7 +28,6 @@ def raw_feature(name, dependencies):
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
 
-            cache_dir = '/home/joel/cortex_cache' # TODO get from enviorn
 
             # Verify all required parameters for the primary feature function.
             params = [
@@ -49,10 +48,27 @@ def raw_feature(name, dependencies):
                 raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                          os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+            
+            # Find a valid local cache directory
+            cache_dir = None
+            if kwargs.get('cache') is not None:
+                cache_dir = os.path.expanduser(kwargs['cache'])
+                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
+            elif os.getenv('CORTEX_CACHE') is not None:
+                cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE'))
+                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
+            if cache_dir is None: 
+                cache_dir = os.path.expanduser('~/.cache/cortex')
+                if not os.path.exists(cache_dir):
+                    log.info(f"Caching directory does not yet exist, creating...")
+                    os.makedirs(cache_dir)
+                assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE'"
+            log.info(f"Cortex caching directory set to: {cache_dir}")   
+            cache_dir   
 
             log.info(f"Processing raw feature \"{name}\"...")
 
-            # local data caching
+            # local data caching TODO: combine pickle window with API data
             found = False
             for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
                 path = cache_dir + '/' + file
