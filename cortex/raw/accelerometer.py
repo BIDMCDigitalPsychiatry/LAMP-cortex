@@ -43,7 +43,7 @@ def accelerometer(resolution=None, limit=100000, **kwargs):
             )['data']
         if not data_next: break
         if data_next[-1]['timestamp'] == to: break
-        data+=data_next
+        data += data_next
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
 
 # def sleep_time_mean(sensor_data, dates):

@@ -42,7 +42,6 @@ def sleep_periods(**kwargs):
                 
             nonnan_ind = np.where(np.logical_not(np.isnan(selection['magnitude'])))[0]
             nonnan_sel = selection.iloc[nonnan_ind]
-            #sel_act = np.average(selection['magnitude'][nonnan_ind], weights=selection['count'][nonnan_ind])
             sel_act = np.average(nonnan_sel['magnitude'], weights=nonnan_sel['count'])
             if sel_act < mean_activity:
                 mean_activity = sel_act
@@ -60,6 +59,7 @@ def sleep_periods(**kwargs):
             reduced_data['data'][i]['time'] = datetime.time(x['time']['hour'],
                                                             x['time']['minute'])
         log.info("Using saved reduced data...")
+        
     except Exception:
         reduced_data = {'end':0, 'data':[]}
         log.info("No saved reduced data found, starting new...")
@@ -146,7 +146,6 @@ def sleep_periods(**kwargs):
         (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
 
     accelDf.loc[:, "Shifted Day"] = pd.to_datetime(accelDf['Shifted Time']).dt.date
-    # Also adjust bed/wake/flex times to account for shift
 
     sleepStartShifted = (datetime.datetime.combine(datetime.date.today(), sleepStart) -
                          (datetime.datetime.combine(datetime.date.min, sleepEndFlex) -
@@ -160,16 +159,11 @@ def sleep_periods(**kwargs):
                        (datetime.datetime.combine(datetime.date.min, sleepEndFlex) -
                         datetime.datetime.min)).time()
 
-# TODO: we don't use this one?
-#     sleepEndFlexShifted = (datetime.datetime.combine(datetime.date.today(), sleepEndFlex) -
-#                            (datetime.datetime.combine(datetime.date.min,
-#                             sleepEndFlex) - datetime.datetime.min)).time()
-
     _sleep_periods = []
     for day, df in accelDf.groupby('Shifted Day'):
-        print(day)
         # Keep track of how many 10min blocks are 1. inactive during "active" periods; or 2. active during "inactive periods"
         night_activity_count, night_inactivity_count = 0, 0
+        day_sleep_period_start = None
         for t, tDf in df.groupby(pd.Grouper(key='Shifted Time', freq='10min')):
             # Have normal time for querying the 10 min for that block (df10min)
             normal_time = t + (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
@@ -177,7 +171,6 @@ def sleep_periods(**kwargs):
             if len(df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values) == 0:
                 continue 
                 
-            day_sleep_period_start = None
             if (sleepStartFlexShifted <= t.time() < sleepStartShifted) or (sleepEndShifted <= t.time()):
                 if tDf['magnitude'].abs().mean() < df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]: 
                     night_inactivity_count += 1
@@ -197,7 +190,7 @@ def sleep_periods(**kwargs):
 
         # Set sleep start time 
         if day_sleep_period_start is None: #if None, default to expected
-            day_sleep_period_start = _sleep_period_expected['bed']# + (datetime.datetime.combine(datetime.date.min, sleepEndFlex) - datetime.datetime.min)
+            day_sleep_period_start = _sleep_period_expected['bed']
         if day_sleep_period_start < datetime.time(hour=8):
             sleep_period_timestamp = datetime.datetime.combine(day + datetime.timedelta(days=1),
                                                                day_sleep_period_start).timestamp() * 1000

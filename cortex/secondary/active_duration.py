@@ -2,6 +2,7 @@ from ..feature_types import secondary_feature, log
 from ..raw.accelerometer import accelerometer
 
 import numpy as np
+import datetime
 import pandas as pd
 
 import LAMP 
@@ -40,7 +41,6 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
 
             nonnan_ind = np.where(np.logical_not(np.isnan(selection['magnitude'])))[0]
             nonnan_sel = selection.iloc[nonnan_ind]
-            #sel_act = np.average(selection['magnitude'][nonnan_ind], weights=selection['count'][nonnan_ind])
             sel_act = np.average(nonnan_sel['magnitude'], weights=nonnan_sel['count'])
             if sel_act < mean_activity:
                 mean_activity = sel_act
