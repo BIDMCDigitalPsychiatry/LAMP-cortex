@@ -267,6 +267,8 @@ def _main():
                             help='Participant ID')
         parser.add_argument(f"--start", dest='start', type=int, required=True,
                             help='time window start in UTC epoch milliseconds')
+        parser.add_argument(f"--resolution", dest='resolution', type=int, required=True,
+                             help='time window grouping resolution in milliseconds')
         parser.add_argument(f"--end", dest='end', type=int, required=True,
                             help='time window end in UTC epoch milliseconds')
 
