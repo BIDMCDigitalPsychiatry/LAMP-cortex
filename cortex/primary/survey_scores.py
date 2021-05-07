@@ -95,10 +95,10 @@ def survey_scores(question_categories=None, **kwargs):
         #add mean to each cat to master dictionary           
         for category in survey_result: 
             survey_result[category] = np.mean(survey_result[category])
-            _event = {'timestamp':survey_time, 'score':survey_result[category]}
+            _event = {'category': surveys[category]['name'], 'timestamp':survey_time, 'score':survey_result[category]}
             if category not in _survey_scores: 
                 _survey_scores[category] = [_event]
             else: 
                 _survey_scores[category].append(_event)
 
-    return _survey_scores
+    return [j for i in _survey_scores.values() for j in i]
