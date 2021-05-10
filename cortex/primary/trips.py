@@ -81,7 +81,7 @@ def trips(**kwargs):
             gps_data.latitude.shift(fill_value=0), gps_data.longitude.shift(fill_value=0),
             gps_data.loc[1:, 'latitude'], gps_data.loc[1:, 'longitude']
         )
-        gps_data['speed'] = gps_data['dx'] / df['dt']
+        gps_data['speed'] = gps_data['dx'] / gps_data['dt']
         gps_data['stationary'] = ((gps_data['speed'] < 10) | (gps_data['dt'] > 600))
         gps_data['stationary_1'] = gps_data['stationary'].shift()
         gps_data['idx'] = gps_data.index
