@@ -6,7 +6,7 @@ import LAMP
     name="lamp.screen_state",
     dependencies=["lamp.screen_state"]
 )
-def screen_state(resolution=None, limit=2147483647, **kwargs):
+def screen_state(resolution=None, limit=2147483647, cache=True, **kwargs):
     """
     Get all cal data bounded by time interval and optionally subsample the data.
 

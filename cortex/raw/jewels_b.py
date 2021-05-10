@@ -6,7 +6,7 @@ import LAMP
     name="lamp.jewels_b",
     dependencies=["lamp.jewels_b"]
 )
-def jewels_b(resolution=None, limit=20000, **kwargs):
+def jewels_b(resolution=None, limit=20000, cache=True, **kwargs):
 
     jewels_b_ids = [activity['id'] for activity in
                     LAMP.Activity.all_by_participant(kwargs['id'])['data']

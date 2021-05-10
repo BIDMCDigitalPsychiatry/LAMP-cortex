@@ -50,48 +50,52 @@ def raw_feature(name, dependencies):
                          os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
             
             # Find a valid local cache directory
-            cache_dir = None
-            if kwargs.get('cache') is not None:
-                cache_dir = os.path.expanduser(kwargs['cache'])
-                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
-            elif os.getenv('CORTEX_CACHE_DIR') is not None:
-                cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
-                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
-            if cache_dir is None: 
-                cache_dir = os.path.expanduser('~/.cache/cortex')
-                if not os.path.exists(cache_dir):
-                    log.info(f"Caching directory does not yet exist, creating...")
-                    os.makedirs(cache_dir)
-                assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
-            log.info(f"Cortex caching directory set to: {cache_dir}")   
-            cache_dir   
+            cache = kwargs.get('cache')
+            if cache:
+                cache_dir = None
+                if kwargs.get('cache_dir') is not None:
+                    cache_dir = os.path.expanduser(kwargs['cache_dir'])
+                    assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
+                elif os.getenv('CORTEX_CACHE_DIR') is not None:
+                    cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
+                    assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
+                if cache_dir is None: 
+                    cache_dir = os.path.expanduser('~/.cache/cortex')
+                    if not os.path.exists(cache_dir):
+                        log.info(f"Caching directory does not yet exist, creating...")
+                        os.makedirs(cache_dir)
+                    assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
+                log.info(f"Cortex caching directory set to: {cache_dir}")   
+                cache_dir   
 
-            log.info(f"Processing raw feature \"{name}\"...")
+                log.info(f"Processing raw feature \"{name}\"...")
 
-            # local data caching TODO: combine pickle window with API data
-            found = False
-            for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
-                path = cache_dir + '/' + file
-                saved = dict(zip(['name', 'id', 'start', 'end'], file.split('.')[0].split('_')))
-                saved['start']=int(saved['start'])
-                saved['end']=int(saved['end'])
-                if name.split('.')[-1] == saved['name']:
-                    if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end']:
-                        _result = pickle.load(open(path, 'rb'))
-                        found = True
-                        log.info('Using saved raw data...')
-                        break
-            if not found:
-                log.info('No saved raw data found, getting new...')
+                # local data caching TODO: combine pickle window with API data
+                found = False
+                for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
+                    path = cache_dir + '/' + file
+                    saved = dict(zip(['name', 'id', 'start', 'end'], file.split('.')[0].split('_')))
+                    saved['start']=int(saved['start'])
+                    saved['end']=int(saved['end'])
+                    if name.split('.')[-1] == saved['name']:
+                        if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end']:
+                            _result = pickle.load(open(path, 'rb'))
+                            found = True
+                            log.info('Using saved raw data...')
+                            break
+                if not found:
+                    log.info('No saved raw data found, getting new...')
+                    _result = func(*args, **kwargs)
+
+                    pickle_path = (cache_dir + '/' +
+                                   name.split('.')[-1] + '_' + 
+                                   kwargs['id'] + '_' +
+                                   str(kwargs['start']) + '_' +
+                                   str(kwargs['end']) + '.cortex')
+                    pickle.dump(_result, open(pickle_path, 'wb'))
+                    log.info(f"Saving raw data as \"{pickle_path}\"...")
+            else:
                 _result = func(*args, **kwargs)
-
-                pickle_path = (cache_dir + '/' +
-                               name.split('.')[-1] + '_' + 
-                               kwargs['id'] + '_' +
-                               str(kwargs['start']) + '_' +
-                               str(kwargs['end']) + '.cortex')
-                pickle.dump(_result, open(pickle_path, 'wb'))
-                log.info(f"Saving raw data as \"{pickle_path}\"...")
 
             _event = {'timestamp': kwargs['start'],
                       'duration': kwargs['end'] - kwargs['start'],
