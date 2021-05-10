@@ -6,7 +6,7 @@ import LAMP
     name='lamp.survey',
     dependencies=['lamp.survey']
 )
-def survey(replace_ids=True, limit=2147483647, **kwargs):
+def survey(replace_ids=True, limit=2147483647, cache=True, **kwargs):
     """
     Get survey events for participant
 

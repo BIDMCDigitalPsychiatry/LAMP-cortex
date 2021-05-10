@@ -6,7 +6,7 @@ import LAMP
     name="lamp.steps",
     dependencies=["lamp.steps"]
 )
-def sms(resolution=None, limit=2147483647, **kwargs):
+def steps(resolution=None, limit=2147483647, cache=True, **kwargs):
     """
     Get all cal data bounded by time interval and optionally subsample the data.
 
