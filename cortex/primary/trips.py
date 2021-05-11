@@ -14,13 +14,13 @@ import datetime
 )
 def trips(**kwargs):
     """
-    
     :param id (string):
     :param start (int):
     :param end (int):
     :return trip_list (list): all trips in the given timeframe; each one has (start, end)
     """
-    # vectorized haversine function
+    ### Helper functions ###
+    
     def haversine_np(lon1, lat1, lon2, lat2):
         """
         Source: https://stackoverflow.com/questions/42877802/pandas-dataframe-join-items-in-range-based-on-their-geo-coordinates-longitude 
@@ -42,27 +42,26 @@ def trips(**kwargs):
         Using this for convenience over GeoPy because it doesn't support our vectorized operations w/ Pandas
         '''
         return 110.25 * ((((lat - lat0) ** 2) + (((lng - lng0) * np.cos(lat0)) ** 2)) ** 0.5)
-    def distance(df,col, idx1, idx2):
+    
+    def total_distance(df,col, idx1, idx2):
         return df[col][idx1:idx2].sum()
+    
     def end_timestamp(df, idx2, col='timestamp'):
         idx  = idx2 - 1
         return df['timestamp'][idx]
-    ### Helper functions ###
-    def label_gps_points(gps_data):
+    
+    def get_trips(gps_data):
         """
-        Label gps readings as being either "stationary" (0) or "transitionary" (1)
+        Get trips for a given GPS DataFrame
 
-        :param sensor_data (dict): maps LAMP sensor to sensor events
+        :param gps_data (pd.DataFrame): Dataframe of raw GPS data
         
-        :return (pd.DataFrame): columns ['timestamp', 'latitude', 'longitude', 'stationary'], where 'stationary' is bool indicating whether GPS point is stationary/nonstationary
+        :return (list): list of dicts, where each dict is a trip, with the following keys: 'start', 'end', 'latitude', 'longitude','distance'
         """
         log.info(f'Inside label_gps_points')
         SPEED_THRESHOLD = 10.0
-        TIME_THRESHOLD = 600 
-        #stationary = True #initial state is not moving (in case gps points are very close together)
+        TIME_THRESHOLD = 600
         log.info(f'create copy of gps_data')
-        #labeled_data = gps_data.copy()
-        print(gps_data)        
     
         gps_data['dt'] = (gps_data['timestamp'] - gps_data['timestamp'].shift()) / (1000*3600)
         gps_data['dx'] = haversine_np(
@@ -77,7 +76,7 @@ def trips(**kwargs):
         new['idx_shift'] = new['idx'].shift(-1, fill_value=0)
         new[new['stationary'] == False]
         new = new[new['idx_shift'] != 0]
-        new['distance'] = new.apply(lambda row: distance(gps_data, 'dx', row['idx'], row['idx_shift']), axis=1)
+        new['distance'] = new.apply(lambda row: total_distance(gps_data, 'dx', row['idx'], row['idx_shift']), axis=1)
         new['end'] = new.apply(lambda row: end_timestamp(gps_data, row['idx_shift']), axis=1)
         new = new[['timestamp', 'end', 'latitude', 'longitude', 'distance']]
         new.columns = ['start', 'end', 'latitude', 'longitude','distance']
@@ -87,10 +86,7 @@ def trips(**kwargs):
     
     
     log.info(f'Modifying DataFrame')
-    start = time.time()
     df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs)['data'])))
     log.info(f'Labeling GPS')
-    labeled_gps = label_gps_points(df)
-    print(time.time() - start)
-    print(len(labeled_gps))
+    labeled_gps = get_trips(df)
     return labeled_gps
