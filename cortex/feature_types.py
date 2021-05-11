@@ -9,6 +9,7 @@ import pandas as pd
 from pprint import pprint
 from inspect import getargspec
 import pickle
+import tarfile
 #from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
@@ -254,6 +255,64 @@ def delete_cache(id, features=None, cache_dir=None):
     :param features (list): features to reset, defaults to all features (optional)
     :param cache_dir (str): path to cache dir, where data will be deleleted
     """
+    cache_dir = cache_finder(cache_dir)
+    
+    #Delete all 'features' in cache_dir for participant
+    for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
+        path = cache_dir + '/' + file
+        saved = dict(zip(['name', 'id', 'start', 'end'], file.split('.')[0].split('_')))
+        if saved['name'] in features and saved['id'] == id:
+            os.remove(path)
+
+def export_cache(cache_dir=None, export_dir=None):
+    """
+    Exports cached raw features as compressive *.tar.gz (saved as *.lamp)
+    :param cache_dir (str): path to cache dir, where data will be read from
+    :param export_dir (str): path to export directory 
+    """
+    cache_dir = cache_finder(cache_dir)
+    #Export as *.tar.gz
+    tar = tarfile.open('cache_' + str(int(time.time())*1000) + '.lamp' + , 'w:gz') #check if override?
+    if export_dir is None:
+        export_dir = os.path.expanduser(cache_dir)
+    else:
+        export_dir = os.path.expanduser()
+        
+    tar.add(cache_dir, 'cache_' + str(int(time.time())*1000) + '.lamp')
+    tar.close()
+    
+def import_cache(cache_dir=None, import_dir=None):
+    """
+    Imports cached raw features from *.tar.gz (saved as *.lamp)
+    :param cache_dir (str): path to cache dir, where data will be 
+    :param import_dir (str): path to import directory 
+    """
+    #Export as *.tar.gz
+    if import_dir is not None:
+        assert os.path.exists(import_dir), "Import cache could not be found. Please provide a existing path to import_dir."
+        try:
+            cache = tarfile.open(import_dir, 'r:gz') #check if override?
+        except tarfile.ReadError:
+            raise "Cache file was found but could not be read. Please check that it is of proper type *.tz"
+            
+    cache_dir = cache_finder(cache_dir)
+    else:
+        #find any cache in the folder
+        for f in os.listdir(cache_dir):
+            if f.endswith('cortex'):
+                try:
+                    cache = tarfile.open(os.path.join(cache_dir, f), 'r:gz')
+                    return cache
+                except:
+                    log.info("Found a file with extension '.cortex' in cache_dir, but unable to read.")
+                    
+        raise Exception("No cache found in cache_dir. Please provide a cache to import via 'import_dir' or provide a 'cache_dir' which contains a importable cache.")
+                    
+
+def cache_finder(cache_dir):
+    """
+    Helper function that finds the cache location
+    """
     if cache_dir is not None:
         cache_dir = os.path.expanduser(cache_dir)
         assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
@@ -263,20 +322,11 @@ def delete_cache(id, features=None, cache_dir=None):
     elif cache_dir is None: 
         cache_dir = os.path.expanduser('~/.cache/cortex')
         if not os.path.exists(cache_dir):
-            log.info(f"Caching directory does not yet exist. Nothing to reset")
+            log.info(f"Caching directory does not yet exist.")
             log.info(f"Creating default cache dir at ~/.cache/cortex")
             os.makedirs(cache_dir)
         assert os.path.exists(cache_dir), "Error in default caching directory at ~/.cache/cortex. Please specify an alternative locatiton as a keyword argument: 'cache_dir', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
-        return
-    
-    #Delete all 'features' in cache_dir for participant
-    for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
-        path = cache_dir + '/' + file
-        saved = dict(zip(['name', 'id', 'start', 'end'], file.split('.')[0].split('_')))
-        if saved['name'] in features and saved['id'] == id:
-            os.remove(path)
-    
-
+    return cache_dir
 
 # Allows execution of feature functions from the command line, with argument parsing.
 def _main():
