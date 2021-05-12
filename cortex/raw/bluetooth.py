@@ -11,8 +11,10 @@ def bluetooth(resolution=None, limit=20000, cache=True, recursive=True, **kwargs
     Get all bluetooth data bounded by time interval and optionally subsample the data.
 
     :param resolution (int): The subsampling resolution (TODO).
-    :param limit (int): The maximum number of GPS events to query for (defaults to INT_MAX).
-    :return timestamp (int): The UTC timestamp for the GPS event.
+    :param limit (int): The maximum number of Bluetooth events to query for (defaults to INT_MAX).
+    :return timestamp (int): The UTC timestamp for the Bluetooth event.
+    :return bt_rssi (int): The rssi for the Bluetooth event.
+    :return bt_address (str): Address of Bluetooth event
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

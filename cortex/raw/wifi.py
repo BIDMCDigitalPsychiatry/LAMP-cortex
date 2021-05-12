@@ -12,7 +12,9 @@ def wifi(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
 
     :param resolution (int): The subsampling resolution (TODO).
     :param limit (int): The maximum number of wifi events to query for (defaults to INT_MAX).
-    :return timestamp (int): The UTC timestamp for the GPS event.
+    :return timestamp (int): The UTC timestamp for the Wifi event.
+    :return bssid (str): BSSID of Wifi event
+    :return ssid (str): SSID of Wifi event
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
