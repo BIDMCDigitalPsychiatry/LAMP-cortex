@@ -17,7 +17,7 @@ def trips(**kwargs):
     :param id (string):
     :param start (int):
     :param end (int):
-    :return trip_list (list): all trips in the given timeframe; each one has (start, end)
+    :return (list): all trips in the given timeframe; each one has (start, end) 
     """
     ### Helper functions ###
     
@@ -58,10 +58,8 @@ def trips(**kwargs):
         
         :return (list): list of dicts, where each dict is a trip, with the following keys: 'start', 'end', 'latitude', 'longitude','distance'
         """
-        log.info(f'Inside label_gps_points')
         SPEED_THRESHOLD = 10.0
         TIME_THRESHOLD = 600
-        log.info(f'create copy of gps_data')
     
         gps_data['dt'] = (gps_data['timestamp'] - gps_data['timestamp'].shift()) / (1000*3600)
         gps_data['dx'] = haversine_np(
@@ -84,8 +82,6 @@ def trips(**kwargs):
 
     ### ####
     
-    
-    log.info(f'Modifying DataFrame')
     df = pd.DataFrame.from_dict(list(reversed(gps(**kwargs)['data'])))
     log.info(f'Labeling GPS')
     labeled_gps = get_trips(df)
