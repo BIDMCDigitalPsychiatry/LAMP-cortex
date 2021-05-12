@@ -6,7 +6,7 @@ import LAMP
     name="lamp.wifi",
     dependencies=["lamp.wifi"]
 )
-def gps(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
+def wifi(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
     """
     Get all wifi data bounded by time interval and optionally subsample the data.
 

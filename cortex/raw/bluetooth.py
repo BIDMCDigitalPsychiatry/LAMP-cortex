@@ -6,7 +6,7 @@ import LAMP
     name="lamp.bluetooth",
     dependencies=["lamp.bluetooth"]
 )
-def gps(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
+def bluetooth(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
     """
     Get all bluetooth data bounded by time interval and optionally subsample the data.
 
