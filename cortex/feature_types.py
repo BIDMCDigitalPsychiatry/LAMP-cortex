@@ -94,7 +94,8 @@ def raw_feature(name, dependencies):
                                    str(kwargs['start']) + '_' +
                                    str(kwargs['end']) + '.cortex')
                     
-                    if kwargs.get('compression') is not None:
+                    if os.environ['CORTEX_CACHE_COMPRESSION'] is not None:
+                        assert os.environ['CORTEX_CACHE_COMPRESSION'] is in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
                         pickle_path += '.' + kwargs.get('compression')
                     
                     pickle.dump(_result, 
