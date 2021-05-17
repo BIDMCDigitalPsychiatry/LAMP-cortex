@@ -8,7 +8,7 @@ import argparse
 import pandas as pd
 from pprint import pprint
 from inspect import getargspec
-import pickle
+import compress_pickle as pickle
 import tarfile
 #from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
@@ -52,7 +52,8 @@ def raw_feature(name, dependencies):
             
             # Find a valid local cache directory
             cache = kwargs.get('cache')
-            if cache:
+
+            if cache is None or cache:
                 cache_dir = None
                 if kwargs.get('cache_dir') is not None:
                     cache_dir = os.path.expanduser(kwargs['cache_dir'])
@@ -67,7 +68,6 @@ def raw_feature(name, dependencies):
                         os.makedirs(cache_dir)
                     assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
                 log.info(f"Cortex caching directory set to: {cache_dir}")   
-                cache_dir   
 
                 log.info(f"Processing raw feature \"{name}\"...")
 
@@ -84,16 +84,24 @@ def raw_feature(name, dependencies):
                             found = True
                             log.info('Using saved raw data...')
                             break
+                            
                 if not found:
                     log.info('No saved raw data found, getting new...')
                     _result = func(*args, **kwargs)
-
                     pickle_path = (cache_dir + '/' +
                                    name.split('.')[-1] + '_' + 
                                    kwargs['id'] + '_' +
                                    str(kwargs['start']) + '_' +
                                    str(kwargs['end']) + '.cortex')
-                    pickle.dump(_result, open(pickle_path, 'wb'))
+                    
+                    if kwargs.get('compression') is not None:
+                        pickle_path += '.' + kwargs.get('compression')
+                    
+                    pickle.dump(_result, 
+                                pickle_path, 
+                                compression=kwargs.get('compression'), 
+                                set_default_extension=False)
+                    
                     log.info(f"Saving raw data as \"{pickle_path}\"...")
             else:
                 _result = func(*args, **kwargs)
@@ -272,7 +280,7 @@ def export_cache(cache_dir=None, export_dir=None):
     """
     cache_dir = cache_finder(cache_dir)
     #Export as *.tar.gz
-    tar = tarfile.open('cache_' + str(int(time.time())*1000) + '.lamp' + , 'w:gz') #check if override?
+    tar = tarfile.open('cache_' + str(int(time.time())*1000) + '.lamp', 'w:gz') #check if override?
     if export_dir is None:
         export_dir = os.path.expanduser(cache_dir)
     else:
@@ -295,8 +303,8 @@ def import_cache(cache_dir=None, import_dir=None):
         except tarfile.ReadError:
             raise "Cache file was found but could not be read. Please check that it is of proper type *.tz"
             
-    cache_dir = cache_finder(cache_dir)
     else:
+        cache_dir = cache_finder(cache_dir)
         #find any cache in the folder
         for f in os.listdir(cache_dir):
             if f.endswith('cortex'):
