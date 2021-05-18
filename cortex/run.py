@@ -64,8 +64,8 @@ def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
     return _results
 
 # Helper function to generate a plot directly from a Cortex DF.
-def plot(**kwargs):
-    return alt.Chart(run(**kwargs)['survey']) # FIXME! hard-coded for now!
+def plot(*args, **kwargs):
+    return alt.Chart(run(*args, **kwargs)['survey']) # FIXME! hard-coded for now!
     
 #Helper function to get list of all participant ids from "id" of type {LAMP.Researcher, LAMP.Study, LAMP.Participant}
 def generate_ids(id_set):
