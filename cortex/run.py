@@ -1,28 +1,61 @@
-# import raw
-# import primary
-# import secondary
+import cortex.raw as raw
+import cortex.primary as primary
+import cortex.secondary as secondary
 
-# from functools import reduce
-# import LAMP
+from functools import reduce
+import LAMP
+import time
+from inspect import getmembers, ismodule
+import pandas as pd
+import os
 
-
-
-# main fxn
-def run(id, feature_dict, start, end):
-    #1. Check id to generate list of participants (put into "generate_id_list"?)
-#     if isinstance(id, str):
-#         if len(LAMP.Participant.view(id)['data']) > 0: 
-#             id = [id]
-#         elif len(LAMP.Study.view(id)['data']) > 0:
-#             id = [p['id'] for p in LAMP.Participant.all_by_study(id)['data']]
-#         elif len(LAMP.Researcher.view(_id)['data']) > 0:
-#             id = reduce(lambda x, y: x + [part['id'] for part in lamp.Participant.all_by_study(y)['data']], 
-#                                 studies[1:], 
-#                                 [part['id'] for part in lamp.Participant.all_by_study(studies[0])['data']])
-            
-    #2. Of zipped list (id, feature), execute
-    pass
+MS_IN_A_DAY = 86400000
+def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
+    # Connect to the LAMP API server.
+    if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
+        raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+    LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+                 os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
     
+    #1. Check id to generate list of participants (put into "generate_id_list"?)
+    participants = generate_ids(id)
+    feature_group = "survey_results"
+    fns = [getattr(mod, mod_name) for mod_name, mod in getmembers(raw, ismodule) if mod_name in features]
+    
+    #TODO allow for raw, primary, and secondary to be used at once
+#     fns = map(lambda feature_group: [getattr(mod, mod_name) 
+#                                      for mod_name, mod in getmembers(feature_group, ismodule) 
+#                                      if mod_name in features],
+#               [raw, primary, secondary])
+    
+    _results = {}
+    for f in fns:
+        _results[str(f)] = []
+        for participant in participants:
+            
+            #Find start, end 
+            if start is None:
+                start = min([getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=-1)['data'][0]['timestamp']
+                                  for mod_name, mod in getmembers(raw, ismodule)
+                                  if len(getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=-1)['data']) > 0])
+            if end is None:
+                end = max([getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=1)['data'][0]['timestamp']
+                            for mod_name, mod in getmembers(raw, ismodule)
+                            if len(getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=1)['data']) > 0])
+            
+            #TODO only for raw function; allow resolution/other params to be passed if secondary, etc
+            _res =  f(id=participant,
+                      start=start,
+                      end=end)#,
+                      #resolution=MS_IN_A_DAY)
+            
+            _results[str(f)].append(pd.DataFrame.from_dict(_res))
+            
+    #TODO: convert and concat all dicts in each _results[str(f)] to pd.DataFrame
+            
+    return _results
+            
+            
     
 #Helper function to get list of all participant ids from "id" of type {LAMP.Researcher, LAMP.Study, LAMP.Participant}
 def generate_ids(id_set):
@@ -53,7 +86,6 @@ def generate_ids(id_set):
         elif "Researcher" in parents:
             # We return a list of Participant ids.
             return [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']]
-            pass
 
         # Researchers have no parents.
         # Therefore, an empty parent dictionary means this id is associated
