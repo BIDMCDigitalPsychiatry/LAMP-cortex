@@ -54,7 +54,6 @@ def raw_feature(name, dependencies):
             cache = kwargs.get('cache')
 
             if cache is None or cache:
-                cache_dir = None
                 if kwargs.get('cache_dir') is not None:
                     cache_dir = os.path.expanduser(kwargs['cache_dir'])
                     assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
@@ -80,7 +79,12 @@ def raw_feature(name, dependencies):
                     saved['end'] = int(saved['end'])
                     if name.split('.')[-1] == saved['name']:
                         if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end']:
-                            _result = pickle.load(open(path, 'rb'))
+                            if file.split('.')[-1] == 'cortex': #if no compression extension, use standard pkl loading
+                                _result = pickle.load(path, 
+                                                      set_default_extension=False,
+                                                      compression=None)
+                            else: 
+                                _result = pickle.load(path)
                             found = True
                             log.info('Using saved raw data...')
                             break
@@ -94,9 +98,9 @@ def raw_feature(name, dependencies):
                                    str(kwargs['start']) + '_' +
                                    str(kwargs['end']) + '.cortex')
                     
-                    if os.environ['CORTEX_CACHE_COMPRESSION'] is not None:
-                        assert os.environ['CORTEX_CACHE_COMPRESSION'] is in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
-                        pickle_path += '.' + kwargs.get('compression')
+                    if os.getenv('CORTEX_CACHE_COMPRESSION') is not None:
+                        assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
+                        pickle_path += '.' + os.getenv('CORTEX_CACHE_COMPRESSION')
                     
                     pickle.dump(_result, 
                                 pickle_path, 
