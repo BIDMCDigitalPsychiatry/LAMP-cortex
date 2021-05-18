@@ -7,7 +7,12 @@ import LAMP
 import time
 from inspect import getmembers, ismodule
 import pandas as pd
+import altair as alt
 import os
+
+# Convenience to avoid extra imports/time-mangling nonsense...
+def now():
+    return int(time.time())*1000
 
 MS_IN_A_DAY = 86400000
 def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
@@ -30,10 +35,11 @@ def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
     
     _results = {}
     for f in fns:
-        _results[str(f)] = []
+        _results[str(f.__name__)] = pd.DataFrame()
         for participant in participants:
             
             #Find start, end 
+            # FIXME: Seems to not work correctly in every case?
             if start is None:
                 start = min([getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=-1)['data'][0]['timestamp']
                                   for mod_name, mod in getmembers(raw, ismodule)
@@ -48,14 +54,18 @@ def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
                       start=start,
                       end=end)#,
                       #resolution=MS_IN_A_DAY)
-            
-            _results[str(f)].append(pd.DataFrame.from_dict(_res))
+            _res2 = pd.DataFrame.from_dict(_res['data'])
+            _res2.insert(0, 'id', participant) # prepend 'id' column
+            _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
+            _results[str(f.__name__)] = pd.concat([_results[str(f.__name__)], _res2])
             
     #TODO: convert and concat all dicts in each _results[str(f)] to pd.DataFrame
             
     return _results
-            
-            
+
+# Helper function to generate a plot directly from a Cortex DF.
+def plot(**kwargs):
+    return alt.Chart(run(**kwargs)['survey']) # FIXME! hard-coded for now!
     
 #Helper function to get list of all participant ids from "id" of type {LAMP.Researcher, LAMP.Study, LAMP.Participant}
 def generate_ids(id_set):
