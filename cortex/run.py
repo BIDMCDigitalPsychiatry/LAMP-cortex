@@ -1,21 +1,24 @@
+import os
+import time
+from functools import reduce
+
+import pandas as pd
+import altair as alt
+
+import LAMP
 import cortex.raw as raw
 import cortex.primary as primary
 import cortex.secondary as secondary
-
-from functools import reduce
-import LAMP
-import time
-from inspect import getmembers, ismodule
-import pandas as pd
-import altair as alt
-import os
+from cortex.feature_types import all_features
 
 # Convenience to avoid extra imports/time-mangling nonsense...
 def now():
     return int(time.time())*1000
 
-MS_IN_A_DAY = 86400000
-def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
+# Convenience to avoid mental math...
+MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
+
+def run(id_or_set, features, start=None, end=None, resolution=MS_PER_DAY):
     # Connect to the LAMP API server.
     if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
         raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
@@ -23,9 +26,8 @@ def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
     
     #1. Check id to generate list of participants (put into "generate_id_list"?)
-    participants = generate_ids(id)
-    feature_group = "survey_results"
-    fns = [getattr(mod, mod_name) for mod_name, mod in getmembers(raw, ismodule) if mod_name in features]
+    participants = generate_ids(id_or_set)
+    func_list = {f['callable'].__name__: f for f in all_features()}
     
     #TODO allow for raw, primary, and secondary to be used at once
 #     fns = map(lambda feature_group: [getattr(mod, mod_name) 
@@ -34,8 +36,14 @@ def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
 #               [raw, primary, secondary])
     
     _results = {}
-    for f in fns:
-        _results[str(f.__name__)] = pd.DataFrame()
+    for f in features:
+        
+        # Make sure we aren't calling non-existant feature functions.
+        if f not in func_list.keys():
+            continue
+        _results[f] = pd.DataFrame()
+        
+        # Iterate all participants in the list
         for participant in participants:
             
             #Find start, end 
@@ -50,22 +58,28 @@ def run(id, features, start=None, end=None, resolution=MS_IN_A_DAY):
                             if len(getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=1)['data']) > 0])
             
             #TODO only for raw function; allow resolution/other params to be passed if secondary, etc
-            _res =  f(id=participant,
-                      start=start,
-                      end=end)#,
-                      #resolution=MS_IN_A_DAY)
+            _res = func_list[f]['callable'](
+                     id=participant,
+                     start=start,
+                     end=end,
+                     #resolution=MS_PER_DAY
+                   )
             _res2 = pd.DataFrame.from_dict(_res['data'])
-            _res2.insert(0, 'id', participant) # prepend 'id' column
-            _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
-            _results[str(f.__name__)] = pd.concat([_results[str(f.__name__)], _res2])
+            if _res2.shape[0] > 0:
+                # If no data exists, don't bother appending the df.
+                _res2.insert(0, 'id', participant) # prepend 'id' column
+                _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
+                _results[f] = pd.concat([_results[f], _res2])
             
     #TODO: convert and concat all dicts in each _results[str(f)] to pd.DataFrame
             
     return _results
 
 # Helper function to generate a plot directly from a Cortex DF.
+# FIXME: currently only allows plotting first one; should be alt.layer()'ed charts.
 def plot(*args, **kwargs):
-    return alt.Chart(run(*args, **kwargs)['survey']) # FIXME! hard-coded for now!
+    df_dict = run(*args, **kwargs)
+    return alt.Chart(list(df_dict.values())[0])
     
 #Helper function to get list of all participant ids from "id" of type {LAMP.Researcher, LAMP.Study, LAMP.Participant}
 def generate_ids(id_set):
