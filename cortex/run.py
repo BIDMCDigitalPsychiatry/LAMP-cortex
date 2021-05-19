@@ -88,10 +88,10 @@ def generate_ids(id_set):
     This function takes either a single id of type Researcher, Study, or
     Participant,or a list of participant ids, and returns a list of all
     associated participant ids.
-    
+
     Args:
         id_set(str/list) - A Researcher, Study, or Participant id, or a list of Participant ids
-    
+
     Returns:
         list - A list of all associated participant ids
     """
@@ -103,12 +103,15 @@ def generate_ids(id_set):
         # If we find a "Study" parent, this must be a Participant
         if "Study" in parents:
             # We return a list of exactly the one Participant ID.
+            log.info("Unpacked and returned a single participant id.")
             return [id_set]
 
         # If we do NOT find a Study parent, it cannot be a participant,
         # but the presence of a "Researcher" parent means it is a Study.
         elif "Researcher" in parents:
             # We return a list of Participant ids.
+            final_list = [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']];
+            log.info("Unpacked ids for Study "+id_set +"and returned " + str(len(final_list)) + " ids.")
             return [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']]
 
         # Researchers have no parents.
@@ -122,17 +125,20 @@ def generate_ids(id_set):
             participant_ids = []
             for study_id in study_ids:
                 participant_ids += [val['id'] for val in LAMP.Participant.all_by_study(study_id)['data']]
+            log.info("Unpacked " + str(len(study_ids))+" studies for Researcher " + id_set + " and returned " + 
+                     str(len(participant_ids)) + " ids total.")
             return participant_ids
         # If we reached this condition, the parent array is not empty, but it does not
         # contain Study OR Researcher parents. This is unlikely but we log the unknown
         # parents and return an empty list.
         else:
-            #log.info("Unknown parent"+str(parents))
+            log.info("Unknown parents found: " + str(parents) + ". Returning empty array.")
             return []
 
     # If a list was passed in, we assume it was a list of participant ids.
     # We then return it unchanged.
     elif isinstance(id_set, list):
+        log.info("Unpacked list of ids. Returned identical list of ids.")
         return id_set
 
 #Check type of id
