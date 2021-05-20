@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "LAMP_cortex"
+name = "LAMP-cortex"
 version = "0.0.0"
 license = "BSD-3-Clause"
 description = "The Cortex data analysis toolkit for the LAMP Platform."
