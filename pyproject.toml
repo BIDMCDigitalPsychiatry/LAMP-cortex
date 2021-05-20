@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "LAMP-cortex"
+version = "0.0.0"
+license = "BSD-3-Clause"
+description = "The Cortex data analysis toolkit for the LAMP Platform."
+authors = ["Division of Digital Psychiatry at Beth Israel Deaconess Medical Center <team@digitalpsych.org>"]
+readme = "README.md"
+homepage = "https://docs.lamp.digital"
+documentation = "https://docs.lamp.digital"
+repository = "https://github.com/BIDMCDigitalPsychiatry/LAMP-cortex"
+keywords = ["LAMP Cortex"]
+packages = [
+    { include = "cortex" }
+]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/BIDMCDigitalPsychiatry/LAMP-platform/issues"
+
+[tool.poetry.scripts]
+cortex = 'cortex.feature_types:_main'
+
+[tool.poetry.dependencies]
+python = "^3.8"
+LAMP-core = "^2021.5.18"
+DateTime = "^4.3"
+numpy = "^1.20.3"
+pandas = "^1.2.4"
+altair = "^4.1.0"
+tzwhere = "^3.0.3"
+geopy = "^2.1.0"
+similaritymeasures = "^0.4.4"
+fastdtw = "^0.3.4"
+sklearn = "^0.0"
+pytz = "^2021.1"
+compress-pickle = "^2.0.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
