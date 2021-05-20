@@ -23,9 +23,14 @@ def survey_scores(question_categories=None, **kwargs):
         'activity': key[1],
         'temporal_slices': list(group)
     } for key, group in _grp]
-
-    _survey_scores = {} #maps survey_type to occurence of scores 
+    
+    # maps survey_type to occurence of scores 
+    _survey_scores = {}
     for result in participant_results:
+        
+        # Make sure the activity actually exists and is not deleted (this was a server issue)
+        if result['activity'] not in surveys:
+            continue
         result_settings = surveys[result['activity']]['settings']
 
         survey_time = result['timestamp']
@@ -91,11 +96,15 @@ def survey_scores(question_categories=None, **kwargs):
                 if score:
                     survey_result[event['survey']].append(score)
                 
-        log.info(survey_result)
+        #log.info(survey_result)
         #add mean to each cat to master dictionary           
         for category in survey_result: 
             survey_result[category] = np.mean(survey_result[category])
-            _event = {'category': surveys[category]['name'], 'timestamp':survey_time, 'score':survey_result[category]}
+            _event = {
+                'category': surveys[category]['name'], 
+                'timestamp': survey_time, 
+                'score': survey_result[category] 
+            }
             if category not in _survey_scores: 
                 _survey_scores[category] = [_event]
             else: 

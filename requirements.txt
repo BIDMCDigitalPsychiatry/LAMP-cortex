@@ -9,3 +9,4 @@ similaritymeasures
 fastdtw
 sklearn
 pytz
+compress_pickle
