@@ -102,7 +102,7 @@ def generate_ids(id_set):
         # If we find a "Study" parent, this must be a Participant
         if "Study" in parents:
             # We return a list of exactly the one Participant ID.
-            log.info("Unpacked and returned a single participant id.")
+            #log.info("Unpacked and returned a single participant id.")
             return [id_set]
 
         # If we do NOT find a Study parent, it cannot be a participant,
@@ -110,7 +110,7 @@ def generate_ids(id_set):
         elif "Researcher" in parents:
             # We return a list of Participant ids.
             final_list = [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']];
-            log.info("Unpacked ids for Study "+id_set +" and returned " + str(len(final_list)) + " ids.")
+            #log.info("Unpacked ids for Study "+id_set +" and returned " + str(len(final_list)) + " ids.")
             return final_list
 
         # Researchers have no parents.
@@ -124,14 +124,14 @@ def generate_ids(id_set):
             participant_ids = []
             for study_id in study_ids:
                 participant_ids += [val['id'] for val in LAMP.Participant.all_by_study(study_id)['data']]
-            log.info("Unpacked " + str(len(study_ids))+" studies for Researcher " + id_set + " and returned " + 
-                     str(len(participant_ids)) + " ids total.")
+            #log.info("Unpacked " + str(len(study_ids))+" studies for Researcher " + id_set + " and returned " + 
+            #         str(len(participant_ids)) + " ids total.")
             return participant_ids
         # If we reached this condition, the parent array is not empty, but it does not
         # contain Study OR Researcher parents. This is unlikely but we log the unknown
         # parents and return an empty list.
         else:
-            log.info("Unknown parents found: " + str(parents) + ". Returning empty array.")
+            #log.info("Unknown parents found: " + str(parents) + ". Returning empty array.")
             return []
 
     # If a list was passed in, we call this function
@@ -139,6 +139,6 @@ def generate_ids(id_set):
     # and elminate repeat ids by converting our list to and from
     # a set.
     elif isinstance(id_set, list):
-        combined_ids = list(set(reduce(lambda acc, _id: acc + generate_ids_recursive(_id), id_set, []))) 
-        log.info("After combining all id lists, returned " + str(len(combined_ids)) + " total ids.")
+        combined_ids = list(set(reduce(lambda acc, _id: acc + generate_ids(_id), id_set, []))) 
+        #log.info("After combining all id lists, returned " + str(len(combined_ids)) + " total ids.")
         return combined_ids
