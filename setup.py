@@ -22,7 +22,8 @@ setup(
       "entrypoints", 
       "tool",
       "lifelines", 
-      "sklearn"
+      "sklearn",
+      "compress_pickle"
     ],
     python_requires='>=3',
     packages=find_packages(exclude=["test", "tests"]),
