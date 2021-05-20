@@ -81,16 +81,15 @@ def plot(*args, **kwargs):
     df_dict = run(*args, **kwargs)
     return alt.Chart(list(df_dict.values())[0])
     
-#Helper function to get list of all participant ids from "id" of type {LAMP.Researcher, LAMP.Study, LAMP.Participant}
+# Helper function to get list of all participant ids from "id" of type {LAMP.Researcher, LAMP.Study, LAMP.Participant}
 def generate_ids(id_set):
-    
     """
     This function takes either a single id of type Researcher, Study, or
     Participant,or a list of participant ids, and returns a list of all
     associated participant ids.
 
     Args:
-        id_set(str/list) - A Researcher, Study, or Participant id, or a list of Participant ids
+        id_set(str/list) - A Researcher, Study, or Participant id, or a list of any combination of ids
 
     Returns:
         list - A list of all associated participant ids
@@ -111,8 +110,8 @@ def generate_ids(id_set):
         elif "Researcher" in parents:
             # We return a list of Participant ids.
             final_list = [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']];
-            log.info("Unpacked ids for Study "+id_set +"and returned " + str(len(final_list)) + " ids.")
-            return [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']]
+            log.info("Unpacked ids for Study "+id_set +" and returned " + str(len(final_list)) + " ids.")
+            return final_list
 
         # Researchers have no parents.
         # Therefore, an empty parent dictionary means this id is associated
@@ -135,15 +134,11 @@ def generate_ids(id_set):
             log.info("Unknown parents found: " + str(parents) + ". Returning empty array.")
             return []
 
-    # If a list was passed in, we assume it was a list of participant ids.
-    # We then return it unchanged.
+    # If a list was passed in, we call this function
+    # on each element, combine the resulting arrays with reduce,
+    # and elminate repeat ids by converting our list to and from
+    # a set.
     elif isinstance(id_set, list):
-        log.info("Unpacked list of ids. Returned identical list of ids.")
-        return id_set
-
-#Check type of id
-def id_check(id):
-    pass
-
-
-
+        combined_ids = list(set(reduce(lambda acc, _id: acc + generate_ids_recursive(_id), id_set, []))) 
+        log.info("After combining all id lists, returned " + str(len(combined_ids)) + " total ids.")
+        return combined_ids
