@@ -14,6 +14,13 @@ def stationary_proportion(g=9.57, eps=.1, col='z', **kwargs):
     """
     Compute the proportion of "stationary" accelerometer readings.
     An accelerometer reading is "stationary" if the z component is close to gravitational acceleration (9.81 m/s^2)
+    
+    g : float
+        Gravitational acceleration constant
+    eps : float
+        Epsilon; used to create an epsilon-neighborhood around g 
+    col : string
+        Column name
     """
     log.info(f'Loading Accelerometer data for 1st trajectory...')
     acc = accelerometer(**kwargs)['data']
@@ -27,6 +34,3 @@ def stationary_proportion(g=9.57, eps=.1, col='z', **kwargs):
     
     
     return {'timestamp':kwargs['start'], 'stationary_proportion': stationary_proportion}
-    
-    
-
