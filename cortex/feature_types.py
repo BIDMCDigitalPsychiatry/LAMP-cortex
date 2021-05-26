@@ -236,9 +236,8 @@ def secondary_feature(name, dependencies):
                 data.append(_result)
                 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
-            data=sorted(data,key=lambda x: x['timestamp'])
+            data = sorted(data,key=lambda x: x['timestamp']) if data else []
             _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
-            return _event
 
             return _event
         # When we register/save the function, make sure we save the decorated and not the RAW function.
