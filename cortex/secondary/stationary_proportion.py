@@ -17,10 +17,13 @@ def stationary_proportion(g=9.57, eps=.1, col='z', **kwargs):
     """
     log.info(f'Loading Accelerometer data for 1st trajectory...')
     acc = accelerometer(**kwargs)['data']
-    acc = pd.DataFrame(acc)[['x', 'y', 'z']]
-    n = len(acc)
-    ct = len(acc[(acc[col] >= g - eps) & (acc[col] <= g + eps)])
-    stationary_proportion = round(ct/n, 5)
+    if acc:
+        acc = pd.DataFrame(acc)[['x', 'y', 'z']]
+        n = len(acc)
+        ct = len(acc[(acc[col] >= g - eps) & (acc[col] <= g + eps)])
+        stationary_proportion = round(ct/n, 5)    
+    else:
+        stationary_proportion = []
     
     
     return {'timestamp':kwargs['start'], 'stationary_proportion': stationary_proportion}
