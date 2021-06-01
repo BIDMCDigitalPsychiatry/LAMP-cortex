@@ -8,7 +8,7 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.trip_duration',
     dependencies=[trips]
 )
-def travel_duration(resolution=MS_IN_A_DAY, **kwargs):
+def trip_duration(resolution=MS_IN_A_DAY, **kwargs):
     '''
     Distance Traveled - Meters
     '''
