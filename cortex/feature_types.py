@@ -77,17 +77,16 @@ def raw_feature(name, dependencies):
                     saved = dict(zip(['name', 'id', 'start', 'end'], file.split('.')[0].split('_')))
                     saved['start'] = int(saved['start'])
                     saved['end'] = int(saved['end'])
-                    if name.split('.')[-1] == saved['name']:
-                        if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end']:
-                            if file.split('.')[-1] == 'cortex': #if no compression extension, use standard pkl loading
-                                _result = pickle.load(path, 
-                                                      set_default_extension=False,
-                                                      compression=None)
-                            else: 
-                                _result = pickle.load(path)
-                            found = True
-                            log.info('Using saved raw data...')
-                            break
+                    if name.split('.')[-1] == saved['name'] and saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end'] and saved['id'] == kwargs['id']:
+                        if file.split('.')[-1] == 'cortex': #if no compression extension, use standard pkl loading
+                            _result = pickle.load(path, 
+                                                  set_default_extension=False,
+                                                  compression=None)
+                        else: 
+                            _result = pickle.load(path)
+                        found = True
+                        log.info('Using saved raw data...')
+                        break
                             
                 if not found:
                     log.info('No saved raw data found, getting new...')
