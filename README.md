@@ -20,6 +20,20 @@ pip install git+https://github.com/BIDMCDigitalPsychiatry/LAMP-cortex.git@master
 
 Alternatively, instead of `pip install`, you may need to use `python3 -m pip install --user`.
 
+### Using Cortex
+
+```python
+cortex.run('YOUR_RESEARCHER_ID', ['hometime'], start=0, end=cortex.now())
+```
+parameter 0: A string containing researcher, study, or single participant ID. (OR) A list containing multiple participant IDs.
+parameter 1: A list containing strings matching Cortex feature functions to run
+
+To see the list of features, call: ```cortex.all_features()```
+
+This outputs a list of functions; to see names only, use: ```[x.__name__ for x in cortex.all_features()]```
+
+This will provide the entire list of Cortex feature functions that can be used in the 2nd parameter of the cortex.run() function.
+
 ### Configuration
 
 Ensure your `server_address` is set correctly. If using the default server, it will be `api.lamp.digital`. Keep your `access_key` (sometimes an email address) and `secret_key` (sometimes a password) private and do not share them with others. While you are able to set these parameters as arguments to the `cortex` executable, it is preferred to set them as session-wide environment variables. You can also run the script from the command line:
