@@ -28,6 +28,26 @@ def survey(replace_ids=True, limit=2147483647, cache=True, **kwargs):
                                                 _from=kwargs['start'],
                                                 to=kwargs['end'],
                                                 _limit=limit)['data']
+    
+    def remove_duplicate_activity_events(raw_data):
+        # Here, we remove any duplicates from raw data
+        # by generating a new list, then replacing the old one.
+        raw_minus_duplicates = []
+        for index, event in enumerate(raw_data):
+            #get a list of all duplicate elements
+            duplicates = list(filter(lambda x: x['temporal_slices']==event['temporal_slices'],raw_minus_duplicates))
+            #if we find a duplicate
+            if not len(duplicates)==0:
+                # we choose the event with a longer duration to be the true event
+                true_event = duplicates[0] if duplicates[0]['duration']>=event['duration'] else event
+                # and replace the old event with the new one
+                raw_minus_duplicates[raw_minus_duplicates.index(duplicates[0])] =  true_event    
+            else:
+                # if we didn't find a duplicate, we just add the new event to the growing list
+                raw_minus_duplicates.append(event)
+        return raw_minus_duplicates
+    
+    raw = remove_duplicate_activity_events(raw)
 
     # Unpack the temporal slices and flatten the dict, including the timestamp and survey.
     # Computing a per-event survey score requires a `groupby('timestamp', 'survey')` call.
