@@ -10,6 +10,7 @@ from pprint import pprint
 from inspect import getargspec
 import compress_pickle as pickle
 import tarfile
+import re
 #from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
@@ -74,10 +75,20 @@ def raw_feature(name, dependencies):
                 found = False
                 for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
                     path = cache_dir + '/' + file
-                    saved = dict(zip(['name', 'id', 'start', 'end'], file.split('.')[0].split('_')))
-                    saved['start'] = int(saved['start'])
-                    saved['end'] = int(saved['end'])
-                    if name.split('.')[-1] == saved['name'] and saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end'] and saved['id'] == kwargs['id']:
+                    
+                    if not re.match('^' + name.split('.')[1], file):
+                        continue
+                        
+                    _, rest = re.split('^'+name.split('.')[1]+'_', file)
+                    saved = dict(zip(['id', 'start', 'end'], re.split('.cortex$', rest)[0].split('_')))
+                    saved['name'] = name.split('.')[1]
+                    try:
+                        saved['start'] = int(saved['start'])
+                        saved['end'] = int(saved['end'])
+                    except:
+                        continue
+                        
+                    if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end'] and saved['id'] == kwargs['id']:
                         if file.split('.')[-1] == 'cortex': #if no compression extension, use standard pkl loading
                             _result = pickle.load(path, 
                                                   set_default_extension=False,
