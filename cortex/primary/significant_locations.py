@@ -160,6 +160,9 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
 
     #Get gps data for this window 
     _gps = gps(**kwargs)['data']
+    if len(_gps) == 0: #return empty list if no data
+        return [] 
+    
     newdf = pd.DataFrame.from_dict(_gps)
     newdf_coords = newdf[['latitude', 'longitude']].values
     props = kmeans.predict(newdf_coords)
@@ -200,6 +203,9 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
     """
     # get gps data
     _gps = gps(**kwargs)['data']
+    if len(_gps) == 0:
+        return []
+    
     df = pd.DataFrame.from_dict(_gps)
     df_clusters = df.copy(deep=True)
     ind = df.shape[0] * [-1]
@@ -222,12 +228,13 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
                 cluster_locs.append(top_points[k])
     else:
         k = 0
-        while top_counts.iloc[k] > min_cluster_points and k < len(df) - 1:
+        while k < len(top_counts) and top_counts.iloc[k] > min_cluster_points and k < len(df) - 1:
             df_clusters.loc[(df_clusters["latitude"] == top_points[k][0]) &
                             (df_clusters["longitude"] == top_points[k][1]),
                             'cluster'] = k
             cluster_locs.append(top_points[k])
             k += 1
+            
 
     return [{
         'start':kwargs['start'],
