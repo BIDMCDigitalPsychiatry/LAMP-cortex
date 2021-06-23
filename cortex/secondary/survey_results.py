@@ -16,7 +16,6 @@ def survey_results(**kwargs):
     """
 
     all_scores=survey_scores(**kwargs)['data']
-    log.info(all_scores)
     data={}
     for survey in all_scores:
         data[survey['category']]=np.nanmean([s['score'] for s in all_scores])
