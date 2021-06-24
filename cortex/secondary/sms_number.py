@@ -10,10 +10,10 @@ MS_IN_A_DAY = 86400000
 )
 def sms_number(resolution=MS_IN_A_DAY, incoming=True, **kwargs):
     """
-    Number of calls made
+    Number of texts sent/received
     """
     INCOMING_DICT = {True: 1, False:2}
     label = INCOMING_DICT[incoming] 
     _sms = sms(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
-    _sms_number = len([sms for sms in _sms if call['call_type'] == label])
-    return {'timestamp':kwargs['start'], 'call_number': _sms_number}
+    _sms_number = len([sms for sms in _sms if sms['sms_type'] == label])
+    return {'timestamp':kwargs['start'], 'sms_number': _sms_number}
