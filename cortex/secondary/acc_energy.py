@@ -17,6 +17,8 @@ def acc_energy(**kwargs):
         n = len(df)
         a = np.square(df).sum(axis=1).sum()
         acc_energy = math.sqrt(a/n)
-        return {'timestamp':kwargs['start'], 'acc_energy': acc_energy}
+        
     else:
-        return None
+        acc_energy = None
+    
+    return {'timestamp':kwargs['start'], 'acc_energy': acc_energy}
