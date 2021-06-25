@@ -88,6 +88,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
         ### DBSCAN ###
         _gps = gps(**{**kwargs, 'start':reduced_data_end})['data']
         df = pd.DataFrame.from_dict(_gps)
+        df = df[df['timestamp'] != df['timestamp'].shift()]
         if len(df) == 0: return []
 
         #To prevent memory issues, limit size of db scan and perform iteratively
@@ -205,8 +206,9 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
     _gps = gps(**kwargs)['data']
     if len(_gps) == 0:
         return []
-    
+
     df = pd.DataFrame.from_dict(_gps)
+    df = df[df['timestamp'] != df['timestamp'].shift()]
     df_clusters = df.copy(deep=True)
     ind = df.shape[0] * [-1]
     df_clusters["cluster"] = ind
