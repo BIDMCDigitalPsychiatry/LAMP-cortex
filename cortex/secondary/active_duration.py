@@ -24,6 +24,7 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
         :return _sleep_period_expted (dict): list bed/wake timestamps and mean accel. magnitude for expected bedtime
         """
         df = pd.DataFrame.from_dict(accelerometer_data_reduced)
+        df = df[df['timestamp'] != df['timestamp'].shift()]
 
         # Creating possible times for expected sleep period, which will be checkede
         times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30]]
@@ -124,6 +125,7 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
         return {'timestamp':kwargs['start'], 'sedentary_duration':None}
 
     accelDf = pd.DataFrame.from_dict(accelerometer_data)
+    accelDf = accelDf[accelDf['timestamp'] != accelDf['timestamp'].shift()]
     accelDf.loc[:, 'Time'] = pd.to_datetime(accelDf['timestamp'], unit='ms')
     accelDf.loc[:, 'magnitude'] = accelDf.apply(lambda row: np.linalg.norm([row['x'],
                                                                             row['y'],
