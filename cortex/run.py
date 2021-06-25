@@ -21,7 +21,7 @@ def now():
 # Convenience to avoid mental math...
 MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
 
-def run(id_or_set, features, feature_params={}, start=None, end=None, resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
+def run(id_or_set, features=[], feature_params={}, start=None, end=None, resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
     """ Function to get features from cortex.
 
         Args:
@@ -56,6 +56,9 @@ def run(id_or_set, features, feature_params={}, start=None, end=None, resolution
             If the start and / or end time are not specified, the earliest and
             latest raw data timepoints will be used. These will then be shifted
             so all days start and end at 9am (if resolution is modulo days)
+            If both features and run_part_and_features are specified then 
+            run_part_and_features will take precendence and features will be
+            set to [].
     """
     # Connect to the LAMP API server.
     if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
@@ -70,6 +73,7 @@ def run(id_or_set, features, feature_params={}, start=None, end=None, resolution
         df = pd.read_csv(run_part_and_feats)
         participants = df.loc["participant"].tolist()
         features_by_participant = df.loc["feature"].tolist()
+        features = []
     func_list = {f['callable'].__name__: f for f in all_features()}
 
     # TODO allow for raw, primary, and secondary to be used at once
