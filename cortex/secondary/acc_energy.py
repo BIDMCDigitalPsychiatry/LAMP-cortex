@@ -11,9 +11,9 @@ MS_IN_A_DAY = 86400000
 )
 def acc_energy(**kwargs):
     log.info(f'Loading Accelerometer data...')
-    df = accelerometer(**kwargs)['data']
-    if df:
-        df = pd.DataFrame(df)[['x', 'y', 'z']]
+    _acc = accelerometer(**kwargs)['data']
+    if _acc:
+        df = pd.DataFrame(_acc)[['x', 'y', 'z']]
         n = len(df)
         a = np.square(df).sum(axis=1).sum()
         acc_energy = math.sqrt(a/n)
