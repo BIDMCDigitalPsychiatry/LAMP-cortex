@@ -13,8 +13,9 @@ def acc_energy(**kwargs):
     log.info(f'Loading Accelerometer data...')
     _acc = accelerometer(**kwargs)['data']
     if _acc:
-        df = pd.DataFrame(_acc)[['x', 'y', 'z']]
+        df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
         df = df[df['timestamp'] != df['timestamp'].shift()]
+        df = df[['x','y','z']]
         n = len(df)
         a = np.square(df).sum(axis=1).sum()
         acc_energy = math.sqrt(a/n)
