@@ -23,6 +23,8 @@ echo "${green} significant_locations.py ${reset}"
 pylint cortex/primary/significant_locations.py
 echo "${green} trips.py ${reset}"
 pylint cortex/primary/trips.py
+echo "${green} survey_scores.py ${reset}"
+pylint cortex/primary/survey_scores.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
