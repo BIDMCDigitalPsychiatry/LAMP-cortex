@@ -1,3 +1,4 @@
+""" Module for getting features from cortex """
 import os
 import time
 from functools import reduce
@@ -9,9 +10,8 @@ import altair as alt
 
 import LAMP
 import cortex.raw as raw
-import cortex.primary as primary
 import cortex.secondary as secondary
-from cortex.feature_types import all_features, log
+from cortex.feature_types import all_features
 
 
 # Convenience to avoid extra imports/time-mangling nonsense...
@@ -21,7 +21,9 @@ def now():
 # Convenience to avoid mental math...
 MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
 
-def run(id_or_set, features=[], feature_params={}, start=None, end=None, resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
+
+def run(id_or_set, features=[], feature_params={}, start=None, end=None,
+        resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
     """ Function to get features from cortex.
 
         Args:
@@ -56,13 +58,14 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None, resolut
             If the start and / or end time are not specified, the earliest and
             latest raw data timepoints will be used. These will then be shifted
             so all days start and end at 9am (if resolution is modulo days)
-            If both features and run_part_and_features are specified then 
+            If both features and run_part_and_features are specified then
             run_part_and_features will take precendence and features will be
             set to [].
     """
     # Connect to the LAMP API server.
     if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-        raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+        raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
+                        + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
@@ -77,8 +80,9 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None, resolut
     func_list = {f['callable'].__name__: f for f in all_features()}
 
     # TODO allow for raw, primary, and secondary to be used at once
-    # fns = map(lambda feature_group: [getattr(mod, mod_name) 
-    #                                  for mod_name, mod in getmembers(feature_group, ismodule) 
+    # fns = map(lambda feature_group: [getattr(mod, mod_name)
+    #                                  for mod_name, mod in
+    #                     getmembers(feature_group, ismodule)
     #                                  if mod_name in features],
     #                                  [raw, primary, secondary])
 
@@ -106,7 +110,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None, resolut
                 if _res2.shape[0] > 0:
                     # If no data exists, don't bother appending the df.
                     _res2.insert(0, 'id', participant) # prepend 'id' column
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
+                     # convert to datetime
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
             except:
                 print("Participant: " + participant + ", Feature: " + f + " crashed.")
@@ -126,7 +131,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None, resolut
                 if _res2.shape[0] > 0:
                     # If no data exists, don't bother appending the df.
                     _res2.insert(0, 'id', participant) # prepend 'id' column
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
+                    # convert to datetime
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
             except:
                 print("Participant: " + participant + ", Feature: " + f + " crashed.")
