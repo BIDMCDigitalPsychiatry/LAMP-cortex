@@ -96,7 +96,9 @@ class TestPrimary(unittest.TestCase):
         num_clusters5 = len(ret5['data'])
         self.assertEqual(num_clusters5, 5)
         # try for more clusters than possible
-        gps_data = pd.DataFrame.from_dict(raw.gps.gps(id=self.TEST_PARTICIPANT, start=0, end=self.TEST_END_TIME)['data'])
+        gps_data = pd.DataFrame.from_dict(raw.gps.gps(id=self.TEST_PARTICIPANT,
+                                                      start=0,
+                                                      end=self.TEST_END_TIME)['data'])
         gps_data = gps_data[gps_data['timestamp'] != gps_data['timestamp'].shift()]
         gps_data['latitude'] = gps_data['latitude'].apply(lambda x: round(x, 3))
         gps_data['longitude'] = gps_data['longitude'].apply(lambda x: round(x, 3))
@@ -109,7 +111,7 @@ class TestPrimary(unittest.TestCase):
                                                                   max_clusters=100000)
         num_clusters100 = len(ret100['data'])
         self.assertEqual(num_clusters100, len(top_counts))
-        
+
     def test_siglocs_min_cluster_size(self):
         """ Test min cluster size """
         ret0 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
@@ -119,7 +121,7 @@ class TestPrimary(unittest.TestCase):
                                                                   min_cluster_size=0.5)
         num_clusters0 = len(ret0['data'])
         self.assertEqual(num_clusters0, 1)
-        
+
         ret1 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
@@ -127,7 +129,7 @@ class TestPrimary(unittest.TestCase):
                                                                   min_cluster_size=0.1)
         num_clusters1 = len(ret1['data'])
         self.assertEqual(num_clusters1, 2)
-        
+
         ret2 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
@@ -135,7 +137,7 @@ class TestPrimary(unittest.TestCase):
                                                                   min_cluster_size=0.01)
         num_clusters2 = len(ret2['data'])
         self.assertEqual(num_clusters2, 4)
-    
+
     def test_siglocs_min_cluster_and_max_clusters(self):
         """ Test when both min cluster size and max clusters is set
             Max clusters should override min cluster size
@@ -148,7 +150,7 @@ class TestPrimary(unittest.TestCase):
                                                                   min_cluster_size=0.001)
         num_clusters = len(ret['data'])
         self.assertEqual(num_clusters, 1)
-        
+
     def test_siglocs_top_clusters(self):
         """ Make sure the top clusters are the expected ones """
         ret = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
@@ -165,7 +167,7 @@ class TestPrimary(unittest.TestCase):
         self.assertEqual(ret[2]['longitude'], -71.104)
         self.assertEqual(ret[3]['latitude'], 42.319)
         self.assertEqual(ret[3]['longitude'], -71.051)
-        
+
     def test_siglocs_kmeans(self):
         """ Test that siglocs is calling the correct method """
         ret = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
@@ -175,8 +177,8 @@ class TestPrimary(unittest.TestCase):
                                                                   min_cluster_size=0.01)
         ret = ret['data']
         num_clusters = len(ret)
-        self.assertEqual(num_clusters, 6)  
-        
-        
+        self.assertEqual(num_clusters, 6)
+
+
 if __name__ == '__main__':
     unittest.main()

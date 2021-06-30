@@ -1,11 +1,11 @@
-from ..feature_types import primary_feature, log
-from ..raw.gps import gps
-from sklearn.cluster import KMeans
+""" Module for computing the significant locations using gps data """
+import math
+from sklearn.cluster import KMeans, DBSCAN
 import pandas as pd
 import numpy as np
-import math
-from sklearn.cluster import DBSCAN
-import LAMP 
+import LAMP
+from ..feature_types import primary_feature, log
+from ..raw.gps import gps
 
 
 @primary_feature(
@@ -46,21 +46,39 @@ def significant_locations(k_max=10, eps=1e-5, max_clusters=-1,
         return _significant_locations_kmeans(k_max, eps, **kwargs)
     return _significant_locations_mode(max_clusters, min_cluster_size, **kwargs)
 
-# Calculates straight-line (not great-circle) distance between two GPS points
-# on Earth in kilometers; equivalent to roughly ~55% - 75% of the Haversian
-# (great-circle) distance. 110.25 is conversion metric marking the length of a
-# spherical degree.
-#
-# https://jonisalonen.com/2014/computing-distance-between-coordinates-can-be-simple-and-fast/
-def euclid(g0, g1):
+
+def euclid(gps0, gps1):
+    """ Calculates euclidean distance
+
+        Args:
+            gps0, gps1 the two gps points in lattitude and longitude
+        Returns:
+            The euclidean distance
+
+        Calculates straight-line (not great-circle) distance between two GPS
+        points on Earth in kilometers; equivalent to roughly ~55% - 75% of the
+        Haversian (great-circle) distance. 110.25 is conversion metric marking
+        the length of a spherical degree.
+
+        Reference:
+        https://jonisalonen.com/2014/computing-distance-between-coordinates-can-be-simple-and-fast/
+    """
     def _euclid(lat, lng, lat0, lng0):  # degrees -> km
         return 110.25 * ((((lat - lat0) ** 2) + (((lng - lng0) * np.cos(lat0)) ** 2)) ** 0.5)
-    return _euclid(g0[0], g0[1], g1[0], g1[1])
+    return _euclid(gps0[0], gps0[1], gps1[0], gps1[1])
 
-# Helper to get location duration
-def _location_duration(df, cluster):
-    df = df[::-1].reset_index()
-    arr_ext = np.r_[False, df['cluster'] == cluster, False]
+
+def _location_duration(df_cluster, cluster):
+    """ Helper function to get location duration
+
+        Args:
+            df_cluster - the original dataframe
+            cluster - the cluster index
+        Returns:
+            Duration in that cluster in ms
+    """
+    df_cluster = df_cluster[::-1].reset_index()
+    arr_ext = np.r_[False, df_cluster['cluster'] == cluster, False]
     idx = np.flatnonzero(arr_ext[:-1] != arr_ext[1:])
     idx_list = list(zip(idx[:-1:2], idx[1::2] - int(True)))
 
@@ -68,34 +86,38 @@ def _location_duration(df, cluster):
     for tup in idx_list:
         if tup[0] == tup[1]:
             continue
-        duration = df['timestamp'][tup[1]] - df['timestamp'][tup[0]] 
+        duration = df_cluster['timestamp'][tup[1]] - df_cluster['timestamp'][tup[0]]
 
         hometime_list.append(duration)
 
     return sum(hometime_list)
 
 def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
-    #Get DB scan metadata fir
+    # Get DB scan metadata fir
     try:
-        reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.significant_locations.reduced')['data']#['data']
+        reduced_data = LAMP.Type.get_attachment(kwargs['id'],
+                                'cortex.significant_locations.reduced')['data']
     except:
         reduced_data = {'end':0, 'data':[]}
 
     reduced_data_end = reduced_data['end']
     new_reduced_data = reduced_data['data'].copy()
 
-    if reduced_data_end < kwargs['end']: #update reduced data by getting new gps data and running dbscan
+    # update reduced data by getting new gps data and running dbscan
+    if reduced_data_end < kwargs['end']:
         ### DBSCAN ###
         _gps = gps(**{**kwargs, 'start':reduced_data_end})['data']
-        df = pd.DataFrame.from_dict(_gps)
-        df = df[df['timestamp'] != df['timestamp'].shift()]
-        if len(df) == 0: return []
+        df_original = pd.DataFrame.from_dict(_gps)
+        if len(df_original) == 0:
+            return []
+        df_original = df_original[df_original['timestamp'] != df_original['timestamp'].shift()]
 
-        #To prevent memory issues, limit size of db scan and perform iteratively
-        cut_df = np.split(df, [30000*i for i in range(math.ceil(len(df) / 30000))])
+        # To prevent memory issues, limit size of db scan and perform iteratively
+        cut_df = np.split(df_original,
+                [30000 * i for i in range(math.ceil(len(df_original) / 30000))])
         for d in cut_df:
-
-            if len(d) == 0: continue
+            if len(d) == 0:
+                continue
 
             d.reset_index(drop=True)
             new_reduced_data = reduced_data['data'].copy()
@@ -103,8 +125,11 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
             props = dbscan.fit_predict(d[['latitude', 'longitude']].values)
             db_points = []
             for l in np.unique(props):
-                db_lats, db_longs = [d.iloc[i]['latitude'] for i in range(len(d)) if props[i] == l], [d.iloc[i]['longitude'] for i in range(len(d)) if props[i] == l]
-                db_duration = [d.iloc[i]['timestamp'] for i in range(len(d)) if props[i] == l]
+                db_lats, db_longs = ([d.iloc[i]['latitude']
+                                      for i in range(len(d)) if props[i] == l],
+                                     [d.iloc[i]['longitude']
+                                      for i in range(len(d)) if props[i] == l])
+                # db_duration = [d.iloc[i]['timestamp'] for i in range(len(d)) if props[i] == l]
                 if l == -1:
                     db_points += [{'latitude':db_lats[i],
                     'longitude':db_longs[i],
@@ -112,58 +137,66 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
                 else:
                     lat_mean, long_mean = np.mean(db_lats), np.mean(db_longs)
                     if len(reduced_data['data']) == 0:
-                        db_points += [{'latitude':lat_mean, 
-                                      'longitude':long_mean, 
+                        db_points += [{'latitude':lat_mean,
+                                      'longitude':long_mean,
                                   'count':len(db_lats)}]
 
                     else:
-                        min_dist_index = np.argmin([euclid((loc['latitude'], loc['longitude']), (lat_mean, long_mean)) for loc in reduced_data['data']])
-                        if euclid((reduced_data['data'][min_dist_index]['latitude'], reduced_data['data'][min_dist_index]['longitude']), 
-                              (lat_mean, long_mean)) < 20:
-                              new_reduced_data[min_dist_index]['count'] += len(db_lats)
+                        min_dist_index = np.argmin([euclid((loc['latitude'],
+                                                            loc['longitude']),
+                                                           (lat_mean, long_mean))
+                                                    for loc in reduced_data['data']])
+                        if (euclid((reduced_data['data'][min_dist_index]['latitude'],
+                                   reduced_data['data'][min_dist_index]['longitude']),
+                              (lat_mean, long_mean)) < 20):
+                            new_reduced_data[min_dist_index]['count'] += len(db_lats)
                         else:
-                            db_points += [{'latitude':lat_mean, 
-                                          'longitude':long_mean, 
+                            db_points += [{'latitude':lat_mean,
+                                          'longitude':long_mean,
                                       'count':len(db_lats)}]
 
-            #Add new db points
+            # Add new db points
             new_reduced_data += db_points
             reduced_data = {'end':kwargs['end'], 'data':new_reduced_data}
 
-        LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key='cortex.significant_locations.reduced', body=reduced_data)
+        LAMP.Type.set_attachment(kwargs['id'], 'me',
+                    attachment_key='cortex.significant_locations.reduced',
+                    body=reduced_data)
        ### ###
 
     # Prepare input parameters.
     expanded_data = []
     for point in reduced_data['data']:
-           expanded_data.extend([{'latitude':point['latitude'], 'longitude':point['longitude']} for _ in range(point['count'])])
+        expanded_data.extend([{'latitude':point['latitude'],
+                               'longitude':point['longitude']}
+                                for _ in range(point['count'])])
 
-    df = pd.DataFrame.from_dict(expanded_data)
-    df2 = df[['latitude', 'longitude']].values
-    K_clusters = range(1, min(k_max, len(df)))
-    kmeans = [KMeans(n_clusters=i) for i in K_clusters]
+    df_original = pd.DataFrame.from_dict(expanded_data)
+    df2 = df_original[['latitude', 'longitude']].values
+    k_clusters = range(1, min(k_max, len(df_original)))
+    kmeans = [KMeans(n_clusters=i) for i in k_clusters]
 
     # Determine number of clusters to score.
-    log.info(f'Calculating number of clusters to score with k_max={k_max}...')
+    log.info('Calculating number of clusters to score with k_max=%d...', k_max)
     score = [kmeans[i].fit(df2).score(df2) for i in range(len(kmeans))]
-    for i in range(len(score)):
+    for i, val in enumerate(score):
         if i == len(score) - 1:
             k = i + 1
             break
-        elif abs(score[i + 1] - score[i] < .01):
+        if abs(score[i + 1] - val < .01):
             k = i + 1
             break
 
-    # Compute KMeans clusters. 
-    log.info(f'Computing KMeans++ with k={k}...')
+    # Compute KMeans clusters.
+    log.info('Computing KMeans++ with k=%d...', k)
     kmeans = KMeans(n_clusters=k, init='k-means++')
     kmeans.fit(df2)
 
-    #Get gps data for this window 
+    # Get gps data for this window
     _gps = gps(**kwargs)['data']
-    if len(_gps) == 0: #return empty list if no data
-        return [] 
-    
+    if len(_gps) == 0: # return empty list if no data
+        return []
+
     newdf = pd.DataFrame.from_dict(_gps)
     newdf_coords = newdf[['latitude', 'longitude']].values
     props = kmeans.predict(newdf_coords)
@@ -172,7 +205,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
 
     # Add proportion of GPS within each centroid and return output.
     return [{
-        'start':kwargs['start'], 
+        'start':kwargs['start'],
         'end':kwargs['end'],
         'latitude': center[0],
         'longitude': center[1],
@@ -184,7 +217,8 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
             np.transpose(newdf_coords[np.argwhere(props == idx)].reshape((-1, 2)))
         ) * 1000) if props[props == idx].size > 0 else None,
         'proportion': props[props == idx].size / props.size,
-        'duration': _location_duration(newdf, idx) #props[props == idx].size * 200 #EXPECTED duration in ms
+        # props[props == idx].size * 200 #EXPECTED duration in ms
+        'duration': _location_duration(newdf, idx)
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
 
@@ -207,10 +241,10 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
     if len(_gps) == 0:
         return []
 
-    df = pd.DataFrame.from_dict(_gps)
-    df = df[df['timestamp'] != df['timestamp'].shift()]
-    df_clusters = df.copy(deep=True)
-    ind = df.shape[0] * [-1]
+    df_original = pd.DataFrame.from_dict(_gps)
+    df_original = df_original[df_original['timestamp'] != df_original['timestamp'].shift()]
+    df_clusters = df_original.copy(deep=True)
+    ind = df_original.shape[0] * [-1]
     df_clusters["cluster"] = ind
     cluster_locs = []
 
@@ -219,7 +253,7 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
     top_counts = df_clusters[['latitude', 'longitude']].value_counts()
     top_points = top_counts.index.tolist()
 
-    min_cluster_points = int(min_cluster_size * len(df))
+    min_cluster_points = int(min_cluster_size * len(df_original))
 
     if max_clusters != -1:
         for k in range(max_clusters):
@@ -230,13 +264,14 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
                 cluster_locs.append(top_points[k])
     else:
         k = 0
-        while k < len(top_counts) and top_counts.iloc[k] > min_cluster_points and k < len(df) - 1:
+        while (k < len(top_counts) and top_counts.iloc[k] > min_cluster_points
+               and k < len(df_original) - 1):
             df_clusters.loc[(df_clusters["latitude"] == top_points[k][0]) &
                             (df_clusters["longitude"] == top_points[k][1]),
                             'cluster'] = k
             cluster_locs.append(top_points[k])
             k += 1
-            
+
 
     return [{
         'start':kwargs['start'],
@@ -249,8 +284,10 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
             # Transpose the points within the centroid and calculate the mean
             # euclidean distance (in km) from the center-point and convert that
             # to meters.
-            np.transpose(df.loc[(df_clusters['cluster'] == idx),['longitude','latitude']].values.reshape((-1, 2)))
+            np.transpose(df_original.loc[(df_clusters['cluster'] == idx),
+                        ['longitude','latitude']].values.reshape((-1, 2)))
         ) * 1000) if df_clusters[df_clusters['cluster'] != idx].size else None,
-        'proportion': df_clusters[df_clusters['cluster'] == idx].size / df_clusters[df_clusters['cluster'] != -1].size,
+        'proportion': (df_clusters[df_clusters['cluster'] == idx].size /
+                       df_clusters[df_clusters['cluster'] != -1].size),
         'duration': _location_duration(df_clusters, idx)
     } for idx, center in enumerate(cluster_locs)]

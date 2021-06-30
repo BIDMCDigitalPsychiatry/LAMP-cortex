@@ -45,6 +45,9 @@ def raw_feature(name, dependencies):
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
 
+            if kwargs['start'] > kwargs['end']:
+                raise Exception("'start' argument must occur before 'end'.")
+
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
                 raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
@@ -146,7 +149,7 @@ def primary_feature(name, dependencies, attach):
 
                 # These are universally required parameters for all feature functions.
                 'id', 'start', 'end',
-                
+
                 # These are the feature function's required parameters after removing parameters
                 # with provided default values, if any are provided.
                 *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
@@ -154,13 +157,16 @@ def primary_feature(name, dependencies, attach):
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
-            
+
+            if kwargs['start'] > kwargs['end']:
+                raise Exception("'start' argument must occur before 'end'.")
+
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
                 raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-            
+
             log.info(f"Processing primary feature \"{name}\"...")
 
             # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
@@ -229,6 +235,9 @@ def secondary_feature(name, dependencies):
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
+
+            if kwargs['start'] > kwargs['end']:
+                raise Exception("'start' argument must occur before 'end'.")
 
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
