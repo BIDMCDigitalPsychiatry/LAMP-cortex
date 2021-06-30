@@ -1,11 +1,12 @@
-from ..feature_types import secondary_feature, log
-from ..raw.accelerometer import accelerometer
-
-import numpy as np
+""" Module for the secondary feature active duration """
 import datetime
+import numpy as np
 import pandas as pd
 
-import LAMP 
+import LAMP
+
+from ..feature_types import secondary_feature, log
+from ..raw.accelerometer import accelerometer
 
 MS_IN_A_DAY = 86400000
 @secondary_feature(
@@ -13,7 +14,7 @@ MS_IN_A_DAY = 86400000
     dependencies=[accelerometer]
 )
 def active_duration(resolution=MS_IN_A_DAY, **kwargs):
-    """
+    """ Function to return the active duration over a given time period in miliseconds.
     """
     def _expected_sleep_period(accelerometer_data_reduced):
         """
@@ -21,7 +22,8 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
 
         :param accelerometer_data (list)
 
-        :return _sleep_period_expted (dict): list bed/wake timestamps and mean accel. magnitude for expected bedtime
+        :return _sleep_period_expted (dict): list bed/wake timestamps and mean
+            accel. magnitude for expected bedtime
         """
         df = pd.DataFrame.from_dict(accelerometer_data_reduced)
 
@@ -36,7 +38,7 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
             else:
                 selection = df.loc[(t0 <= df.time) & (df.time <= t1), :]
 
-            if len(selection) == 0 or selection['count'].sum() == 0: 
+            if len(selection) == 0 or selection['count'].sum() == 0:
                 continue
 
             nonnan_ind = np.where(np.logical_not(np.isnan(selection['magnitude'])))[0]
@@ -44,7 +46,7 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
             sel_act = np.average(nonnan_sel['magnitude'], weights=nonnan_sel['count'])
             if sel_act < mean_activity:
                 mean_activity = sel_act
-                _sleep_period_expected = {'bed': t0, 'wake': t1, 'accelerometer_magnitude': sel_act} 
+                _sleep_period_expected = {'bed': t0, 'wake': t1, 'accelerometer_magnitude': sel_act}
 
         if mean_activity == float('inf'):
             _sleep_period_expected = {'bed': None, 'wake': None, 'accelerometer_magnitude': None}
@@ -53,7 +55,8 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
 
     # Data reduction
     try:
-        reduced_data = LAMP.Type.get_attachment(kwargs['id'], 'cortex.sleep_periods.reduced')['data']
+        reduced_data = LAMP.Type.get_attachment(kwargs['id'],
+                                        'cortex.sleep_periods.reduced')['data']
         for i, x in enumerate(reduced_data['data']):
             reduced_data['data'][i]['time'] = datetime.time(x['time']['hour'],
                                                             x['time']['minute'])
@@ -79,14 +82,17 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
             # Get mean accel readings of 10min bins for participant
             new_reduced_data = []
             for s, t in reduceDf.groupby(pd.Grouper(key='Time', freq='10min')):
-                res_10min = {'time': s.time(), 'magnitude': t['magnitude'].abs().mean(), 'count': len(t)}
+                res_10min = {'time': s.time(),
+                             'magnitude': t['magnitude'].abs().mean(),
+                             'count': len(t)}
                 # Update new reduced data
                 found = False
                 for accel_bin in reduced_data['data']:
                     if accel_bin['time'] == res_10min['time']:
                         accel_bin['magnitude'] = np.mean([accel_bin['magnitude']] * accel_bin['count'] +
                                                          [res_10min['magnitude']] * res_10min['count'])
-                        accel_bin['count'] = accel_bin['count'] + res_10min['count']
+                        accel_bin['count'] = (accel_bin['count']
+                                                + res_10min['count'])
                         new_reduced_data.append(accel_bin)
                         found = True
                         break
@@ -114,16 +120,17 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
 
 
     accelerometer_data = accelerometer(**kwargs)['data']
-    if len(accelerometer_data) == 0: 
+    if len(accelerometer_data) == 0:
         return {'timestamp':kwargs['start'], 'sedentary_duration':None}
 
-    # Calculate sleep periods 
+    # Calculate sleep periods
     _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
 
     if _sleep_period_expected['bed'] is None:
         return {'timestamp':kwargs['start'], 'sedentary_duration':None}
 
     accelDf = pd.DataFrame.from_dict(accelerometer_data)
+    accelDf = accelDf[accelDf['timestamp'] != accelDf['timestamp'].shift()]
     accelDf.loc[:, 'Time'] = pd.to_datetime(accelDf['timestamp'], unit='ms')
     accelDf.loc[:, 'magnitude'] = accelDf.apply(lambda row: np.linalg.norm([row['x'],
                                                                             row['y'],
@@ -137,18 +144,20 @@ def active_duration(resolution=MS_IN_A_DAY, **kwargs):
     for t, df in accelDf.groupby(pd.Grouper(key='Time', freq='10min')):
         # Ignore block if can't map to mean value
         if len(df10min.loc[df10min['time'] == t, 'magnitude'].values) == 0:
-            continue 
+            continue
 
         if datetime.time(0, 0) <= bed_time <= datetime.time(4, 0):
             if t < bed_time or t > wake_time:
-                if df['magnitude'].abs().mean() >= df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]:
+                if (df['magnitude'].abs().mean() >= df10min.loc[df10min['time']
+                        == normal_time.time(), 'magnitude'].values[0]):
                     activity_count += 1
         elif datetime.time(18, 0) <= bed_time <= datetime.time(23, 30):
             if wake_time < t < bed_time:
-                if df['magnitude'].abs().mean() >= df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]:
+                if (df['magnitude'].abs().mean() >= df10min.loc[df10min['time']
+                        == normal_time.time(), 'magnitude'].values[0]):
                     activity_count += 1
 
-    #Calculate activity duration
+    # Calculate activity duration
     _active_duration = (1000*60*10) * activity_count # MS_IN_10_MIN * number_of_10min
 
     return {'timestamp':kwargs['start'], 'active_duration':_active_duration}

@@ -6,7 +6,7 @@ import LAMP
     name="lamp.accelerometer",
     dependencies=["lamp.accelerometer"]
 )
-def accelerometer(resolution=None, limit=100000, cache=True, recursive=True, **kwargs):
+def accelerometer(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
     """
     Get all GPS data bounded by time interval and optionally subsample the data.
 
