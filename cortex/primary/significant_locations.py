@@ -14,7 +14,7 @@ from ..raw.gps import gps
     attach=False
 )
 def significant_locations(k_max=10, eps=1e-5, max_clusters=-1,
-                          min_cluster_size=0.01, method='mode', **kwargs):
+                          min_cluster_size=0.01, MAX_DIST=300, method='mode', **kwargs):
     """
     Get the coordinates of significant locations visited by the participant in
     the specified timeframe using the KMeans clustering method.
@@ -79,6 +79,58 @@ def _location_duration(df_cluster, cluster):
     """
     df_cluster = df_cluster[::-1].reset_index()
     arr_ext = np.r_[False, df_cluster['cluster'] == cluster, False]
+
+
+def distance(c1, c2):
+    '''
+    c1: (tuple) Geo coordinate
+    c2: (tuple) Geo Coordinate
+    return: distance in meters
+    '''
+    R = 6378.137
+    dLat = c2[0] * math.pi / 180 - c1[0] * math.pi / 180
+    dLon = c2[1] * math.pi / 180 - c1[1] * math.pi / 180
+    a1 = math.sin(dLat / 2) * math.sin(dLat / 2)
+    a2 = math.cos(c1[0] * math.pi / 180) * math.cos(c2[0] * math.pi / 180)
+    a3 = math.sin(dLon / 2) * math.sin(dLon / 2)
+    a = a1 + (a2 * a3)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    d = R * c
+    return d * 1000
+
+def remove_clusters(clusters, MAX_DIST):
+    """ Function to remove clusters that are less than specified distance
+        (MAX_DIST) away from at least one other cluster
+
+        Args:
+            clusters: (list of dicts) Each dict in the list is a significant location 
+            MAX_DIST: (int) Maximum distance allowed between clusters (in meters)
+    """
+    n = len(clusters)
+    clusters_removed = []
+    for i in range(n - 1):
+        big_cluster_prop = clusters[i]['proportion']
+        if big_cluster_prop > 0:
+            big_cluster_latlon = (clusters[i]['latitude'], clusters[i]['longitude'])
+            for j in range(i + 1, n):
+                small_cluster_latlon = (clusters[j]['latitude'], clusters[j]['longitude'])
+                dist = distance(big_cluster_latlon, small_cluster_latlon)
+                if dist < MAX_DIST:
+                    clusters[i]['proportion'] += clusters[j]['proportion']
+                    clusters[j]['proportion'] = 0
+                    clusters[i]['duration'] += clusters[j]['duration']
+        else:
+            pass
+    clusters = [cl for cl in clusters if cl['proportion'] > 0]
+    for i in range(len(clusters)):
+        clusters[i]['rank'] = i
+    return clusters
+
+# Helper to get location duration
+def _location_duration(df, cluster):
+    df = df[::-1].reset_index()
+    arr_ext = np.r_[False, df['cluster'] == cluster, False]
+
     idx = np.flatnonzero(arr_ext[:-1] != arr_ext[1:])
     idx_list = list(zip(idx[:-1:2], idx[1::2] - int(True)))
 
@@ -222,8 +274,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
 
-def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
-                                **kwargs):
+def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01, MAX_DIST=300, **kwargs):
     """ Function to assign points to k significant locations using mode method.
 
         Args:
@@ -273,7 +324,7 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
             k += 1
 
 
-    return [{
+    return remove_clusters([{
         'start':kwargs['start'],
         'end':kwargs['end'],
         'latitude': center[0],
@@ -290,4 +341,4 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
         'proportion': (df_clusters[df_clusters['cluster'] == idx].size /
                        df_clusters[df_clusters['cluster'] != -1].size),
         'duration': _location_duration(df_clusters, idx)
-    } for idx, center in enumerate(cluster_locs)]
+    } for idx, center in enumerate(cluster_locs)])
