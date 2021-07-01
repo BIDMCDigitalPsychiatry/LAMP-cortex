@@ -1,4 +1,4 @@
-from ..feature_types import primary_feature
+from ..feature_types import primary_feature, log
 from ..raw.screen_state import screen_state
 
 import pandas as pd
@@ -12,7 +12,9 @@ def screen_active(**kwargs):
     """
     Builds bout of screen activitty
     """
+    log.info("IN SCREEN ACTIVE")
     _screen_state = list(reversed(screen_state(**kwargs)['data']))
+    log.info(_screen_state)
 
     on_events = [1, 3]
     off_events = [0, 2]
@@ -34,7 +36,7 @@ def screen_active(**kwargs):
             continue
         elif start and _screen_state[i]['state'] in on_events:
             bout['start'] = _screen_state[i]['timestamp']
-            start = False 
+            start = False
         elif not start and _screen_state[i]['state'] in off_events:
             bout['end'] = _screen_state[i]['timestamp']
             bout['duration'] = bout['end'] - bout['start']

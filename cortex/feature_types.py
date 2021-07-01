@@ -265,7 +265,7 @@ def secondary_feature(name, dependencies):
         return _wrapper2
     return _wrapper1
 
-def delete_attach(id, features=None):
+def delete_attach(participant, features=None):
     """
     Deletes all saved primary features for a participant (requires LAMP-core 2021.4.7 or later)
     :param participant (str): LAMP id to reset for

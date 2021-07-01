@@ -20,5 +20,4 @@ def screen_state(resolution=None, limit=2147483647, cache=True, **kwargs):
                                                _from=kwargs['start'],
                                                to=kwargs['end'],
                                                _limit=limit)['data']
-
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]

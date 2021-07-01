@@ -103,7 +103,7 @@ def remove_clusters(clusters, MAX_DIST):
         (MAX_DIST) away from at least one other cluster
 
         Args:
-            clusters: (list of dicts) Each dict in the list is a significant location 
+            clusters: (list of dicts) Each dict in the list is a significant location
             MAX_DIST: (int) Maximum distance allowed between clusters (in meters)
     """
     n = len(clusters)
@@ -138,7 +138,7 @@ def _location_duration(df, cluster):
     for tup in idx_list:
         if tup[0] == tup[1]:
             continue
-        duration = df_cluster['timestamp'][tup[1]] - df_cluster['timestamp'][tup[0]]
+        duration = df['timestamp'][tup[1]] - df['timestamp'][tup[0]]
 
         hometime_list.append(duration)
 
@@ -341,4 +341,4 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01, MAX_DIST
         'proportion': (df_clusters[df_clusters['cluster'] == idx].size /
                        df_clusters[df_clusters['cluster'] != -1].size),
         'duration': _location_duration(df_clusters, idx)
-    } for idx, center in enumerate(cluster_locs)])
+    } for idx, center in enumerate(cluster_locs)], MAX_DIST)
