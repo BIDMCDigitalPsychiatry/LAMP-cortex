@@ -14,7 +14,7 @@ import LAMP
     attach=False
 )
 def significant_locations(k_max=10, eps=1e-5, max_clusters=-1,
-                          min_cluster_size=0.01, method='mode', **kwargs):
+                          min_cluster_size=0.01, MAX_DIST=300, method='mode', **kwargs):
     """
     Get the coordinates of significant locations visited by the participant in
     the specified timeframe using the KMeans clustering method.
@@ -74,7 +74,7 @@ def distance(c1, c2):
     d = R * c
     return d * 1000
 
-def remove_clusters(clusters, MAX_DIST=300):
+def remove_clusters(clusters, MAX_DIST):
     """ Function to remove clusters that are less than specified distance (MAX_DIST) away from at least one other cluster
 
         Args:
@@ -232,8 +232,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
 
-def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
-                                **kwargs):
+def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01, MAX_DIST=300, **kwargs):
     """ Function to assign points to k significant locations using mode method.
 
         Args:
