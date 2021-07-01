@@ -57,6 +57,22 @@ def euclid(g0, g1):
         return 110.25 * ((((lat - lat0) ** 2) + (((lng - lng0) * np.cos(lat0)) ** 2)) ** 0.5)
     return _euclid(g0[0], g0[1], g1[0], g1[1])
 
+def distance(c1, c2):
+    '''
+    c1: (tuple) Geo coordinate
+    c2: (tuple) Geo Coordinate
+    return: distance in meters
+    '''
+    R = 6378.137
+    dLat = c2[0] * math.pi / 180 - c1[0] * math.pi / 180
+    dLon = c2[1] * math.pi / 180 - c1[1] * math.pi / 180
+    a1 = math.sin(dLat / 2) * math.sin(dLat / 2)
+    a2 = math.cos(c1[0] * math.pi / 180) * math.cos(c2[0] * math.pi / 180)
+    a3 = math.sin(dLon / 2) * math.sin(dLon / 2)
+    a = a1 + (a2 * a3)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    d = R * c
+    return d * 1000
 
 def remove_clusters(clusters, MAX_DIST=300):
     """ Function to remove clusters that are less than specified distance (MAX_DIST) away from at least one other cluster
@@ -73,11 +89,11 @@ def remove_clusters(clusters, MAX_DIST=300):
             big_cluster_latlon = (clusters[i]['latitude'], clusters[i]['longitude'])
             for j in range(i + 1, n):
                 small_cluster_latlon = (clusters[j]['latitude'], clusters[j]['longitude'])
-                dist = get_hometime.distance(big_cluster_latlon, small_cluster_latlon)
+                dist = distance(big_cluster_latlon, small_cluster_latlon)
                 if dist < MAX_DIST:
                     clusters[i]['proportion'] += clusters[j]['proportion']
                     clusters[j]['proportion'] = 0
-                    clusters_removed.append(j)
+                    clusters[i]['duration'] += clusters[j]['duration']
         else:
             pass
     clusters = [cl for cl in clusters if cl['proportion'] > 0]
