@@ -57,6 +57,34 @@ def euclid(g0, g1):
         return 110.25 * ((((lat - lat0) ** 2) + (((lng - lng0) * np.cos(lat0)) ** 2)) ** 0.5)
     return _euclid(g0[0], g0[1], g1[0], g1[1])
 
+
+def remove_clusters(clusters, MAX_DIST=300):
+    """ Function to remove clusters that are less than specified distance (MAX_DIST) away from at least one other cluster
+
+        Args:
+            clusters: (list of dicts) Each dict in the list is a significant location 
+            MAX_DIST: (int) Maximum distance allowed between clusters (in meters)
+    """
+    n = len(clusters)
+    clusters_removed = []
+    for i in range(n - 1):
+        big_cluster_prop = clusters[i]['proportion']
+        if big_cluster_prop > 0:
+            big_cluster_latlon = (clusters[i]['latitude'], clusters[i]['longitude'])
+            for j in range(i + 1, n):
+                small_cluster_latlon = (clusters[j]['latitude'], clusters[j]['longitude'])
+                dist = get_hometime.distance(big_cluster_latlon, small_cluster_latlon)
+                if dist < MAX_DIST:
+                    clusters[i]['proportion'] += clusters[j]['proportion']
+                    clusters[j]['proportion'] = 0
+                    clusters_removed.append(j)
+        else:
+            pass
+    clusters = [cl for cl in clusters if cl['proportion'] > 0]
+    for i in range(len(clusters)):
+        clusters[i]['rank'] = i
+    return clusters
+
 # Helper to get location duration
 def _location_duration(df, cluster):
     df = df[::-1].reset_index()
@@ -238,7 +266,7 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
             k += 1
             
 
-    return [{
+    return remove_clusters([{
         'start':kwargs['start'],
         'end':kwargs['end'],
         'latitude': center[0],
@@ -253,4 +281,4 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01,
         ) * 1000) if df_clusters[df_clusters['cluster'] != idx].size else None,
         'proportion': df_clusters[df_clusters['cluster'] == idx].size / df_clusters[df_clusters['cluster'] != -1].size,
         'duration': _location_duration(df_clusters, idx)
-    } for idx, center in enumerate(cluster_locs)]
+    } for idx, center in enumerate(cluster_locs)])
