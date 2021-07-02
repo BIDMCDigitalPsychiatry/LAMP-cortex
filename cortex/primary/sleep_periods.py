@@ -25,9 +25,12 @@ def sleep_periods(**kwargs):
         :return _sleep_period_expted (dict): list bed/wake timestamps and mean accel. magnitude for expected bedtime
         """
         df = pd.DataFrame.from_dict(accelerometer_data_reduced)
-        df = df[df['timestamp'] != df['timestamp'].shift()]
+        # If we have data, we filter to remove duplicates here
+        if 'timestamp' in df.columns:
+            df = df[df['timestamp'] != df['timestamp'].shift()]
+        
 
-        # Creating possible times for expected sleep period, which will be checkede
+        # Creating possible times for expected sleep period, which will be checked
         times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30]]
 
         mean_activity = float('inf')
