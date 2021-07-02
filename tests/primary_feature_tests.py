@@ -84,7 +84,8 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
-                                                                  max_clusters=1)
+                                                                  max_clusters=1,
+                                                                  max_dist=0)
         num_clusters1 = len(ret1['data'])
         self.assertEqual(num_clusters1, 1)
         # try for 5 clusters
@@ -92,7 +93,8 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
-                                                                  max_clusters=5)
+                                                                  max_clusters=5,
+                                                                  max_dist=0)
         num_clusters5 = len(ret5['data'])
         self.assertEqual(num_clusters5, 5)
         # try for more clusters than possible
@@ -105,10 +107,11 @@ class TestPrimary(unittest.TestCase):
         top_counts = gps_data[['latitude', 'longitude']].value_counts()
         # Test for some number of clusters larger than the max possible number
         ret100 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
-                                                                  start=0,
-                                                                  end=self.TEST_END_TIME,
-                                                                  method='mode',
-                                                                  max_clusters=100000)
+                                                                     start=0,
+                                                                     end=self.TEST_END_TIME,
+                                                                     method='mode',
+                                                                     max_clusters=100000,
+                                                                     max_dist=0)
         num_clusters100 = len(ret100['data'])
         self.assertEqual(num_clusters100, len(top_counts))
 
@@ -118,7 +121,8 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
-                                                                  min_cluster_size=0.5)
+                                                                  min_cluster_size=0.5,
+                                                                  max_dist=0)
         num_clusters0 = len(ret0['data'])
         self.assertEqual(num_clusters0, 1)
 
@@ -126,7 +130,8 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
-                                                                  min_cluster_size=0.1)
+                                                                  min_cluster_size=0.1,
+                                                                  max_dist=0)
         num_clusters1 = len(ret1['data'])
         self.assertEqual(num_clusters1, 2)
 
@@ -134,7 +139,8 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
-                                                                  min_cluster_size=0.01)
+                                                                  min_cluster_size=0.01,
+                                                                  max_dist=0)
         num_clusters2 = len(ret2['data'])
         self.assertEqual(num_clusters2, 4)
 
@@ -147,7 +153,8 @@ class TestPrimary(unittest.TestCase):
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
                                                                   max_clusters=1,
-                                                                  min_cluster_size=0.001)
+                                                                  min_cluster_size=0.001,
+                                                                  max_dist=0)
         num_clusters = len(ret['data'])
         self.assertEqual(num_clusters, 1)
 
@@ -157,7 +164,8 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode',
-                                                                  min_cluster_size=0.01)
+                                                                  min_cluster_size=0.01,
+                                                                  max_dist=0)
         ret = ret['data']
         self.assertEqual(ret[0]['latitude'], 42.320)
         self.assertEqual(ret[0]['longitude'], -71.051)
@@ -178,6 +186,23 @@ class TestPrimary(unittest.TestCase):
         ret = ret['data']
         num_clusters = len(ret)
         self.assertEqual(num_clusters, 6)
+        
+    def test_siglocs_top_clusters_remove_clusters(self):
+        """ Make sure the top clusters are the expected ones
+            if max dist is set
+        """
+        ret = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
+                                                                  start=0,
+                                                                  end=self.TEST_END_TIME,
+                                                                  method='mode',
+                                                                  min_cluster_size=0.01,
+                                                                  max_dist=200)
+        ret = ret['data']
+        self.assertEqual(ret[0]['latitude'], 42.320)
+        self.assertEqual(ret[0]['longitude'], -71.051)
+        self.assertEqual(ret[1]['latitude'], 42.340)
+        self.assertEqual(ret[1]['longitude'], -71.105)
+        self.assertEqual(len(ret),2)
 
 
 if __name__ == '__main__':

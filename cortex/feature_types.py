@@ -168,7 +168,7 @@ def primary_feature(name, dependencies, attach):
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
             log.info(f"Processing primary feature \"{name}\"...")
-
+            log.info(kwargs['start']) # delete this
             # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
             #Get previously calculated primary feature results from attachments, if you do attach.
