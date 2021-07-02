@@ -1,7 +1,6 @@
+""" Module for computing screen active bouts from screen state """
 from ..feature_types import primary_feature, log
 from ..raw.screen_state import screen_state
-
-import pandas as pd
 
 @primary_feature(
     name="cortex.screen_active",
@@ -20,7 +19,7 @@ def screen_active(**kwargs):
 
     on_events = [0, 2]# [1, 3]
     off_events = [1, 3]# [0, 2]
-    #Ensure state is present; convert value if not
+    # Ensure state is present; convert value if not
     for _event in _screen_state:
         if 'state' not in _event:
             if 'data' not in _event:
@@ -28,17 +27,18 @@ def screen_active(**kwargs):
             else:
                 _event['state'] = _event['data']['value']
 
-    #Initialize
+    # Initialize
     _screen_active = []
-    start = True #if looking for start 
+    start = True # if looking for start
     bout = {}
     for i in range(len(_screen_state) - 1):
         log.info(i)
         log.info(_screen_state[i])
         if i == len(_screen_state) - 1:
-            info.log(_screen_state[i])
+            log.ifo(_screen_state[i])
         elapsed = _screen_state[i+1]['timestamp'] - _screen_state[i]['timestamp']
-        if elapsed < 1000 and _screen_state[i+1]['state'] in on_events and _screen_state[i]['state'] in on_events:
+        if (elapsed < 1000 and _screen_state[i+1]['state'] in on_events
+            and _screen_state[i]['state'] in on_events):
             continue
         elif start and _screen_state[i]['state'] in on_events:
             bout['start'] = _screen_state[i]['timestamp']
@@ -54,11 +54,11 @@ def screen_active(**kwargs):
 
             bout = {}
             start = True
-    
+
     if not start and _screen_state[-1]['state'] in off_events:
         bout['end'] = _screen_state[-1]['timestamp']
         bout['duration'] = bout['end'] - bout['start']
         log.info("adding a bout 2...")
         _screen_active.append(bout)
-            
+
     return _screen_active

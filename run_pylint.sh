@@ -25,6 +25,8 @@ echo "${green} trips.py ${reset}"
 pylint cortex/primary/trips.py
 echo "${green} survey_scores.py ${reset}"
 pylint cortex/primary/survey_scores.py
+echo "${green} screen_active.py ${reset}"
+pylint cortex/primary/screen_active.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
