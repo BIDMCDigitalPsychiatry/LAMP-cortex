@@ -1,5 +1,8 @@
 """ Module for computing screen active bouts from screen state """
-from ..feature_types import primary_feature, log
+import datetime
+import LAMP
+
+from ..feature_types import primary_feature
 from ..raw.screen_state import screen_state
 
 @primary_feature(
@@ -8,17 +11,23 @@ from ..raw.screen_state import screen_state
     attach=True
 )
 def screen_active(**kwargs):
-    """
-    Builds bout of screen activitty
-    """
-    log.info("IN SCREEN ACTIVE")
-    log.info(kwargs['start'])
-    log.info(kwargs['end'])
-    _screen_state = list(reversed(screen_state(**kwargs)['data']))
-    log.info(_screen_state)
+    """ Builds bout of screen activity.
 
-    on_events = [0, 2]# [1, 3]
-    off_events = [1, 3]# [0, 2]
+        Checks for both state = 0 --> ON
+                    and state = 0 --> OFF
+        and compares to activity data to determine which is correct.
+    """
+    # if attach then run it for the entrire thing and return the entire thing
+    # otherwise run it for the entire thing but keep the original timestamps
+    # get new timestamps
+    start_time = 0
+    end_time = int(datetime.datetime.now().timestamp()) * 1000
+
+    # get all of the data for the bouts
+    _screen_state = list(reversed(screen_state(id=kwargs['id'],
+                                               start=start_time,
+                                               end=end_time)['data']))
+
     # Ensure state is present; convert value if not
     for _event in _screen_state:
         if 'state' not in _event:
@@ -28,28 +37,48 @@ def screen_active(**kwargs):
                 _event['state'] = _event['data']['value']
 
     # Initialize
+    _screen_active = _get_screen_state_data(_screen_state, flipped=0)
+    _screen_active_flipped = _get_screen_state_data(_screen_state, flipped=1)
+
+    # figure out which one is correct
+    # find activity, determine whether screen = 0 or 1 at this time
+    activities = LAMP.ActivityEvent.all_by_participant(kwargs['id'])['data']
+    _ret_screen_active = []
+    if len(activities) > 0:
+        screen_on_time = activities[0]['timestamp']
+        val = [loc for loc in _screen_active if loc['start'] <= screen_on_time <= loc['end']]
+        if len(val) == 1:
+            _ret_screen_active = _screen_active
+        else:
+            _ret_screen_active = _screen_active_flipped
+    else:
+        # assume normal is correct
+        _ret_screen_active = _screen_active
+
+    return _ret_screen_active
+
+def _get_screen_state_data(_screen_state, flipped=0):
+    on_events = [1, 3]
+    off_events = [0, 2]
+    if flipped:
+        on_events = [0, 2]
+        off_events = [1, 3]
+
     _screen_active = []
     start = True # if looking for start
     bout = {}
     for i in range(len(_screen_state) - 1):
-        log.info(i)
-        log.info(_screen_state[i])
-        if i == len(_screen_state) - 1:
-            log.ifo(_screen_state[i])
         elapsed = _screen_state[i+1]['timestamp'] - _screen_state[i]['timestamp']
+        # For normal
         if (elapsed < 1000 and _screen_state[i+1]['state'] in on_events
             and _screen_state[i]['state'] in on_events):
             continue
-        elif start and _screen_state[i]['state'] in on_events:
+        if start and _screen_state[i]['state'] in on_events:
             bout['start'] = _screen_state[i]['timestamp']
             start = False
-            log.info("setting start")
-            log.info(_screen_state[i])
         elif not start and _screen_state[i]['state'] in off_events:
             bout['end'] = _screen_state[i]['timestamp']
             bout['duration'] = bout['end'] - bout['start']
-            log.info("adding a bout...")
-            log.info(bout)
             _screen_active.append(bout)
 
             bout = {}
@@ -58,7 +87,6 @@ def screen_active(**kwargs):
     if not start and _screen_state[-1]['state'] in off_events:
         bout['end'] = _screen_state[-1]['timestamp']
         bout['duration'] = bout['end'] - bout['start']
-        log.info("adding a bout 2...")
         _screen_active.append(bout)
 
     return _screen_active

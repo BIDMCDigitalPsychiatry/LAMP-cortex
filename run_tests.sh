@@ -11,6 +11,7 @@ find tests -name '*tests.py' -print0 |
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/primary/significant_locations.py
             coverage report -m cortex/primary/trips.py
+            coverage report -m cortex/primary/screen_active.py
         else
             echo "TODO: add other tests here"
             # coverage report

@@ -11,6 +11,7 @@ from inspect import getargspec
 import compress_pickle as pickle
 import tarfile
 import re
+import copy
 #from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
@@ -175,9 +176,11 @@ def primary_feature(name, dependencies, attach):
             if attach:
                 try: 
                    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-                   # remove last in case interval still open 
+                   # remove last in case interval still open
+                   print(max(attachments, key=lambda x: x['end']))
                    attachments.remove(max(attachments, key=lambda x: x['end']))
                    _from = max(a['end'] for a in attachments)
+                   print(_from)
                    log.info(f"Using saved \"{name}\"...")
                 except LAMP.ApiException: 
                    attachments = []
@@ -190,21 +193,94 @@ def primary_feature(name, dependencies, attach):
 
                 start=kwargs.pop('start')
                 if _from > kwargs['end']:
+                    print("returning empty list")
                     _result=[]
                 else:
+                    print("calling function")
                     _result = func(*args, **{**kwargs, 'start':_from})
 
-                # Combine old attachments with new result
-                _body_new=sorted((_result+attachments),key=lambda x: x['start'])
-                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
-                [b for b in _body_new if b['start']>=start] } 
+                # Combine old attachments with new results
+                _body_new=sorted((_result + attachments),key=lambda x: x['start'])
+                _body_new_copy = copy.deepcopy(_body_new)
+                if len(_body_new) > 0:
+                    # _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
+                    # [b for b in _body_new if b['start']>=start] }
+                    _event = None
+                    log.info(_body_new[0])
+                    ###---------- Find data -----------####
+                    start_idx = 0
+                    end_idx = len(_body_new) - 1
+                    log.info("finding start")
+                    while start_idx < len(_body_new) - 1 and _body_new[start_idx]['start'] <= start:
+                        start_idx += 1
+                    start_idx -= 1
+                    if start_idx == -1:
+                        start_idx += 1
+                    log.info("start is")
+                    log.info(start_idx)
+                    log.info(_body_new[start_idx])
+                    print("start is")
+                    print(start_idx)
+                    print(_body_new[start_idx])
+                    # look for end
+                    while end_idx > 0 and _body_new[end_idx]['end'] >= kwargs['end']:
+                        end_idx -= 1
+                    end_idx += 1
+                    if end_idx == len(_body_new):
+                        end_idx -= 1
+                    log.info("end is")
+                    log.info(end_idx)
+                    log.info(_body_new[end_idx])
+                    log.info("all data btw start and end")
+                    log.info(_body_new[start_idx:end_idx + 1])
+                    print("end is")
+                    print(end_idx)
+                    print(_body_new[end_idx])
+                    print("all data btw start and end")
+                    print(start_idx)
+                    print(end_idx + 3)
+                    print(_body_new[start_idx:(end_idx + 3)])
+                    # check if you need to advance / go back
+                    if _body_new[start_idx]['end'] < start:
+                        if start_idx + 1 < len(_body_new):
+                            start_idx += 1
+                        else:
+                           _event = {'timestamp': start, 'duration': kwargs['end'] - start, 'data': []}
+                    if _body_new[end_idx]['start'] > kwargs['end']:
+                        if end_idx - 1 > -1:
+                            start_idx -= 1
+                        else:
+                            _event = {'timestamp': start, 'duration': kwargs['end'] - start, 'data': []}
+                    # check if hanging off the end
+                    if _body_new[start_idx]['start'] < start:
+                        log.info("trying to shift start")
+                        if _body_new[start_idx]['end'] > start:
+                            _body_new[start_idx]['start'] = start
+                            _body_new[start_idx]['duration'] = _body_new[start_idx]['end'] - start
+                        elif start_idx + 1 < len(_body_new) and start_idx + 1 <= end_idx:
+                            start_idx += 1
+                    if _body_new[end_idx]['end'] > kwargs['end']:
+                        log.info("trying to shift end")
+                        if _body_new[end_idx]['start'] < kwargs['end']:
+                            _body_new[end_idx]['end'] = kwargs['end']
+                            _body_new[end_idx]['duration'] = kwargs['end'] - _body_new[end_idx]['start']
+                        elif end_idx - 1 > -1 and end_idx - 1 >= start_idx:
+                            end_idx -= 1
+                    if _event is None:
+                        _event = {'timestamp': start, 'duration': kwargs['end'] - start, 'data':_body_new[start_idx:end_idx + 1]}
+                    log.info("end and start after shifting")
+                    log.info(end_idx)
+                    log.info(start_idx)
+                    ###----------  -----------####
+                else:
+                    _event = {'timestamp': start, 'duration': kwargs['end'] - start, 'data': []}
 
                 # Upload new features as attachment.
-                log.info(f"Saving primary feature \"{name}\"...") 
-                LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
+                log.info(f"Saving primary feature \"{name}\"...")
+                LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new_copy)
             else:
                 _result = func(*args, **kwargs)
-                _event = {'timestamp':kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
+                _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
 
             return _event
 

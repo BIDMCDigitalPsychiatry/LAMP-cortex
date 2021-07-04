@@ -13,7 +13,7 @@ def screen_state(resolution=None, limit=2147483647, cache=True, **kwargs):
     :param resolution (int): The subsampling resolution (TODO).
     :param limit (int): The maximum number of GPS events to query for (defaults to INT_MAX).
     :return timestamp (int): The UTC timestamp for the GPS event.
-    :return TODO 
+    :return TODO
     """
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.screen_state",
