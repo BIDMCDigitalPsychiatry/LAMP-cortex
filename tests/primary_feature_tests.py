@@ -223,7 +223,7 @@ class TestPrimary(unittest.TestCase):
     def test_screenactive_correct_duration(self):
         """ Test if the correct active duration is returned """
         print("RUNNING CORRECT DUR TEST")
-        # cortex.feature_types.delete_attach(self.TEST_PARTICIPANT, features=["cortex.screen_active"])
+        cortex.feature_types.delete_attach(self.TEST_PARTICIPANT, features=["cortex.screen_active"])
         ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT,
                                                    start=self.TEST_SCREEN_ACTIVE_START_0,
                                                    end=self.TEST_SCREEN_ACTIVE_END_0)
