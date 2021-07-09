@@ -170,17 +170,18 @@ def primary_feature(name, dependencies, attach):
 
             log.info(f"Processing primary feature \"{name}\"...")
             log.info(kwargs['start']) # delete this
-            # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
+            # TODO: Require primary feature dependencies to be raw features!
+            # -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
-            #Get previously calculated primary feature results from attachments, if you do attach.
+            # Get previously calculated primary feature results from attachments, if you do attach.
             if attach:
                 try: 
                    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
                    # remove last in case interval still open
-                   print(max(attachments, key=lambda x: x['end']))
+                   # print(max(attachments, key=lambda x: x['end']))
                    attachments.remove(max(attachments, key=lambda x: x['end']))
                    _from = max(a['end'] for a in attachments)
-                   print(_from)
+                   # print(_from)
                    log.info(f"Using saved \"{name}\"...")
                 except LAMP.ApiException: 
                    attachments = []
@@ -201,7 +202,13 @@ def primary_feature(name, dependencies, attach):
 
                 # Combine old attachments with new results
                 _body_new=sorted((_result + attachments),key=lambda x: x['start'])
-                _body_new_copy = copy.deepcopy(_body_new)
+                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
+                            [b for b in _body_new if
+                                           ((b['start'] >= start and b['end'] <= kwargs['end']) 
+                                         or (b['start'] < start and start < b['end'] <= kwargs['end'])
+                                         or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))] }
+                print(_event)
+                """_body_new_copy = copy.deepcopy(_body_new)
                 if len(_body_new) > 0:
                     # _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
                     # [b for b in _body_new if b['start']>=start] }
@@ -274,10 +281,10 @@ def primary_feature(name, dependencies, attach):
                     ###----------  -----------####
                 else:
                     _event = {'timestamp': start, 'duration': kwargs['end'] - start, 'data': []}
-
+                """
                 # Upload new features as attachment.
                 log.info(f"Saving primary feature \"{name}\"...")
-                LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new_copy)
+                LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
             else:
                 _result = func(*args, **kwargs)
                 _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
@@ -300,10 +307,10 @@ def secondary_feature(name, dependencies):
 
             # Verify all required parameters for the primary feature function.
             params = [
-                
+
                 # These are universally required parameters for all feature functions.
                 'id', 'start', 'end', 'resolution',
-                
+
                 # These are the feature function's required parameters after removing parameters
                 # with provided default values, if any are provided.
                 *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
@@ -320,7 +327,7 @@ def secondary_feature(name, dependencies):
                 raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-            
+
             log.info(f"Processing secondary feature \"{name}\"...")
 
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
@@ -329,7 +336,7 @@ def secondary_feature(name, dependencies):
                 window_start, window_end = window[0], window[1]
                 _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
                 data.append(_result)
-                
+
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
             data = sorted(data,key=lambda x: x['timestamp']) if data else []
             _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
@@ -354,7 +361,7 @@ def delete_attach(participant, features=None):
             if feature in features:
                 LAMP.Type.set_attachment(participant, 'me', attachment_key=feature, body=None)
                 log.info(f"Reset \"{feature}\"...")
-                
+
 def delete_cache(id, features=None, cache_dir=None):
     """
     Deletes all cached raw features for a participant (requires LAMP-core 2021.4.7 or later)
@@ -363,7 +370,7 @@ def delete_cache(id, features=None, cache_dir=None):
     :param cache_dir (str): path to cache dir, where data will be deleleted
     """
     cache_dir = cache_finder(cache_dir)
-    
+
     #Delete all 'features' in cache_dir for participant
     for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
         path = cache_dir + '/' + file
@@ -384,7 +391,7 @@ def export_cache(cache_dir=None, export_dir=None):
         export_dir = os.path.expanduser(cache_dir)
     else:
         export_dir = os.path.expanduser()
-        
+
     tar.add(cache_dir, 'cache_' + str(int(time.time())*1000) + '.lamp')
     tar.close()
     
@@ -401,7 +408,7 @@ def import_cache(cache_dir=None, import_dir=None):
             cache = tarfile.open(import_dir, 'r:gz') #check if override?
         except tarfile.ReadError:
             raise "Cache file was found but could not be read. Please check that it is of proper type *.tz"
-            
+
     else:
         cache_dir = cache_finder(cache_dir)
         #find any cache in the folder
@@ -412,9 +419,9 @@ def import_cache(cache_dir=None, import_dir=None):
                     return cache
                 except:
                     log.info("Found a file with extension '.cortex' in cache_dir, but unable to read.")
-                    
+
         raise Exception("No cache found in cache_dir. Please provide a cache to import via 'import_dir' or provide a 'cache_dir' which contains a importable cache.")
-                    
+
 
 def cache_finder(cache_dir):
     """
