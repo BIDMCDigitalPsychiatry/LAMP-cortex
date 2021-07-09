@@ -44,7 +44,7 @@ def significant_locations(k_max=10, eps=1e-5, max_clusters=-1,
     """
     if method == 'k_means':
         return _significant_locations_kmeans(k_max, eps, **kwargs)
-    return _significant_locations_mode(max_clusters, min_cluster_size, **kwargs)
+    return _significant_locations_mode(max_clusters, min_cluster_size, MAX_DIST, **kwargs)
 
 # Calculates straight-line (not great-circle) distance between two GPS points
 # on Earth in kilometers; equivalent to roughly ~55% - 75% of the Haversian
@@ -232,7 +232,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
 
-def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01, MAX_DIST=300, **kwargs):
+def _significant_locations_mode(max_clusters, min_cluster_size, MAX_DIST, **kwargs):
     """ Function to assign points to k significant locations using mode method.
 
         Args:
@@ -296,4 +296,4 @@ def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01, MAX_DIST
         ) * 1000) if df_clusters[df_clusters['cluster'] != idx].size else None,
         'proportion': df_clusters[df_clusters['cluster'] == idx].size / df_clusters[df_clusters['cluster'] != -1].size,
         'duration': _location_duration(df_clusters, idx)
-    } for idx, center in enumerate(cluster_locs)])
+    } for idx, center in enumerate(cluster_locs)], MAX_DIST)
