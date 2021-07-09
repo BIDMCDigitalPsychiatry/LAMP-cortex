@@ -28,7 +28,7 @@ class TestPrimary(unittest.TestCase):
 
 
     # 0. Trips
-    """def test_primary_id_none(self):
+    def test_primary_id_none(self):
         # Test id is none
         param = "id"
         with self.assertRaisesRegex(Exception, f"parameter `{param}` is required but missing"):
@@ -219,25 +219,23 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME)
         self.assertEqual(ret1['data'], [])
-    """
+    
     def test_screenactive_correct_duration(self):
-        """ Test if the correct active duration is returned """
-        print("RUNNING CORRECT DUR TEST")
+        # Test if the correct active duration is returned
         cortex.feature_types.delete_attach(self.TEST_PARTICIPANT, features=["cortex.screen_active"])
         ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT,
                                                    start=self.TEST_SCREEN_ACTIVE_START_0,
                                                    end=self.TEST_SCREEN_ACTIVE_END_0)
         correct_dur = 600000
-        print(ret0)
         self.assertEqual(ret0['data'][0]['duration'], correct_dur)
 
     def test_screenactive_correct_number(self):
-        """ Test if the participant has no data """
+        # Test if the participant has no data
         ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT,
                                                    start=self.TEST_SCREEN_ACTIVE_START_1,
                                                    end=self.TEST_SCREEN_ACTIVE_END_1)
         num_bouts = len(ret0['data'])
-        self.assertEqual(num_bouts, 3)
+        self.assertEqual(num_bouts, 2)
         
 if __name__ == '__main__':
     unittest.main()
