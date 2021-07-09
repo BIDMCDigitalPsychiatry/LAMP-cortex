@@ -270,8 +270,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
         'duration': _location_duration(newdf, idx)
     } for idx, center in enumerate(kmeans.cluster_centers_)]
 
-
-def _significant_locations_mode(max_clusters=-1, min_cluster_size=0.01, max_dist=300, **kwargs):
+def _significant_locations_mode(max_clusters, min_cluster_size, max_dist, **kwargs):
     """ Function to assign points to k significant locations using mode method.
 
         Args:
