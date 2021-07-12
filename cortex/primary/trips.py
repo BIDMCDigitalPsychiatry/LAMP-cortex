@@ -75,7 +75,7 @@ def trips(**kwargs):
         gps_data['idx'] = gps_data.index
         new = gps_data[gps_data['stationary'] != gps_data['stationary_1']]
         new['idx_shift'] = new['idx'].shift(-1, fill_value=0)
-        # new[new['stationary'] is False]
+        new = new[new['stationary'] is False]
         new = new[new['idx_shift'] != 0]
         new['distance'] = new.apply(lambda row:
                                 total_distance(gps_data, 'dx',

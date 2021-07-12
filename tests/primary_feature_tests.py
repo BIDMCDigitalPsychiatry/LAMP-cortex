@@ -219,7 +219,7 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME)
         self.assertEqual(ret1['data'], [])
-    
+
     def test_screenactive_correct_duration(self):
         # Test if the correct active duration is returned
         cortex.feature_types.delete_attach(self.TEST_PARTICIPANT, features=["cortex.screen_active"])
@@ -236,6 +236,6 @@ class TestPrimary(unittest.TestCase):
                                                    end=self.TEST_SCREEN_ACTIVE_END_1)
         num_bouts = len(ret0['data'])
         self.assertEqual(num_bouts, 2)
-        
+
 if __name__ == '__main__':
     unittest.main()
