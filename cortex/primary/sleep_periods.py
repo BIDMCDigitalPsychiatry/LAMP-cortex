@@ -30,7 +30,7 @@ def sleep_periods(**kwargs):
         # If we have data, we filter to remove duplicates here
         if 'timestamp' in df.columns:
             df = df[df['timestamp'] != df['timestamp'].shift()]
-        
+
 
         # Creating possible times for expected sleep period, which will be checked
         times = [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(18, 24)  for m in [0, 30] ] + [(datetime.time(hour=h, minute=m), (datetime.datetime.combine(datetime.date.today(), datetime.time(hour=h, minute=m)) + datetime.timedelta(hours=8, minutes=0)).time()) for h in range(0, 4) for m in [0, 30]]
@@ -149,10 +149,10 @@ def sleep_periods(**kwargs):
     bed_time, wake_time = _sleep_period_expected['bed'], _sleep_period_expected['wake']
 
     # Calculate sleep
-    sleep_start, sleep_start_flex = bed_time, (datetime.datetime.combine(datetime.date.today(), bed_time) -
-                                            datetime.timedelta(hours=2)).time()
-    sleep_end, sleep_end_flex = wake_time, (datetime.datetime.combine(datetime.date.today(), wake_time) +
-                                         datetime.timedelta(hours=2)).time()
+    sleep_start, sleep_start_flex = bed_time, (datetime.datetime.combine(datetime.date.today(),
+                                                bed_time) - datetime.timedelta(hours=2)).time()
+    sleep_end, sleep_end_flex = wake_time, (datetime.datetime.combine(datetime.date.today(),
+                                            wake_time) + datetime.timedelta(hours=2)).time()
 
     # We need to shift times so that the day begins a midnight
     # (and thus is on the same day) sleep start flex begins on
@@ -175,24 +175,30 @@ def sleep_periods(**kwargs):
 
     _sleep_periods = []
     for day, df in accel_df.groupby('Shifted Day'):
-        # Keep track of how many 10min blocks are 1. inactive during "active" periods; or 2. active during "inactive periods"
+        # Keep track of how many 10min blocks are
+        # 1. inactive during "active" periods; or
+        # 2. active during "inactive periods"
         night_activity_count, night_inactivity_count = 0, 0
         day_sleep_period_start = None
         for t, tDf in df.groupby(pd.Grouper(key='Shifted Time', freq='10min')):
             # Have normal time for querying the 10 min for that block (df10min)
-            normal_time = t + (datetime.datetime.combine(datetime.date.min, sleep_end_flex) - datetime.datetime.min)
+            normal_time = t + (datetime.datetime.combine(datetime.date.min, sleep_end_flex)
+                               - datetime.datetime.min)
             # Ignore block if can't map to mean value
             if len(df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values) == 0:
                 continue
 
-            if (sleep_start_flex_shifted <= t.time() < sleep_start_shifted) or (sleep_end_shifted <= t.time()):
-                if tDf['magnitude'].abs().mean() < df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]:
+            if ((sleep_start_flex_shifted <= t.time() < sleep_start_shifted)
+                or (sleep_end_shifted <= t.time())):
+                if (tDf['magnitude'].abs().mean() < df10min.loc[df10min['time']
+                                    == normal_time.time(), 'magnitude'].values[0]):
                     night_inactivity_count += 1
                     if day_sleep_period_start is None:
                         day_sleep_period_start = normal_time.time()
 
             elif sleep_start_shifted <= t.time() < sleep_end_shifted:
-                if tDf['magnitude'].abs().mean() > df10min.loc[df10min['time'] == normal_time.time(), 'magnitude'].values[0]:
+                if (tDf['magnitude'].abs().mean() > df10min.loc[df10min['time']
+                                    == normal_time.time(), 'magnitude'].values[0]):
                     night_activity_count += 1
 
         # Calculate day's sleep duration using these activity account
@@ -207,12 +213,14 @@ def sleep_periods(**kwargs):
             day_sleep_period_start = _sleep_period_expected['bed']
         if day_sleep_period_start < datetime.time(hour=8):
             sleep_period_timestamp = datetime.datetime.combine(day + datetime.timedelta(days=1),
-                                                               day_sleep_period_start).timestamp() * 1000
+                                                    day_sleep_period_start).timestamp() * 1000
         else:
-            sleep_period_timestamp = datetime.datetime.combine(day, day_sleep_period_start).timestamp() * 1000
+            sleep_period_timestamp = datetime.datetime.combine(day,
+                                                day_sleep_period_start).timestamp() * 1000
 
         _sleep_period = {'start': int(sleep_period_timestamp),
-                         'end': int(sleep_period_timestamp + (daily_sleep * 3600000))} #MS_IN_AN_HOUR
+                         'end': int(sleep_period_timestamp
+                                    + (daily_sleep * 3600000))} #MS_IN_AN_HOUR
         _sleep_periods.append(_sleep_period)
 
     return _sleep_periods

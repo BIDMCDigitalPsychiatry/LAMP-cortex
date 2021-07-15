@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 class TestPrimary(unittest.TestCase):
     # pylint: disable=invalid-sequence-index
     """ Class for testing primary features """
+    MS_IN_DAY = 60 * 60 * 24 * 1000
     TEST_PARTICIPANT = "U26468383"
     EMPTY_PARTICIPANT = "U5704591513"
     TEST_END_TIME = 1585363115912
@@ -20,6 +21,8 @@ class TestPrimary(unittest.TestCase):
     TEST_SCREEN_ACTIVE_END_0 = 1585356533814
     TEST_SCREEN_ACTIVE_START_1 = 1585346933781
     TEST_SCREEN_ACTIVE_END_1 = 1585358335411
+    TEST_SCREEN_ACTIVE_START_2 = 1585346933781
+    TEST_SCREEN_ACTIVE_END_2 = TEST_SCREEN_ACTIVE_START_2 + 3 * MS_IN_DAY
 
     def setUp(self):
         """ Setup the tests """
@@ -230,12 +233,17 @@ class TestPrimary(unittest.TestCase):
         self.assertEqual(ret0['data'][0]['duration'], correct_dur)
 
     def test_screenactive_correct_number(self):
-        # Test if the participant has no data
+        # Test if the number of bouts is correct
         ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT,
                                                    start=self.TEST_SCREEN_ACTIVE_START_1,
                                                    end=self.TEST_SCREEN_ACTIVE_END_1)
         num_bouts = len(ret0['data'])
         self.assertEqual(num_bouts, 2)
+
+    def test_screenactive_multiple_days(self):
+        # Test the duration and make sure it works with attachments
+        # TODO
+        pass
 
 if __name__ == '__main__':
     unittest.main()

@@ -201,7 +201,7 @@ def primary_feature(name, dependencies, attach):
                 unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
                 # _body_new=sorted(set(_result + attachments),key=lambda x: x['start'])
                 _body_new=sorted((unique_dict),key=lambda x: x['start'])
-                
+
                 _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
                             [b for b in _body_new if
                                            ((b['start'] >= start and b['end'] <= kwargs['end']) 

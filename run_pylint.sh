@@ -33,7 +33,7 @@ pylint cortex/primary/sleep_periods.py
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
 # TODO: add these
-# echo "${green} significant_locations.py ${reset}"
-# pylint cortex/primary/significant_locations.py
+echo "${green} entropy.py ${reset}"
+pylint cortex/secondary/entropy.py
 
  echo "${reset}"
