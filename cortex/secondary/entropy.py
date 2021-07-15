@@ -1,6 +1,6 @@
+import math
 from ..feature_types import secondary_feature, log
 from ..primary.significant_locations import significant_locations
-import math 
 
 MS_IN_A_DAY = 86400000
 @secondary_feature(
@@ -21,6 +21,7 @@ def entropy(resolution=MS_IN_A_DAY, **kwargs):
         _entropy = None
     # log.info(f'Computing entropy...')
     _entropy = -sum([loc['proportion'] * math.log(loc['proportion']) for loc in _significant_locations['data'] if 0 < loc['proportion'] <= 1])
-    if _entropy == 0:  # no sig locs
+    if _entropy == 0: # no sig locs
+
         _entropy = None
     return {'timestamp': kwargs['start'], 'entropy': _entropy}

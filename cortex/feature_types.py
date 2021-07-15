@@ -7,10 +7,11 @@ import logging
 import argparse
 import pandas as pd
 from pprint import pprint
-from inspect import getargspec
+from inspect import getargspec, getfullargspec
 import compress_pickle as pickle
 import tarfile
 import re
+import copy
 #from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
@@ -39,11 +40,14 @@ def raw_feature(name, dependencies):
 
                 # These are the feature function's required parameters after removing parameters
                 # with provided default values, if any are provided.
-                *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
+                *getfullargspec(func)[0][:-len(getfullargspec(func)[3] or ()) or None]
             ]
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
+
+            if kwargs['start'] > kwargs['end']:
+                raise Exception("'start' argument must occur before 'end'.")
 
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
@@ -146,30 +150,34 @@ def primary_feature(name, dependencies, attach):
 
                 # These are universally required parameters for all feature functions.
                 'id', 'start', 'end',
-                
+
                 # These are the feature function's required parameters after removing parameters
                 # with provided default values, if any are provided.
-                *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
+                *getfullargspec(func)[0][:-len(getfullargspec(func)[3] or ()) or None]
             ]
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
-            
+
+            if kwargs['start'] > kwargs['end']:
+                raise Exception("'start' argument must occur before 'end'.")
+
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
                 raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-            
+
             log.info(f"Processing primary feature \"{name}\"...")
+            log.info(kwargs['start']) # delete this
+            # TODO: Require primary feature dependencies to be raw features!
+            # -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
-            # TODO: Require primary feature dependencies to be raw features! -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
-
-            #Get previously calculated primary feature results from attachments, if you do attach.
+            # Get previously calculated primary feature results from attachments, if you do attach.
             if attach:
                 try: 
                    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-                   # remove last in case interval still open 
+                   # remove last in case interval still open
                    attachments.remove(max(attachments, key=lambda x: x['end']))
                    _from = max(a['end'] for a in attachments)
                    log.info(f"Using saved \"{name}\"...")
@@ -179,7 +187,7 @@ def primary_feature(name, dependencies, attach):
                    log.info(f"No saved \"{name}\" found...")
                 except Exception:
                     attachments = []
-                    _from = 0 
+                    _from = 0
                     log.info(f"Saved \"{name}\" could not be parsed, discarding...")
 
                 start=kwargs.pop('start')
@@ -188,17 +196,32 @@ def primary_feature(name, dependencies, attach):
                 else:
                     _result = func(*args, **{**kwargs, 'start':_from})
 
-                # Combine old attachments with new result
-                _body_new=sorted((_result+attachments),key=lambda x: x['start'])
+                # Combine old attachments with new results
+                unique_dict = _result + attachments
+                unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
+                # _body_new=sorted(set(_result + attachments),key=lambda x: x['start'])
+                _body_new=sorted((unique_dict),key=lambda x: x['start'])
+
                 _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
-                [b for b in _body_new if b['start']>=start] } 
+                            [b for b in _body_new if
+                                           ((b['start'] >= start and b['end'] <= kwargs['end']) 
+                                         or (b['start'] < start and start < b['end'] <= kwargs['end'])
+                                         or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))] }
+                # make sure start and end match kwargs
+                if len(_event['data']) > 0:
+                    if _event['data'][0]['start'] < start:
+                        _event['data'][0]['start'] = start
+                        _event['data'][0]['duration'] = _event['data'][0]['end'] - _event['data'][0]['start']
+                    if _event['data'][len(_event['data']) - 1]['end'] > kwargs['end']:
+                        _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
+                        _event['data'][len(_event['data']) - 1]['duration'] = _event['data'][len(_event['data']) - 1]['end'] - _event['data'][len(_event['data']) - 1]['start']
 
                 # Upload new features as attachment.
-                log.info(f"Saving primary feature \"{name}\"...") 
+                log.info(f"Saving primary feature \"{name}\"...")
                 LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
             else:
                 _result = func(*args, **kwargs)
-                _event = {'timestamp':kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
+                _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
 
             return _event
 
@@ -218,24 +241,27 @@ def secondary_feature(name, dependencies):
 
             # Verify all required parameters for the primary feature function.
             params = [
-                
+
                 # These are universally required parameters for all feature functions.
                 'id', 'start', 'end', 'resolution',
-                
+
                 # These are the feature function's required parameters after removing parameters
                 # with provided default values, if any are provided.
-                *getargspec(func)[0][:-len(getargspec(func)[3] or ()) or None]
+                *getfullargspec(func)[0][:-len(getfullargspec(func)[3] or ()) or None]
             ]
             for param in params:
                 if kwargs.get(param, None) is None:
                     raise Exception(f"parameter `{param}` is required but missing")
+
+            if kwargs['start'] > kwargs['end']:
+                raise Exception("'start' argument must occur before 'end'.")
 
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
                 raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-            
+
             log.info(f"Processing secondary feature \"{name}\"...")
 
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
@@ -244,7 +270,7 @@ def secondary_feature(name, dependencies):
                 window_start, window_end = window[0], window[1]
                 _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
                 data.append(_result)
-                
+
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
             data = sorted(data,key=lambda x: x['timestamp']) if data else []
             _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'resolution':kwargs['resolution'], 'data': data}
@@ -256,12 +282,14 @@ def secondary_feature(name, dependencies):
         return _wrapper2
     return _wrapper1
 
-def delete_attach(id, features=None):
+def delete_attach(participant, features=None):
     """
     Deletes all saved primary features for a participant (requires LAMP-core 2021.4.7 or later)
     :param participant (str): LAMP id to reset for
     :param features (list): features to reset, defaults to all features (optional)
     """
+    LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
     attachments= LAMP.Type.list_attachments(participant)['data']
     if features is None: features=attachments
     for feature in attachments:
@@ -269,7 +297,7 @@ def delete_attach(id, features=None):
             if feature in features:
                 LAMP.Type.set_attachment(participant, 'me', attachment_key=feature, body=None)
                 log.info(f"Reset \"{feature}\"...")
-                
+
 def delete_cache(id, features=None, cache_dir=None):
     """
     Deletes all cached raw features for a participant (requires LAMP-core 2021.4.7 or later)
@@ -278,7 +306,7 @@ def delete_cache(id, features=None, cache_dir=None):
     :param cache_dir (str): path to cache dir, where data will be deleleted
     """
     cache_dir = cache_finder(cache_dir)
-    
+
     #Delete all 'features' in cache_dir for participant
     for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
         path = cache_dir + '/' + file
@@ -299,7 +327,7 @@ def export_cache(cache_dir=None, export_dir=None):
         export_dir = os.path.expanduser(cache_dir)
     else:
         export_dir = os.path.expanduser()
-        
+
     tar.add(cache_dir, 'cache_' + str(int(time.time())*1000) + '.lamp')
     tar.close()
     
@@ -316,7 +344,7 @@ def import_cache(cache_dir=None, import_dir=None):
             cache = tarfile.open(import_dir, 'r:gz') #check if override?
         except tarfile.ReadError:
             raise "Cache file was found but could not be read. Please check that it is of proper type *.tz"
-            
+
     else:
         cache_dir = cache_finder(cache_dir)
         #find any cache in the folder
@@ -327,9 +355,9 @@ def import_cache(cache_dir=None, import_dir=None):
                     return cache
                 except:
                     log.info("Found a file with extension '.cortex' in cache_dir, but unable to read.")
-                    
+
         raise Exception("No cache found in cache_dir. Please provide a cache to import via 'import_dir' or provide a 'cache_dir' which contains a importable cache.")
-                    
+
 
 def cache_finder(cache_dir):
     """
@@ -382,8 +410,8 @@ def _main():
         # Add feature-specific parameters and mark the parameter as required 
         # if no default value is provided. Use the function docstring to get 
         # the parameter's description.
-        opt_idx = len(getargspec(func)[0]) - len(getargspec(func)[3] or ())
-        for idx, param in enumerate(getargspec(func)[0]):
+        opt_idx = len(getfullargspec(func)[0]) - len(getfullargspec(func)[3] or ())
+        for idx, param in enumerate(getfullargspec(func)[0]):
             desc = 'missing parameter description'
             parser.add_argument(f"--{param}", dest=param, required=idx < opt_idx,
                                 help=desc + (' (required)' if idx < opt_idx else ''))
