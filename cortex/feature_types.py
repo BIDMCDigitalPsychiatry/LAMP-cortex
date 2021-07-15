@@ -175,16 +175,16 @@ def primary_feature(name, dependencies, attach):
 
             # Get previously calculated primary feature results from attachments, if you do attach.
             if attach:
-                try: 
-                   attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
-                   # remove last in case interval still open
-                   attachments.remove(max(attachments, key=lambda x: x['end']))
-                   _from = max(a['end'] for a in attachments)
-                   log.info(f"Using saved \"{name}\"...")
-                except LAMP.ApiException: 
-                   attachments = []
-                   _from = 0 
-                   log.info(f"No saved \"{name}\" found...")
+                try:
+                    attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
+                    # remove last in case interval still open
+                    attachments.remove(max(attachments, key=lambda x: x['end']))
+                    _from = max(a['end'] for a in attachments)
+                    log.info(f"Using saved \"{name}\"...")
+                except LAMP.ApiException:
+                    attachments = []
+                    _from = 0 
+                    log.info(f"No saved \"{name}\" found...")
                 except Exception:
                     attachments = []
                     _from = 0
@@ -199,14 +199,16 @@ def primary_feature(name, dependencies, attach):
                 # Combine old attachments with new results
                 unique_dict = _result + attachments
                 unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
-                # _body_new=sorted(set(_result + attachments),key=lambda x: x['start'])
                 _body_new=sorted((unique_dict),key=lambda x: x['start'])
+                # need to use a copy so you don't overwrite the original
+                _body_new_copy = copy.deepcopy(_body_new)
 
                 _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
-                            [b for b in _body_new if
+                            [b for b in _body_new_copy if
                                            ((b['start'] >= start and b['end'] <= kwargs['end']) 
                                          or (b['start'] < start and start < b['end'] <= kwargs['end'])
                                          or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))] }
+
                 # make sure start and end match kwargs
                 if len(_event['data']) > 0:
                     if _event['data'][0]['start'] < start:
