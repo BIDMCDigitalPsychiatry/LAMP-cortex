@@ -1,4 +1,4 @@
-from ..feature_types import secondary_feature
+from ..feature_types import secondary_feature, log
 from ..primary.sleep_periods import sleep_periods
 
 import math 
