@@ -178,8 +178,12 @@ def primary_feature(name, dependencies, attach):
                 try:
                     attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
                     # remove last in case interval still open
-                    attachments.remove(max(attachments, key=lambda x: x['end']))
-                    _from = max(a['end'] for a in attachments)
+                    # but make sure there is data
+                    if len(attachments) > 0:
+                        attachments.remove(max(attachments, key=lambda x: x['end']))
+                        _from = max(a['end'] for a in attachments)
+                    else:
+                        _from = kwargs['end']
                     log.info(f"Using saved \"{name}\"...")
                 except LAMP.ApiException:
                     attachments = []
