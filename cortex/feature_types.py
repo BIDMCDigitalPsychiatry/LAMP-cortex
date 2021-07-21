@@ -12,10 +12,12 @@ import compress_pickle as pickle
 import tarfile
 import re
 import copy
+import numpy as np
 #from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG, format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
+                    format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
 log = logging.getLogger('cortex')
 
 # List all registered features (raw, primary, secondary).
@@ -51,10 +53,11 @@ def raw_feature(name, dependencies):
 
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-                raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+                raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`" +
+                                " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                          os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-            
+
             # Find a valid local cache directory
             cache = kwargs.get('cache')
 
@@ -70,7 +73,9 @@ def raw_feature(name, dependencies):
                     if not os.path.exists(cache_dir):
                         log.info(f"Caching directory does not yet exist, creating...")
                         os.makedirs(cache_dir)
-                    assert os.path.exists(cache_dir), "Default caching directory could not be used, specify an alternative locatiton as a keyword argument: 'cache', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
+                    assert os.path.exists(cache_dir), ("Default caching directory could not be used," +
+                                    " specify an alternative locatiton as a keyword argument: 'cache'," +
+                                    " or as an enviornmental variable: 'CORTEX_CACHE_DIR'")
                 log.info(f"Cortex caching directory set to: {cache_dir}")   
 
                 log.info(f"Processing raw feature \"{name}\"...")
@@ -79,10 +84,10 @@ def raw_feature(name, dependencies):
                 found = False
                 for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
                     path = cache_dir + '/' + file
-                    
+
                     if not re.match('^' + name.split('.')[1], file):
                         continue
-                        
+
                     _, rest = re.split('^'+name.split('.')[1]+'_', file)
                     saved = dict(zip(['id', 'start', 'end'], re.split('.cortex$', rest)[0].split('_')))
                     saved['name'] = name.split('.')[1]
@@ -91,36 +96,36 @@ def raw_feature(name, dependencies):
                         saved['end'] = int(saved['end'])
                     except:
                         continue
-                        
+
                     if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end'] and saved['id'] == kwargs['id']:
                         if file.split('.')[-1] == 'cortex': #if no compression extension, use standard pkl loading
-                            _result = pickle.load(path, 
+                            _result = pickle.load(path,
                                                   set_default_extension=False,
                                                   compression=None)
-                        else: 
+                        else:
                             _result = pickle.load(path)
                         found = True
                         log.info('Using saved raw data...')
                         break
-                            
+
                 if not found:
                     log.info('No saved raw data found, getting new...')
                     _result = func(*args, **kwargs)
                     pickle_path = (cache_dir + '/' +
-                                   name.split('.')[-1] + '_' + 
+                                   name.split('.')[-1] + '_' +
                                    kwargs['id'] + '_' +
                                    str(kwargs['start']) + '_' +
                                    str(kwargs['end']) + '.cortex')
-                    
+
                     if os.getenv('CORTEX_CACHE_COMPRESSION') is not None:
                         assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
                         pickle_path += '.' + os.getenv('CORTEX_CACHE_COMPRESSION')
-                    
-                    pickle.dump(_result, 
-                                pickle_path, 
-                                compression=kwargs.get('compression'), 
+
+                    pickle.dump(_result,
+                                pickle_path,
+                                compression=kwargs.get('compression'),
                                 set_default_extension=False)
-                    
+
                     log.info(f"Saving raw data as \"{pickle_path}\"...")
             else:
                 _result = func(*args, **kwargs)
@@ -129,6 +134,29 @@ def raw_feature(name, dependencies):
                       'duration': kwargs['end'] - kwargs['start'],
                       'data': [r for r in _result if r['timestamp'] >= kwargs['start'] and
                                r['timestamp'] <= kwargs['end']]}
+
+            # Add data quality metrics
+            TEN_MINUTES = 1000 * 60 * 10
+            RES = TEN_MINUTES # set the resolution for quality
+            HZ_THRESH = 0.5 # set threshold in hz
+            idx = 0
+            end_time = _event['data'][0]['timestamp']
+            start_time = _event['data'][len(_event['data'])-1]['timestamp']
+            res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
+            if res_counts.shape[0] > 0:
+                for i, x in enumerate(range(end_time, start_time, -1 * RES)):
+                    while idx + 1 < len(_event['data']) and _event['data'][idx]['timestamp'] > x - RES:
+                        res_counts[i] += 1
+                        idx += 1
+                fs = res_counts / (RES / 1000)
+                _event["fs_mean"] = fs.mean()
+                _event["fs_var"] = fs.var()
+                _event["percent_good_data"] = np.sum(fs > HZ_THRESH) / fs.shape[0]
+            else:
+                _event["fs_mean"] = len(_event['data']) / (RES / 1000)
+                _event["fs_var"] = 0
+                _event["percent_good_data"] = _event["fs_mean"] > HZ_THRESH
+
             return _event
 
         # When we register/save the function, make sure we save the decorated and not the RAW function.
@@ -231,7 +259,8 @@ def primary_feature(name, dependencies, attach):
 
             return _event
 
-        # When we register/save the function, make sure we save the decorated and not the RAW function.
+        # When we register/save the function, make sure we save the
+        # decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__
         __features__.append({ 'name': name, 'type': 'primary', 'dependencies': dependencies, 'callable': _wrapper2 })
         return _wrapper2
@@ -328,7 +357,7 @@ def export_cache(cache_dir=None, export_dir=None):
     """
     cache_dir = cache_finder(cache_dir)
     #Export as *.tar.gz
-    tar = tarfile.open('cache_' + str(int(time.time())*1000) + '.lamp', 'w:gz') #check if override?
+    tar = tarfile.open('cache_' + str(int(time.time())*1000) + '.lamp', 'w:gz') # check if override?
     if export_dir is None:
         export_dir = os.path.expanduser(cache_dir)
     else:
@@ -347,7 +376,7 @@ def import_cache(cache_dir=None, import_dir=None):
     if import_dir is not None:
         assert os.path.exists(import_dir), "Import cache could not be found. Please provide a existing path to import_dir."
         try:
-            cache = tarfile.open(import_dir, 'r:gz') #check if override?
+            cache = tarfile.open(import_dir, 'r:gz') # check if override?
         except tarfile.ReadError:
             raise "Cache file was found but could not be read. Please check that it is of proper type *.tz"
 
@@ -362,7 +391,8 @@ def import_cache(cache_dir=None, import_dir=None):
                 except:
                     log.info("Found a file with extension '.cortex' in cache_dir, but unable to read.")
 
-        raise Exception("No cache found in cache_dir. Please provide a cache to import via 'import_dir' or provide a 'cache_dir' which contains a importable cache.")
+        raise Exception("No cache found in cache_dir. Please provide a cache to" +
+                        " import via 'import_dir' or provide a 'cache_dir' which contains a importable cache.")
 
 
 def cache_finder(cache_dir):

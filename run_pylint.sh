@@ -8,8 +8,10 @@ echo "${red}-----------RUNNING PYLINT----------${reset}"
 echo "${red}-----------------------------------${reset}"
 
 echo "${red} Running pylint for all main files ${reset}"
-# echo "${green} run.py ${reset}"
-# pylint cortex/run.py
+echo "${green} run.py ${reset}"
+pylint cortex/run.py
+echo "${green} feature_types.py ${reset}"
+pylint cortex/feature_types.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
