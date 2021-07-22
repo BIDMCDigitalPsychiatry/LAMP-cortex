@@ -140,22 +140,27 @@ def raw_feature(name, dependencies):
             RES = TEN_MINUTES # set the resolution for quality
             HZ_THRESH = 0.5 # set threshold in hz
             idx = 0
-            end_time = _event['data'][0]['timestamp']
-            start_time = _event['data'][len(_event['data'])-1]['timestamp']
-            res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
-            if res_counts.shape[0] > 0:
-                for i, x in enumerate(range(end_time, start_time, -1 * RES)):
-                    while idx + 1 < len(_event['data']) and _event['data'][idx]['timestamp'] > x - RES:
-                        res_counts[i] += 1
-                        idx += 1
-                fs = res_counts / (RES / 1000)
-                _event["fs_mean"] = fs.mean()
-                _event["fs_var"] = fs.var()
-                _event["percent_good_data"] = np.sum(fs > HZ_THRESH) / fs.shape[0]
+            if len(_event['data']) > 0:
+                end_time = _event['data'][0]['timestamp']
+                start_time = _event['data'][len(_event['data'])-1]['timestamp']
+                res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
+                if res_counts.shape[0] > 0:
+                    for i, x in enumerate(range(end_time, start_time, -1 * RES)):
+                        while idx + 1 < len(_event['data']) and _event['data'][idx]['timestamp'] > x - RES:
+                            res_counts[i] += 1
+                            idx += 1
+                    fs = res_counts / (RES / 1000)
+                    _event["fs_mean"] = fs.mean()
+                    _event["fs_var"] = fs.var()
+                    _event["percent_good_data"] = np.sum(fs > HZ_THRESH) / fs.shape[0]
+                else:
+                    _event["fs_mean"] = len(_event['data']) / (RES / 1000)
+                    _event["fs_var"] = 0
+                    _event["percent_good_data"] = _event["fs_mean"] > HZ_THRESH
             else:
-                _event["fs_mean"] = len(_event['data']) / (RES / 1000)
+                _event["fs_mean"] = 0
                 _event["fs_var"] = 0
-                _event["percent_good_data"] = _event["fs_mean"] > HZ_THRESH
+                _event["percent_good_data"] = 0
 
             return _event
 

@@ -102,7 +102,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 params_f = feature_params[f]
             else:
                 params_f = {}
-            try:
+            #try:
+            if True:
                 _res = get_feature_for_participant(participant, f, params_f, start, end, resolution)
 
                 # Make this into a df
@@ -113,8 +114,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                      # convert to datetime
                     _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
-            except:
-                print("Participant: " + participant + ", Feature: " + f + " crashed.")
+            #except:
+            #    log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
         if run_part_and_feats != "":
             f = features_by_participant[i]
             # Make sure we aren't calling non-existant feature functions.
@@ -135,7 +136,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
             except:
-                print("Participant: " + participant + ", Feature: " + f + " crashed.")
+                log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
 
     # Save if there is a file path specified
     if path_to_save != "":
