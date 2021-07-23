@@ -11,7 +11,7 @@ import altair as alt
 import LAMP
 import cortex.raw as raw
 import cortex.secondary as secondary
-from cortex.feature_types import all_features
+from cortex.feature_types import all_features, log
 
 
 # Convenience to avoid extra imports/time-mangling nonsense...
@@ -20,6 +20,8 @@ def now():
 
 # Convenience to avoid mental math...
 MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
+
+
 
 
 def run(id_or_set, features=[], feature_params={}, start=None, end=None,
