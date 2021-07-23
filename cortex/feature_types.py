@@ -141,8 +141,8 @@ def raw_feature(name, dependencies):
             HZ_THRESH = 0.5 # set threshold in hz
             idx = 0
             if len(_event['data']) > 0:
-                end_time = _event['data'][0]['timestamp']
-                start_time = _event['data'][len(_event['data'])-1]['timestamp']
+                end_time = int(_event['data'][0]['timestamp'])
+                start_time = int(_event['data'][len(_event['data'])-1]['timestamp'])
                 res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
                 if res_counts.shape[0] > 0:
                     for i, x in enumerate(range(end_time, start_time, -1 * RES)):
