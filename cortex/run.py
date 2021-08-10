@@ -1,3 +1,4 @@
+""" Module for getting features from cortex """
 import os
 import time
 from functools import reduce
@@ -9,7 +10,6 @@ import altair as alt
 
 import LAMP
 import cortex.raw as raw
-import cortex.primary as primary
 import cortex.secondary as secondary
 from cortex.feature_types import all_features, log
 
@@ -21,7 +21,11 @@ def now():
 # Convenience to avoid mental math...
 MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
 
-def run(id_or_set, features, feature_params={}, start=None, end=None, resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
+
+
+
+def run(id_or_set, features=[], feature_params={}, start=None, end=None,
+        resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
     """ Function to get features from cortex.
 
         Args:
@@ -56,10 +60,14 @@ def run(id_or_set, features, feature_params={}, start=None, end=None, resolution
             If the start and / or end time are not specified, the earliest and
             latest raw data timepoints will be used. These will then be shifted
             so all days start and end at 9am (if resolution is modulo days)
+            If both features and run_part_and_features are specified then
+            run_part_and_features will take precendence and features will be
+            set to [].
     """
     # Connect to the LAMP API server.
     if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-        raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+        raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
+                        + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
@@ -70,11 +78,13 @@ def run(id_or_set, features, feature_params={}, start=None, end=None, resolution
         df = pd.read_csv(run_part_and_feats)
         participants = df.loc["participant"].tolist()
         features_by_participant = df.loc["feature"].tolist()
+        features = []
     func_list = {f['callable'].__name__: f for f in all_features()}
 
     # TODO allow for raw, primary, and secondary to be used at once
-    # fns = map(lambda feature_group: [getattr(mod, mod_name) 
-    #                                  for mod_name, mod in getmembers(feature_group, ismodule) 
+    # fns = map(lambda feature_group: [getattr(mod, mod_name)
+    #                                  for mod_name, mod in
+    #                     getmembers(feature_group, ismodule)
     #                                  if mod_name in features],
     #                                  [raw, primary, secondary])
 
@@ -102,10 +112,11 @@ def run(id_or_set, features, feature_params={}, start=None, end=None, resolution
                 if _res2.shape[0] > 0:
                     # If no data exists, don't bother appending the df.
                     _res2.insert(0, 'id', participant) # prepend 'id' column
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
+                     # convert to datetime
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
             except:
-                print("Participant: " + participant + ", Feature: " + f + " crashed.")
+                log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
         if run_part_and_feats != "":
             f = features_by_participant[i]
             # Make sure we aren't calling non-existant feature functions.
@@ -122,10 +133,11 @@ def run(id_or_set, features, feature_params={}, start=None, end=None, resolution
                 if _res2.shape[0] > 0:
                     # If no data exists, don't bother appending the df.
                     _res2.insert(0, 'id', participant) # prepend 'id' column
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms') # convert to datetime
+                    # convert to datetime
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
             except:
-                print("Participant: " + participant + ", Feature: " + f + " crashed.")
+                log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
 
     # Save if there is a file path specified
     if path_to_save != "":
@@ -152,15 +164,32 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
     # 5 Find start, end
     # FIXME: Seems to not work correctly in every case?
     if start is None:
-        start = min([getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=-1)['data'][0]['timestamp']
+        start = min([getattr(mod, mod_name)(id=participant,
+                                            start=0,
+                                            end=int(time.time())*1000,
+                                            cache=False,
+                                            recursive=False,
+                                            limit=-1)['data'][0]['timestamp']
                      for mod_name, mod in inspect.getmembers(raw, inspect.ismodule)
-                     if len(getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=-1)['data']) > 0])
+                     if len(getattr(mod, mod_name)(id=participant,
+                                                   start=0,
+                                                   end=int(time.time())*1000,
+                                                   cache=False,
+                                                   recursive=False, limit=-1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
             start = set_date_9am(start, 1)
     if end is None:
-        end = max([getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=1)['data'][0]['timestamp']
+        end = max([getattr(mod, mod_name)(id=participant,
+                                          start=0,
+                                          end=int(time.time())*1000,
+                                          cache=False,
+                                          recursive=False, limit=1)['data'][0]['timestamp']
                     for mod_name, mod in inspect.getmembers(raw, inspect.ismodule)
-                    if len(getattr(mod, mod_name)(id=participant, start=0, end=int(time.time())*1000, cache=False, recursive=False, limit=1)['data']) > 0])
+                    if len(getattr(mod, mod_name)(id=participant,
+                                                  start=0,
+                                                  end=int(time.time())*1000,
+                                                  cache=False,
+                                                  recursive=False, limit=1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
             end = set_date_9am(end, 1)
     if hasattr(secondary, feature):
