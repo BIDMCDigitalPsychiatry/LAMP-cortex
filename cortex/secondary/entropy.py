@@ -1,5 +1,6 @@
+""" Module to compute entropy from primary feature significant_locations """
 import math
-from ..feature_types import secondary_feature, log
+from ..feature_types import secondary_feature
 from ..primary.significant_locations import significant_locations
 
 MS_IN_A_DAY = 86400000
@@ -10,18 +11,22 @@ MS_IN_A_DAY = 86400000
 def entropy(resolution=MS_IN_A_DAY, **kwargs):
     """
     Calculate entropy
+        sum (p log p)
+        where p is the proportion of time spent at each signficant location
     """
-    # log.info(f'Loading significant locations data...')
     if kwargs.get('method') is not None:
-        _significant_locations = significant_locations(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], method=kwargs['method'])
+        _significant_locations = significant_locations(id=kwargs['id'],
+                                                       start=kwargs['start'],
+                                                       end=kwargs['end'],
+                                                       method=kwargs['method'])
     else:
-        _significant_locations = significant_locations(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
+        _significant_locations = significant_locations(id=kwargs['id'],
+                                                       start=kwargs['start'],
+                                                       end=kwargs['end'])
 
     if len(_significant_locations['data']) == 0:
         _entropy = None
-    # log.info(f'Computing entropy...')
-    _entropy = -sum([loc['proportion'] * math.log(loc['proportion']) for loc in _significant_locations['data'] if 0 < loc['proportion'] <= 1])
-    if _entropy == 0: # no sig locs
 
-        _entropy = None
+    _entropy = -sum([loc['proportion'] * math.log(loc['proportion'])
+                     for loc in _significant_locations['data'] if 0 < loc['proportion'] <= 1])
     return {'timestamp': kwargs['start'], 'entropy': _entropy}
