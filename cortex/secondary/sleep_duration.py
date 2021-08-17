@@ -16,5 +16,8 @@ def sleep_duration(**kwargs):
     _sleep_periods = sleep_periods(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     #_sleep_duration = sum([res['duration'] for res in _sleep_periods['data']])
     _sleep_duration = sum([res['end'] - res['start'] for res in _sleep_periods['data']])
+    # if there is no accelerometer data, sleep should be None
+    if _sleep_periods['has_raw_data'] == 0:
+        _sleep_duration = None
     return {'timestamp':kwargs['start'],
             'sleep_duration': _sleep_duration}

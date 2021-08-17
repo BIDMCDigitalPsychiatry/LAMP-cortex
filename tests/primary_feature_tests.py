@@ -29,7 +29,6 @@ class TestPrimary(unittest.TestCase):
         logger = logging.getLogger()
         logger.setLevel(logging.CRITICAL)
 
-
     # 0. Trips
     def test_primary_id_none(self):
         # Test id is none
@@ -79,11 +78,13 @@ class TestPrimary(unittest.TestCase):
                                                                   end=self.TEST_END_TIME,
                                                                   method='mode')
         self.assertEqual(ret0['data'], [])
+        self.assertEqual(ret0['has_raw_data'], 0)
         ret1 = primary.significant_locations.significant_locations(id=self.EMPTY_PARTICIPANT,
                                                                   start=0,
                                                                   end=self.TEST_END_TIME,
                                                                   method='k_means')
         self.assertEqual(ret1['data'], [])
+        self.assertEqual(ret1['has_raw_data'], 0)
 
     def test_siglocs_max_clusters(self):
         # Test if max_clusters is set
@@ -218,10 +219,12 @@ class TestPrimary(unittest.TestCase):
                                                                   start=0,
                                                                   end=self.TEST_END_TIME)
         self.assertEqual(ret0['data'], [])
+        self.assertEqual(ret0['has_raw_data'], 0)
         ret1 = primary.screen_active.screen_active(id=self.EMPTY_PARTICIPANT,
                                                                   start=0,
                                                                   end=self.TEST_END_TIME)
         self.assertEqual(ret1['data'], [])
+        self.assertEqual(ret1['has_raw_data'], 0)
 
     def test_screenactive_correct_duration(self):
         # Test if the correct active duration is returned
@@ -239,11 +242,6 @@ class TestPrimary(unittest.TestCase):
                                                    end=self.TEST_SCREEN_ACTIVE_END_1)
         num_bouts = len(ret0['data'])
         self.assertEqual(num_bouts, 2)
-
-    def test_screenactive_multiple_days(self):
-        # Test the duration and make sure it works with attachments
-        # TODO
-        pass
 
 if __name__ == '__main__':
     unittest.main()

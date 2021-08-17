@@ -27,6 +27,9 @@ def screen_active(**kwargs):
     _screen_state = list(reversed(screen_state(id=kwargs['id'],
                                                start=start_time,
                                                end=end_time)['data']))
+    has_raw_data = 1
+    if len(_screen_state) == 0:
+        has_raw_data = 0
 
     # Ensure state is present; convert value if not
     for _event in _screen_state:
@@ -54,8 +57,7 @@ def screen_active(**kwargs):
     else:
         # assume normal is correct
         _ret_screen_active = _screen_active
-
-    return _ret_screen_active
+    return {'data': _ret_screen_active, 'has_raw_data': has_raw_data}
 
 def _get_screen_state_data(_screen_state, flipped=0):
     on_events = [1, 3]

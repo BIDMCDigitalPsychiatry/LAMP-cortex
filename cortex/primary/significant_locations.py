@@ -158,7 +158,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
         _gps = gps(**{**kwargs, 'start':reduced_data_end})['data']
         df_original = pd.DataFrame.from_dict(_gps)
         if len(df_original) == 0:
-            return []
+            return {'data': [], 'has_raw_data': 0}
         df_original = df_original[df_original['timestamp'] != df_original['timestamp'].shift()]
 
         # To prevent memory issues, limit size of db scan and perform iteratively
@@ -244,7 +244,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
     # Get gps data for this window
     _gps = gps(**kwargs)['data']
     if len(_gps) == 0: # return empty list if no data
-        return []
+        return {'data': [], 'has_raw_data': 0}
 
     newdf = pd.DataFrame.from_dict(_gps)
     newdf_coords = newdf[['latitude', 'longitude']].values
@@ -253,7 +253,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
 
 
     # Add proportion of GPS within each centroid and return output.
-    return [{
+    return {'data': [{
         'start':kwargs['start'],
         'end':kwargs['end'],
         'latitude': center[0],
@@ -268,7 +268,7 @@ def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
         'proportion': props[props == idx].size / props.size,
         # props[props == idx].size * 200 #EXPECTED duration in ms
         'duration': _location_duration(newdf, idx)
-    } for idx, center in enumerate(kmeans.cluster_centers_)]
+    } for idx, center in enumerate(kmeans.cluster_centers_)], 'has_raw_data': 1}
 
 def _significant_locations_mode(max_clusters, min_cluster_size, max_dist, **kwargs):
     """ Function to assign points to k significant locations using mode method.
@@ -286,7 +286,7 @@ def _significant_locations_mode(max_clusters, min_cluster_size, max_dist, **kwar
     # get gps data
     _gps = gps(**kwargs)['data']
     if len(_gps) == 0:
-        return []
+        return {'data': [], 'has_raw_data': 0}
 
     df_original = pd.DataFrame.from_dict(_gps)
     df_original = df_original[df_original['timestamp'] != df_original['timestamp'].shift()]
@@ -319,7 +319,7 @@ def _significant_locations_mode(max_clusters, min_cluster_size, max_dist, **kwar
             cluster_locs.append(top_points[k])
             k += 1
 
-    return remove_clusters([{
+    return {'data': remove_clusters([{
         'start':kwargs['start'],
         'end':kwargs['end'],
         'latitude': center[0],
@@ -336,4 +336,4 @@ def _significant_locations_mode(max_clusters, min_cluster_size, max_dist, **kwar
         'proportion': (df_clusters[df_clusters['cluster'] == idx].size /
                        df_clusters[df_clusters['cluster'] != -1].size),
         'duration': _location_duration(df_clusters, idx)
-    } for idx, center in enumerate(cluster_locs)], max_dist)
+    } for idx, center in enumerate(cluster_locs)], max_dist), 'has_raw_data': 1}

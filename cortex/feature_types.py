@@ -71,14 +71,15 @@ def raw_feature(name, dependencies):
                 else:
                     cache_dir = os.path.expanduser('~/.cache/cortex')
                     if not os.path.exists(cache_dir):
-                        log.info(f"Caching directory does not yet exist, creating...")
+                        log.info("Caching directory does not yet exist, creating...")
                         os.makedirs(cache_dir)
-                    assert os.path.exists(cache_dir), ("Default caching directory could not be used," +
-                                    " specify an alternative locatiton as a keyword argument: 'cache'," +
-                                    " or as an enviornmental variable: 'CORTEX_CACHE_DIR'")
-                log.info(f"Cortex caching directory set to: {cache_dir}")   
+                    assert os.path.exists(cache_dir), ("Default caching directory could" +
+                                    " not be used, specify an alternative locatiton as a " +
+                                    "keyword argument: 'cache', or as an enviornmental" +
+                                    " variable: 'CORTEX_CACHE_DIR'")
+                log.info("Cortex caching directory set to: " + cache_dir)
 
-                log.info(f"Processing raw feature \"{name}\"...")
+                log.info("Processing raw feature " + name + "...")
 
                 # local data caching TODO: combine pickle window with API data
                 found = False
@@ -98,7 +99,8 @@ def raw_feature(name, dependencies):
                         continue
 
                     if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end'] and saved['id'] == kwargs['id']:
-                        if file.split('.')[-1] == 'cortex': #if no compression extension, use standard pkl loading
+                        #if no compression extension, use standard pkl loading
+                        if file.split('.')[-1] == 'cortex':
                             _result = pickle.load(path,
                                                   set_default_extension=False,
                                                   compression=None)
@@ -126,7 +128,7 @@ def raw_feature(name, dependencies):
                                 compression=kwargs.get('compression'),
                                 set_default_extension=False)
 
-                    log.info(f"Saving raw data as \"{pickle_path}\"...")
+                    log.info("Saving raw data as " + pickle_path + "...")
             else:
                 _result = func(*args, **kwargs)
 
@@ -146,7 +148,8 @@ def raw_feature(name, dependencies):
                 res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
                 if res_counts.shape[0] > 0:
                     for i, x in enumerate(range(end_time, start_time, -1 * RES)):
-                        while idx + 1 < len(_event['data']) and _event['data'][idx]['timestamp'] > x - RES:
+                        while (idx + 1 < len(_event['data']) and
+                               _event['data'][idx]['timestamp'] > x - RES):
                             res_counts[i] += 1
                             idx += 1
                     fs = res_counts / (RES / 1000)
@@ -164,7 +167,8 @@ def raw_feature(name, dependencies):
 
             return _event
 
-        # When we register/save the function, make sure we save the decorated and not the RAW function.
+        # When we register/save the function, make sure we
+        # save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__
         __features__.append({ 'name': name, 'type': 'raw', 'dependencies': dependencies, 'callable': _wrapper2 })
         return _wrapper2
@@ -197,7 +201,8 @@ def primary_feature(name, dependencies, attach):
 
             # Connect to the LAMP API server.
             if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-                raise Exception(f"You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+                raise Exception("You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
+                                + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
@@ -207,6 +212,7 @@ def primary_feature(name, dependencies, attach):
             # -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
             # Get previously calculated primary feature results from attachments, if you do attach.
+            has_raw_data = -1
             if attach:
                 try:
                     attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
@@ -215,23 +221,27 @@ def primary_feature(name, dependencies, attach):
                     if len(attachments) > 0:
                         attachments.remove(max(attachments, key=lambda x: x['end']))
                         _from = max(a['end'] for a in attachments)
+                        has_raw_data = 1
                     else:
                         _from = kwargs['end']
                     log.info(f"Using saved \"{name}\"...")
                 except LAMP.ApiException:
                     attachments = []
-                    _from = 0 
+                    _from = 0
                     log.info(f"No saved \"{name}\" found...")
                 except Exception:
                     attachments = []
                     _from = 0
-                    log.info(f"Saved \"{name}\" could not be parsed, discarding...")
+                    log.info("Saved " + name + " could not be parsed, discarding...")
 
                 start=kwargs.pop('start')
                 if _from > kwargs['end']:
                     _result=[]
                 else:
                     _result = func(*args, **{**kwargs, 'start':_from})
+                    if 'has_raw_data' in _result:
+                        has_raw_data = _result['has_raw_data']
+                    _result = _result['data']
 
                 # Combine old attachments with new results
                 unique_dict = _result + attachments
@@ -240,11 +250,12 @@ def primary_feature(name, dependencies, attach):
                 # need to use a copy so you don't overwrite the original
                 _body_new_copy = copy.deepcopy(_body_new)
 
-                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data': 
+                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data':
                             [b for b in _body_new_copy if
-                                           ((b['start'] >= start and b['end'] <= kwargs['end']) 
-                                         or (b['start'] < start and start < b['end'] <= kwargs['end'])
-                                         or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))] }
+                                    ((b['start'] >= start and b['end'] <= kwargs['end'])
+                                  or (b['start'] < start and start < b['end'] <= kwargs['end'])
+                                  or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))],
+                          'has_raw_data': has_raw_data }
 
                 # make sure start and end match kwargs
                 if len(_event['data']) > 0:
@@ -253,14 +264,18 @@ def primary_feature(name, dependencies, attach):
                         _event['data'][0]['duration'] = _event['data'][0]['end'] - _event['data'][0]['start']
                     if _event['data'][len(_event['data']) - 1]['end'] > kwargs['end']:
                         _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
-                        _event['data'][len(_event['data']) - 1]['duration'] = _event['data'][len(_event['data']) - 1]['end'] - _event['data'][len(_event['data']) - 1]['start']
+                        _event['data'][len(_event['data']) - 1]['duration'] = (_event['data'][len(_event['data']) - 1]['end']
+                                                                - _event['data'][len(_event['data']) - 1]['start'])
 
                 # Upload new features as attachment.
                 log.info(f"Saving primary feature \"{name}\"...")
                 LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
             else:
+                has_raw_data = -1
                 _result = func(*args, **kwargs)
-                _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':_result}
+                if 'has_raw_data' in _result:
+                    has_raw_data = _result['has_raw_data']
+                _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result['data'], 'has_raw_data': has_raw_data}
 
             return _event
 
@@ -291,7 +306,7 @@ def secondary_feature(name, dependencies):
             ]
             for param in params:
                 if kwargs.get(param, None) is None:
-                    raise Exception(f"parameter `{param}` is required but missing")
+                    raise Exception("parameter `" + param + "` is required but missing")
 
             if kwargs['start'] > kwargs['end']:
                 raise Exception("'start' argument must occur before 'end'.")
@@ -302,7 +317,7 @@ def secondary_feature(name, dependencies):
             LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
-            log.info(f"Processing secondary feature \"{name}\"...")
+            log.info("Processing secondary feature " + name + "...")
 
             timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
             data = []
@@ -336,7 +351,7 @@ def delete_attach(participant, features=None):
         if feature.startswith('cortex'):
             if feature in features:
                 LAMP.Type.set_attachment(participant, 'me', attachment_key=feature, body=None)
-                log.info(f"Reset \"{feature}\"...")
+                log.info("Reset " + feature + "...")
 
 def delete_cache(id, features=None, cache_dir=None):
     """
