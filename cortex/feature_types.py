@@ -221,7 +221,8 @@ def primary_feature(name, dependencies, attach):
                     if len(attachments) > 0:
                         attachments.remove(max(attachments, key=lambda x: x['end']))
                         _from = max(a['end'] for a in attachments)
-                        has_raw_data = 1
+                        if _from > kwargs['start'] and _from < kwargs['end']:
+                            has_raw_data = 1
                     else:
                         _from = kwargs['end']
                     log.info(f"Using saved \"{name}\"...")
