@@ -18,4 +18,7 @@ def call_duration(resolution=MS_IN_A_DAY, incoming=True, **kwargs):
     _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
     log.info(f'Computing call duration...')
     _call_duration = np.sum([call['call_duration'] for call in _calls if call['call_type'] == label])
+    # if you have no call duration, this means you have no call data over the period, should return None
+    if _call_duration == 0:
+        _call_duration = None
     return {'timestamp':kwargs['start'], 'call_duration': _call_duration}

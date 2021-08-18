@@ -88,7 +88,7 @@ def trips(**kwargs):
 
     df_dist = pd.DataFrame.from_dict(list(reversed(gps(**kwargs)['data'])))
     if len(df_dist) == 0:
-        return []
+        return {'data': [], 'has_raw_data': 0}
     log.info('Labeling GPS')
     labeled_gps = get_trips(df_dist)
-    return labeled_gps
+    return {'data': labeled_gps, 'has_raw_data': 1}

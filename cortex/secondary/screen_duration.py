@@ -14,4 +14,7 @@ def screen_duration(resolution=MS_IN_A_DAY, **kwargs):
     """
     _screen_active = screen_active(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])
+    # screen duration should be None if there is no data
+    if _screen_active['has_raw_data'] == 0:
+        _screen_duration = None
     return {'timestamp':kwargs['start'], 'screen_duration': _screen_duration}
