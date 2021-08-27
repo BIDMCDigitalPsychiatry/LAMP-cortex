@@ -12,6 +12,12 @@ find tests -name '*tests.py' -print0 |
             coverage report -m cortex/primary/significant_locations.py
             coverage report -m cortex/primary/trips.py
             coverage report -m cortex/primary/screen_active.py
+        elif [[ $line = "tests/secondary_feature_tests.py" ]]
+        then
+            echo "${green} Running tests for ${line} ${reset}"
+            coverage run "$line"
+            echo "${cyan} Coverage Report for ${line}"
+            coverage report -m cortex/secondary/acc_jerk.py
         else
             echo "TODO: add other tests here"
             # coverage report

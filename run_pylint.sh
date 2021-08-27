@@ -37,5 +37,7 @@ echo "${red} Running pylint for secondary features ${reset}"
 # TODO: add these
 echo "${green} entropy.py ${reset}"
 pylint cortex/secondary/entropy.py
+echo "${green} acc_jerk.py ${reset}"
+pylint cortex/secondary/acc_jerk.py
 
  echo "${reset}"
