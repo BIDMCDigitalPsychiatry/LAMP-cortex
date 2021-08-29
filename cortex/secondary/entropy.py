@@ -8,7 +8,7 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.entropy',
     dependencies=[significant_locations]
 )
-def entropy(resolution=MS_IN_A_DAY, **kwargs):
+def entropy(**kwargs):
     """
     Calculate entropy
         sum (p log p)

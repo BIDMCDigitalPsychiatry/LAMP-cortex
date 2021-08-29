@@ -18,9 +18,8 @@ class TestSecondary(unittest.TestCase):
     MS_IN_DAY = 60 * 60 * 24 * 1000
     TEST_PARTICIPANT = "U26468383"
     EMPTY_PARTICIPANT = "U5704591513"
-    TEST_END_TIME = 1583532324130 + MS_IN_DAY + 1
-    #1583532324130
-    #1585358317568
+    TEST_END_TIME = 1583532324130 + 30 * MS_IN_DAY
+    TEST_START_TIME_JERK = 1584137124130
 
     def setUp(self):
         """ Setup the tests """
@@ -30,63 +29,43 @@ class TestSecondary(unittest.TestCase):
     # 1. Acc_jerk
     def test_acc_jerk_no_data(self):
         # Test if the participant has no data
-        ret0 = secondary.acc_jerk.acc_jerk(id=self.EMPTY_PARTICIPANT, start=0, end=self.TEST_END_TIME,
-                            resolution=self.MS_IN_DAY)
-        print(ret0)
+        ret0 = secondary.acc_jerk.acc_jerk(id=self.EMPTY_PARTICIPANT,
+                                           start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
+                                           end=self.TEST_END_TIME,
+                                           resolution=self.MS_IN_DAY)
         for x in ret0['data']:
             self.assertEqual(x['acc_jerk'], None)
 
     def test_acc_jerk_default_threshold(self):
         # Test to make sure jerk is correct
-        earliest_time = LAMP.SensorEvent.all_by_participant(participant_id=self.TEST_PARTICIPANT,
-                                       origin="lamp.accelerometer",
-                                       _from=0,
-                                       to=self.TEST_END_TIME,
-                                       _limit=-1)['data']
-        latest_time = LAMP.SensorEvent.all_by_participant(participant_id=self.TEST_PARTICIPANT,
-                                       origin="lamp.accelerometer",
-                                       _from=0,
-                                       to=self.TEST_END_TIME,
-                                       _limit=1)['data']
-        print(earliest_time)
-        print(latest_time)
-                                                
         ret1 = secondary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
-                                                                  start=0,
-                                                                  end=self.TEST_END_TIME,
-                                                                  resolution=self.MS_IN_DAY)
-        print(ret1['data'])
-        
-    """
-    def test_siglocs_min_cluster_size(self):
-        # Test min cluster size
-        ret0 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
-                                                                  start=0,
-                                                                  end=self.TEST_END_TIME,
-                                                                  method='mode',
-                                                                  min_cluster_size=0.5,
-                                                                  max_dist=0)
-        num_clusters0 = len(ret0['data'])
-        self.assertEqual(num_clusters0, 1)
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY)
+        ACC_JERK_DEFAULT = 0.04132388383691913
+        self.assertEqual(ret1['data'][0]['acc_jerk'], ACC_JERK_DEFAULT)
 
-        ret1 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
-                                                                  start=0,
-                                                                  end=self.TEST_END_TIME,
-                                                                  method='mode',
-                                                                  min_cluster_size=0.1,
-                                                                  max_dist=0)
-        num_clusters1 = len(ret1['data'])
-        self.assertEqual(num_clusters1, 2)
 
-        ret2 = primary.significant_locations.significant_locations(id=self.TEST_PARTICIPANT,
-                                                                  start=0,
-                                                                  end=self.TEST_END_TIME,
-                                                                  method='mode',
-                                                                  min_cluster_size=0.01,
-                                                                  max_dist=0)
-        num_clusters2 = len(ret2['data'])
-        self.assertEqual(num_clusters2, 4)
-    """
+    def test_acc_jerk_differnt_thresholds(self):
+        # Test to make sure the threshold parameter works for jerk
+        #
+        # Note that threshold should not be set this high, this
+        # is done for testing purposes only
+        ACC_JERK_5S = 0.020665072792929968
+        ACC_JERK_70S = 0.018483403010722384
+        ret1 = secondary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY,
+                                           threshold=5000)
+        self.assertEqual(ret1['data'][0]['acc_jerk'], ACC_JERK_5S)
+
+        ret2 = secondary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY,
+                                           threshold=70000)
+        self.assertEqual(ret2['data'][0]['acc_jerk'], ACC_JERK_70S)
 
 if __name__ == '__main__':
     unittest.main()

@@ -39,5 +39,11 @@ echo "${green} entropy.py ${reset}"
 pylint cortex/secondary/entropy.py
 echo "${green} acc_jerk.py ${reset}"
 pylint cortex/secondary/acc_jerk.py
+echo "${green} hometime.py ${reset}"
+pylint cortex/secondary/hometime.py
+echo "${green} screen_duration.py ${reset}"
+pylint cortex/secondary/screen_duration.py
+echo "${green} call_duration.py ${reset}"
+pylint cortex/secondary/call_duration.py
 
  echo "${reset}"

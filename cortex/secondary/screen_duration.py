@@ -1,16 +1,16 @@
+""" Module for screen duration from primary feature screen active """
+import numpy as np
 from ..feature_types import secondary_feature
 from ..primary.screen_active import screen_active
-
-import numpy as np
 
 MS_IN_A_DAY = 86400000
 @secondary_feature(
     name='cortex.feature.screen_duration',
     dependencies=[screen_active]
 )
-def screen_duration(resolution=MS_IN_A_DAY, **kwargs):
-    """
-    Screen active time
+def screen_duration(**kwargs):
+    """ Computes screen_duration by summing the screen_active periods over a
+        given time.
     """
     _screen_active = screen_active(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])
