@@ -2,6 +2,7 @@
 import unittest
 import sys
 import os
+import math
 import logging
 import pandas as pd
 import cortex
@@ -23,6 +24,7 @@ class TestPrimary(unittest.TestCase):
     TEST_SCREEN_ACTIVE_END_1 = 1585358335411
     TEST_SCREEN_ACTIVE_START_2 = 1585346933781
     TEST_SCREEN_ACTIVE_END_2 = TEST_SCREEN_ACTIVE_START_2 + 3 * MS_IN_DAY
+    TEST_START_TIME_JERK = 1584137124130
 
     def setUp(self):
         """ Setup the tests """
@@ -242,6 +244,56 @@ class TestPrimary(unittest.TestCase):
                                                    end=self.TEST_SCREEN_ACTIVE_END_1)
         num_bouts = len(ret0['data'])
         self.assertEqual(num_bouts, 2)
+
+    # 3. Acc_jerk
+    def test_acc_jerk_no_data(self):
+        # Test if the participant has no data
+        ret0 = primary.acc_jerk.acc_jerk(id=self.EMPTY_PARTICIPANT,
+                                           start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
+                                           end=self.TEST_END_TIME,
+                                           resolution=self.MS_IN_DAY)
+
+        self.assertEqual(ret0['data'], [])
+        self.assertEqual(ret0['has_raw_data'], 0)
+
+    def test_acc_jerk_default_threshold(self):
+        # Test to make sure jerk is correct
+        ret1 = primary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1)
+        ACC_DEFAULT = 4.132388383691913e-05
+        self.assertEqual(ret1['data'][0]["acc_jerk"], ACC_DEFAULT)
+        self.assertEqual(len(ret1['data']), 1)
+
+
+    def test_mean_acc_jerk_differnt_thresholds(self):
+        # Test to make sure the threshold parameter works for jerk
+        #
+        # Note that threshold should not be set this high, this
+        # is done for testing purposes only
+        ret1 = primary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           threshold=5000)
+        ACC_JERK1_0 = 3.4714133045562506e-08
+        ACC_JERK1_1 = 1.4439344535270027e-07
+        self.assertEqual(ret1["data"][0]['acc_jerk'], ACC_JERK1_0)
+        self.assertEqual(ret1["data"][1]['acc_jerk'], ACC_JERK1_1)
+        self.assertEqual(len(ret1["data"]), 4)
+
+        ret2 = primary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           threshold=550000)
+        ACC_JERK2_0 = 3.4714133045562506e-08
+        ACC_JERK2_1 = 1.4439344535270027e-07
+        ACC_JERK2_2 = 2.673282483361155e-08
+        ACC_JERK2_3 = 2.8462423632716186e-10
+        self.assertEqual(ret2["data"][0]['acc_jerk'], ACC_JERK2_0)
+        self.assertEqual(ret2["data"][1]['acc_jerk'], ACC_JERK2_1)
+        self.assertEqual(ret2["data"][2]['acc_jerk'], ACC_JERK2_2)
+        self.assertEqual(ret2["data"][3]['acc_jerk'], ACC_JERK2_3)
+        self.assertEqual(len(ret2["data"]), 14)
 
 if __name__ == '__main__':
     unittest.main()
