@@ -1,15 +1,14 @@
-""" Module for computing jerk from raw accelerometer data """
-import math
-import pandas as pd
+""" Module for computing screen active bouts from screen state """
 import numpy as np
+import pandas as pd
 
-from ..feature_types import secondary_feature
+from ..feature_types import primary_feature
 from ..raw.accelerometer import accelerometer
 
-MS_IN_A_DAY = 86400000
-@secondary_feature(
-    name='cortex.feature.acc_energy',
-    dependencies=[accelerometer]
+@primary_feature(
+    name="cortex.acc_jerk",
+    dependencies=[accelerometer],
+    attach=False
 )
 def acc_jerk(threshold=500, **kwargs):
     """ Computes the jerk of the accelerometer data.
@@ -21,20 +20,27 @@ def acc_jerk(threshold=500, **kwargs):
                 points, jerk has little meaning)
     """
     _acc = accelerometer(**kwargs)['data']
-    jerk = None
     if _acc:
+        has_raw_data = 1
         acc_df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
         acc_df = acc_df[acc_df['timestamp'] != acc_df['timestamp'].shift()]
-        acc_df['dt'] =  acc_df['timestamp'].shift() - acc_df['timestamp']
+        acc_df['dt'] = acc_df['timestamp'].shift() - acc_df['timestamp']
         acc_df['x_shift'] = acc_df['x'].shift()
         acc_df['y_shift'] = acc_df['y'].shift()
         acc_df['z_shift'] = acc_df['z'].shift()
         acc_df = acc_df[acc_df['dt'] < threshold]
         # if there are no datapoints with small enough dts then skip this computation
         if len(acc_df) > 0:
-            x_sum = np.square((acc_df['x_shift'] - acc_df['x']) / acc_df['dt']).sum()
-            y_sum = np.square((acc_df['y_shift'] - acc_df['y']) / acc_df['dt']).sum()
-            z_sum = np.square((acc_df['z_shift'] - acc_df['z']) / acc_df['dt']).sum()
-            jerk = math.sqrt((x_sum + y_sum + z_sum) / len(acc_df))
+            x_sum = (acc_df['x_shift'] - acc_df['x']) / acc_df['dt']
+            y_sum = (acc_df['y_shift'] - acc_df['y']) / acc_df['dt']
+            z_sum = (acc_df['z_shift'] - acc_df['z']) / acc_df['dt']
+            acc_df["acc_jerk"] = np.sqrt((x_sum + y_sum + z_sum))
+            acc_df = acc_df.dropna()
+            _ret = list(acc_df[["timestamp", "acc_jerk"]].T.to_dict().values())
+        else:
+            _ret = []
+    else:
+        has_raw_data = 0
+        _ret = []
 
-    return {'timestamp': kwargs['start'], 'acc_jerk': jerk}
+    return {'data': _ret, 'has_raw_data': has_raw_data}
