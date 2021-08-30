@@ -43,7 +43,8 @@ class TestSecondary(unittest.TestCase):
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
                                            resolution=self.MS_IN_DAY)
-        self.assertEqual(ret1['data'][0]['mean_acc_jerk'], None)
+        ACC_DEFAULT = 4.132388383691913e-05
+        self.assertEqual(ret1['data'][0]['mean_acc_jerk'], ACC_DEFAULT)
 
 
     def test_mean_acc_jerk_differnt_thresholds(self):
@@ -51,8 +52,8 @@ class TestSecondary(unittest.TestCase):
         #
         # Note that threshold should not be set this high, this
         # is done for testing purposes only
-        ACC_JERK_5S = 0.015270228184285617
-        ACC_JERK_70S = 0.015270228184285617
+        ACC_JERK_5S = 1.05517280095106e-05
+        ACC_JERK_70S = 8.441456035918827e-06
         ret1 = secondary.mean_acc_jerk.mean_acc_jerk(id=self.TEST_PARTICIPANT,
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,

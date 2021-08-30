@@ -261,7 +261,9 @@ class TestPrimary(unittest.TestCase):
         ret1 = primary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1)
-        self.assertEqual(ret1['data'], [])
+        ACC_DEFAULT = 4.132388383691913e-05
+        self.assertEqual(ret1['data'][0]["acc_jerk"], ACC_DEFAULT)
+        self.assertEqual(len(ret1['data']), 1)
 
 
     def test_mean_acc_jerk_differnt_thresholds(self):
@@ -273,25 +275,25 @@ class TestPrimary(unittest.TestCase):
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
                                            threshold=5000)
-        ACC_JERK1_0 = 0.005528821334627469
-        ACC_JERK1_1 = 0.025011635033943765
+        ACC_JERK1_0 = 3.4714133045562506e-08
+        ACC_JERK1_1 = 1.4439344535270027e-07
         self.assertEqual(ret1["data"][0]['acc_jerk'], ACC_JERK1_0)
         self.assertEqual(ret1["data"][1]['acc_jerk'], ACC_JERK1_1)
-        self.assertEqual(len(ret1["data"]), 2)
+        self.assertEqual(len(ret1["data"]), 4)
 
         ret2 = primary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
                                            threshold=550000)
-        ACC_JERK2_0 = 0.005528821334627469
-        ACC_JERK2_1 = 0.0070467496623375986
-        ACC_JERK2_2 = 0.025011635033943765
-        ACC_JERK2_3 = 0.00028634310776760435
+        ACC_JERK2_0 = 3.4714133045562506e-08
+        ACC_JERK2_1 = 1.4439344535270027e-07
+        ACC_JERK2_2 = 2.673282483361155e-08
+        ACC_JERK2_3 = 2.8462423632716186e-10
         self.assertEqual(ret2["data"][0]['acc_jerk'], ACC_JERK2_0)
         self.assertEqual(ret2["data"][1]['acc_jerk'], ACC_JERK2_1)
         self.assertEqual(ret2["data"][2]['acc_jerk'], ACC_JERK2_2)
         self.assertEqual(ret2["data"][3]['acc_jerk'], ACC_JERK2_3)
-        self.assertEqual(len(ret2["data"]), 4)
+        self.assertEqual(len(ret2["data"]), 14)
 
 if __name__ == '__main__':
     unittest.main()
