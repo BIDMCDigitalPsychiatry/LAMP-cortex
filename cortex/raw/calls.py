@@ -8,7 +8,7 @@ import LAMP
 )
 def calls(resolution=None, limit=2147483647, cache=True, **kwargs):
     """
-    Get all cal data bounded by time interval and optionally subsample the data.
+    Get all call data bounded by time interval and optionally subsample the data.
 
     :param resolution (int): The subsampling resolution (TODO).
     :param limit (int): The maximum number of GPS events to query for (defaults to INT_MAX).

@@ -1,6 +1,6 @@
-from ..feature_types import raw_feature, log
+""" Module for raw feature accelerometer """
 import LAMP
-
+from ..feature_types import raw_feature
 
 @raw_feature(
     name="lamp.accelerometer",
@@ -29,7 +29,7 @@ def accelerometer(resolution=None, limit=20000, cache=True, recursive=True, **kw
                                                         _from=kwargs['start'],
                                                         to=to,
                                                         _limit=limit)['data']
-        if not data_next: break
-        if data_next[-1]['timestamp'] == to: break
+        if not data_next or data_next[-1]['timestamp'] == to:
+            break
         data += data_next
     return [{'timestamp': int(x['timestamp']), **x['data']} for x in data]

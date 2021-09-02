@@ -15,9 +15,12 @@ pylint cortex/feature_types.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
-# TODO: add these
-# echo "${green} gps.py ${reset}"
-# pylint cortex/raw/gps.py
+echo "${green} gps.py ${reset}"
+pylint cortex/raw/gps.py
+echo "${green} accelerometer.py ${reset}"
+pylint cortex/raw/accelerometer.py
+echo "${green} bluetooth.py ${reset}"
+pylint cortex/raw/bluetooth.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
@@ -47,5 +50,7 @@ echo "${green} screen_duration.py ${reset}"
 pylint cortex/secondary/screen_duration.py
 echo "${green} call_duration.py ${reset}"
 pylint cortex/secondary/call_duration.py
+echo "${green} bluetooth_device_count.py ${reset}"
+pylint cortex/secondary/bluetooth_device_count.py
 
  echo "${reset}"

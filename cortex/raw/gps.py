@@ -1,6 +1,6 @@
-from ..feature_types import raw_feature
+""" Module for raw feature gps """
 import LAMP
-
+from ..feature_types import raw_feature
 
 @raw_feature(
     name="lamp.gps",
@@ -31,8 +31,8 @@ def gps(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
                                                         _from=kwargs['start'],
                                                         to=to,
                                                         _limit=limit)['data']
-        if not data_next: break
-        if data_next[-1]['timestamp'] == to: break
+        if not data_next or data_next[-1]['timestamp']:
+            break
         data += data_next
 
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
