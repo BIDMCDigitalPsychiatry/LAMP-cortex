@@ -27,7 +27,7 @@ class TestSecondary(unittest.TestCase):
         logger = logging.getLogger()
         logger.setLevel(logging.CRITICAL)
 
-    # 1. mean_acc_jerk
+    # 0. mean_acc_jerk
     def test_acc_jerk_no_data(self):
         # Test if the participant has no data
         ret0 = secondary.mean_acc_jerk.mean_acc_jerk(id=self.EMPTY_PARTICIPANT,
@@ -67,6 +67,16 @@ class TestSecondary(unittest.TestCase):
                                            resolution=self.MS_IN_DAY,
                                            threshold=70000)
         self.assertEqual(ret2['data'][0]['mean_acc_jerk'], ACC_JERK_70S)
+
+    # 1. bluetooth_device_count
+    def test_device_count_no_data(self):
+        # Test if the participant has no data
+        ret0 = secondary.bluetooth_device_count.bluetooth_device_count(id=self.EMPTY_PARTICIPANT,
+                                           start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
+                                           end=self.TEST_END_TIME,
+                                           resolution=self.MS_IN_DAY)
+        for x in ret0['data']:
+            self.assertEqual(x['bluetooth_device_count'], None)
 
 if __name__ == '__main__':
     unittest.main()
