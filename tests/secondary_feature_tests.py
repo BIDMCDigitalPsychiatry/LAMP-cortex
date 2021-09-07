@@ -9,8 +9,8 @@ import cortex
 import cortex.secondary as secondary
 import LAMP
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-LAMP.connect('admin', 'LAMPLAMP')
-sys.path.insert(1,'/home/danielle/LAMP-cortex')
+LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+            os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
 
 class TestSecondary(unittest.TestCase):
