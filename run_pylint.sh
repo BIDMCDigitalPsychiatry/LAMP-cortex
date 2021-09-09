@@ -52,5 +52,9 @@ echo "${green} call_duration.py ${reset}"
 pylint cortex/secondary/call_duration.py
 echo "${green} bluetooth_device_count.py ${reset}"
 pylint cortex/secondary/bluetooth_device_count.py
+echo "${green} trip_duration.py ${reset}"
+pylint cortex/secondary/trip_duration.py
+echo "${green} trip_distance.py ${reset}"
+pylint cortex/secondary/trip_distance.py
 
  echo "${reset}"
