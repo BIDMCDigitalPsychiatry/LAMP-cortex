@@ -8,8 +8,8 @@ MS_IN_A_DAY = 86400000
     dependencies=[trips]
 )
 def trip_duration(**kwargs):
-    """Duration of trips in ms
+    """ Duration of trips in ms
     """
     _trips = trips(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     _duration = sum([trip['end']['timestamp'] - trip['start']['timestamp'] for trip in _trips])
-    return {'trip_duration': _duration}
+    return {'timestamp': kwargs['start'], 'trip_duration': _duration}
