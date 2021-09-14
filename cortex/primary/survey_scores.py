@@ -124,4 +124,4 @@ def survey_scores(question_categories=None, **kwargs):
             else:
                 _survey_scores[category].append(_event)
 
-    return [j for i in _survey_scores.values() for j in i]
+    return {'data': [j for i in _survey_scores.values() for j in i]}

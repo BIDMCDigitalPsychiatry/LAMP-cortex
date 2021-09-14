@@ -127,13 +127,13 @@ def sleep_periods(**kwargs):
 
     accelerometer_data = accelerometer(**kwargs)['data']
     if len(accelerometer_data) == 0:
-        return []
+        return {'data': [], 'has_raw_data': 0}
 
     # Calculate sleep periods
     _sleep_period_expected = _expected_sleep_period(reduced_data['data'])
 
     if _sleep_period_expected['bed'] is None:
-        return []
+        return {'data': [], 'has_raw_data': 1}
 
     accel_df = pd.DataFrame.from_dict(accelerometer_data)
     accel_df = accel_df[accel_df['timestamp'] != accel_df['timestamp'].shift()]
@@ -223,4 +223,4 @@ def sleep_periods(**kwargs):
                                     + (daily_sleep * 3600000))} #MS_IN_AN_HOUR
         _sleep_periods.append(_sleep_period)
 
-    return _sleep_periods
+    return {'data': _sleep_periods, 'has_raw_data': 1}

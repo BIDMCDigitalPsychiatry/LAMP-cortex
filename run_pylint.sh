@@ -15,9 +15,12 @@ pylint cortex/feature_types.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
-# TODO: add these
-# echo "${green} gps.py ${reset}"
-# pylint cortex/raw/gps.py
+echo "${green} gps.py ${reset}"
+pylint cortex/raw/gps.py
+echo "${green} accelerometer.py ${reset}"
+pylint cortex/raw/accelerometer.py
+echo "${green} bluetooth.py ${reset}"
+pylint cortex/raw/bluetooth.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
@@ -31,11 +34,27 @@ echo "${green} screen_active.py ${reset}"
 pylint cortex/primary/screen_active.py
 echo "${green} sleep_periods.py ${reset}"
 pylint cortex/primary/sleep_periods.py
+echo "${green} acc_jerk.py ${reset}"
+pylint cortex/primary/acc_jerk.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
 # TODO: add these
 echo "${green} entropy.py ${reset}"
 pylint cortex/secondary/entropy.py
+echo "${green} mean_acc_jerk.py ${reset}"
+pylint cortex/secondary/mean_acc_jerk.py
+echo "${green} hometime.py ${reset}"
+pylint cortex/secondary/hometime.py
+echo "${green} screen_duration.py ${reset}"
+pylint cortex/secondary/screen_duration.py
+echo "${green} call_duration.py ${reset}"
+pylint cortex/secondary/call_duration.py
+echo "${green} bluetooth_device_count.py ${reset}"
+pylint cortex/secondary/bluetooth_device_count.py
+echo "${green} trip_duration.py ${reset}"
+pylint cortex/secondary/trip_duration.py
+echo "${green} trip_distance.py ${reset}"
+pylint cortex/secondary/trip_distance.py
 
  echo "${reset}"
