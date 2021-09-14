@@ -14,4 +14,4 @@ def call_number(incoming=True, **kwargs):
     label = incoming_dict[incoming]
     _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
     _call_number = len([call for call in _calls if call['call_type'] == label])
-    return {'timestamp':kwargs['start'], 'data': _call_number}
+    return {'timestamp':kwargs['start'], 'value': _call_number}
