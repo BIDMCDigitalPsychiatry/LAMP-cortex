@@ -29,4 +29,4 @@ def entropy(**kwargs):
 
     _entropy = -sum([loc['proportion'] * math.log(loc['proportion'])
                      for loc in _significant_locations['data'] if 0 < loc['proportion'] <= 1])
-    return {'timestamp': kwargs['start'], 'entropy': _entropy}
+    return {'timestamp': kwargs['start'], 'data': _entropy}

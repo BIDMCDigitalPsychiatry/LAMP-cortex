@@ -17,4 +17,4 @@ def screen_duration(**kwargs):
     # screen duration should be None if there is no data
     if _screen_active['has_raw_data'] == 0:
         _screen_duration = None
-    return {'timestamp':kwargs['start'], 'screen_duration': _screen_duration}
+    return {'timestamp':kwargs['start'], 'data': _screen_duration}
