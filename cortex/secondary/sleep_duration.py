@@ -20,4 +20,4 @@ def sleep_duration(**kwargs):
     if _sleep_periods['has_raw_data'] == 0:
         _sleep_duration = None
     return {'timestamp':kwargs['start'],
-            'sleep_duration': _sleep_duration}
+            'value': _sleep_duration}

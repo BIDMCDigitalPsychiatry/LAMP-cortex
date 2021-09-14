@@ -24,4 +24,4 @@ def call_duration(incoming=True, **kwargs):
     # over the period, should return None
     if _call_duration == 0:
         _call_duration = None
-    return {'timestamp': kwargs['start'], 'call_duration': _call_duration}
+    return {'timestamp': kwargs['start'], 'value': _call_duration}

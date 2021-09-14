@@ -18,4 +18,4 @@ def trip_distance(**kwargs):
     _trips = _trips["data"]
     log.info('Computing Trip Distance...')
     _distance = sum([trip['distance'] for trip in _trips])
-    return {'timestamp': kwargs['start'], 'trip_distance': _distance}
+    return {'timestamp': kwargs['start'], 'value': _distance}
