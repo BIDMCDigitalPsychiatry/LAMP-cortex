@@ -6,7 +6,11 @@ from ..feature_types import raw_feature
     name="lamp.gps",
     dependencies=["lamp.gps", "lamp.gps.contextual"]
 )
-def gps(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
+def gps(resolution=None, 
+        _limit=10000, 
+        cache=False, 
+        recursive=True, 
+        **kwargs):
     """
     Get all GPS data bounded by time interval and optionally subsample the data.
 
@@ -23,14 +27,14 @@ def gps(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
                                                origin="lamp.gps",
                                                _from=kwargs['start'],
                                                to=kwargs['end'],
-                                               _limit=limit)['data']
+                                               _limit=_limit)['data']
     while data and recursive:
         to = data[-1]['timestamp']
         data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                         origin="lamp.gps",
                                                         _from=kwargs['start'],
                                                         to=to,
-                                                        _limit=limit)['data']
+                                                        _limit=_limit)['data']
         if not data_next or data_next[-1]['timestamp']:
             break
         data += data_next

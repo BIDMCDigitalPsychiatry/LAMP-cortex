@@ -69,18 +69,18 @@ def raw_feature(name, dependencies):
                     cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
                     assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
                 else:
-                    cache_dir = os.path.expanduser('~/.cache/cortex')
-                    if not os.path.exists(cache_dir):
-                        log.info("Caching directory does not yet exist, creating...")
-                        os.makedirs(cache_dir)
+#                     cache_dir = os.path.expanduser('~/.cache/cortex')
+#                     if not os.path.exists(cache_dir):
+#                         log.info("Caching directory does not yet exist, creating...")
+#                         os.makedirs(cache_dir)
+                    console.log("No caching directory passed. ")
                     assert os.path.exists(cache_dir), ("Default caching directory could" +
                                     " not be used, specify an alternative locatiton as a " +
                                     "keyword argument: 'cache', or as an enviornmental" +
                                     " variable: 'CORTEX_CACHE_DIR'")
+                    
                 log.info("Cortex caching directory set to: " + cache_dir)
-
                 log.info("Processing raw feature " + name + "...")
-
                 # local data caching TODO: combine pickle window with API data
                 found = False
                 for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp

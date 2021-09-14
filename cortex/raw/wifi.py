@@ -6,7 +6,11 @@ import LAMP
     name="lamp.wifi",
     dependencies=["lamp.wifi"]
 )
-def wifi(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
+def wifi(resolution=None, 
+         _limit=10000, 
+         cache=False, 
+         recursive=True, 
+         **kwargs):
     """
     Get all wifi data bounded by time interval and optionally subsample the data.
 
@@ -21,14 +25,14 @@ def wifi(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
                                                origin="lamp.wifi",
                                                _from=kwargs['start'],
                                                to=kwargs['end'],
-                                               _limit=limit)['data']
+                                               _limit=_limit)['data']
     while data and recursive:
         to = data[-1]['timestamp']
         data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                         origin="lamp.wifi",
                                                         _from=kwargs['start'],
                                                         to=to,
-                                                        _limit=limit)['data']
+                                                        _limit=_limit)['data']
         if not data_next: break
         if data_next[-1]['timestamp'] == to: break
         data += data_next

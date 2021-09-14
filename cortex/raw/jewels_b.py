@@ -6,7 +6,10 @@ import LAMP
     name="lamp.jewels_b",
     dependencies=["lamp.jewels_b"]
 )
-def jewels_b(resolution=None, limit=20000, cache=True, **kwargs):
+def jewels_b(resolution=None, 
+             _limit=10000, 
+             cache=False, 
+             **kwargs):
 
     jewels_b_ids = [activity['id'] for activity in
                     LAMP.Activity.all_by_participant(kwargs['id'])['data']
@@ -21,7 +24,7 @@ def jewels_b(resolution=None, limit=20000, cache=True, **kwargs):
                  for res in LAMP.ActivityEvent.all_by_participant(kwargs['id'],
                                                                   _from=kwargs['start'],
                                                                   to=kwargs['end'],
-                                                                  _limit=limit)['data']
+                                                                  _limit=_limit)['data']
                  if res['activity'] in jewels_b_ids]
 
     while _jewels_b:
@@ -35,7 +38,7 @@ def jewels_b(resolution=None, limit=20000, cache=True, **kwargs):
                           for res in LAMP.ActivityEvent.all_by_participant(kwargs['id'],
                                                                            _from=kwargs['start'],
                                                                            to=kwargs['end'],
-                                                                           _limit=limit)['data']
+                                                                           _limit=_limit)['data']
                           if res['activity'] in jewels_b_ids]
 
         if not _jewels_b_next: break

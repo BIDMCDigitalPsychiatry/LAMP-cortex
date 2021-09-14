@@ -6,7 +6,11 @@ from ..feature_types import raw_feature
     name="lamp.bluetooth",
     dependencies=["lamp.bluetooth"]
 )
-def bluetooth(resolution=None, limit=20000, cache=True, recursive=True, **kwargs):
+def bluetooth(resolution=None, 
+              _limit=10000, 
+              cache=False, 
+              recursive=True, 
+              **kwargs):
     """
     Get all bluetooth data bounded by time interval and optionally subsample the data.
 
@@ -21,14 +25,14 @@ def bluetooth(resolution=None, limit=20000, cache=True, recursive=True, **kwargs
                                                origin="lamp.bluetooth",
                                                _from=kwargs['start'],
                                                to=kwargs['end'],
-                                               _limit=limit)['data']
+                                               _limit=_limit)['data']
     while data and recursive:
         to = data[-1]['timestamp']
         data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                         origin="lamp.bluetooth",
                                                         _from=kwargs['start'],
                                                         to=to,
-                                                        _limit=limit)['data']
+                                                        _limit=_limit)['data']
         if not data_next or data_next[-1]['timestamp'] == to:
             break
         data += data_next

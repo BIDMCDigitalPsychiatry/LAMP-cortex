@@ -6,7 +6,10 @@ import LAMP
     name="lamp.steps",
     dependencies=["lamp.steps"]
 )
-def steps(resolution=None, limit=2147483647, cache=True, **kwargs):
+def steps(resolution=None, 
+          _limit=2147483647, 
+          cache=False, 
+          **kwargs):
     """
     Get all cal data bounded by time interval and optionally subsample the data.
 
@@ -20,7 +23,7 @@ def steps(resolution=None, limit=2147483647, cache=True, **kwargs):
                                                origin="lamp.steps",
                                                _from=kwargs['start'],
                                                to=kwargs['end'],
-                                               _limit=limit)['data']
+                                               _limit=_limit)['data']
 
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
 

@@ -7,7 +7,10 @@ import LAMP
     name="lamp.screen_state",
     dependencies=["lamp.screen_state"]
 )
-def screen_state(resolution=None, limit=2147483647, cache=True, **kwargs):
+def screen_state(resolution=None, 
+                 _limit=2147483647, 
+                 cache=False, 
+                 **kwargs):
     """
     Get all screen state data bounded by time interval and optionally subsample the data.
 
