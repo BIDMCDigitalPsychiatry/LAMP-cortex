@@ -46,7 +46,7 @@ def data_quality(feature, bin_size=-1, **kwargs):
                                 kwargs["start"],
                                 kwargs["end"])
 
-    return {'timestamp':kwargs['start'], 'data': _data_quality}
+    return {'timestamp':kwargs['start'], 'data_quality': _data_quality}
 
 def _get_quality(_data, bin_size, start, end):
     """ Returns the data quality (percent of bins with one or more data points).

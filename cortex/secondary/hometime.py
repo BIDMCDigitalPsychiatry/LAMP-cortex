@@ -18,4 +18,4 @@ def hometime(**kwargs):
     else:
         _hometime = [loc['duration'] for loc in _significant_locations['data']
                      if loc['rank'] == 0][0]
-    return {'timestamp': kwargs['start'], 'data': _hometime}
+    return {'timestamp': kwargs['start'], 'hometime': _hometime}
