@@ -56,5 +56,7 @@ echo "${green} trip_duration.py ${reset}"
 pylint cortex/secondary/trip_duration.py
 echo "${green} trip_distance.py ${reset}"
 pylint cortex/secondary/trip_distance.py
+echo "${green} data_quality.py ${reset}"
+pylint cortex/secondary/data_quality.py
 
  echo "${reset}"

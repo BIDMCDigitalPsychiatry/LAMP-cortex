@@ -78,5 +78,55 @@ class TestSecondary(unittest.TestCase):
         for x in ret0['data']:
             self.assertEqual(x['bluetooth_device_count'], None)
 
+    # 2. data_quality
+    def test_data_quality_no_data(self):
+        # Test if the participant has no data
+        ret0 = secondary.data_quality.data_quality(id=self.EMPTY_PARTICIPANT,
+                                           start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
+                                           end=self.TEST_END_TIME,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="gps")
+        for x in ret0['data']:
+            self.assertEqual(x['data_quality'], 0)
+
+    def test_data_quality_undefined_feature(self):
+        # Test that None is returned for a feature that does not exist
+        ret0 = secondary.data_quality.data_quality(id=self.EMPTY_PARTICIPANT,
+                                           start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
+                                           end=self.TEST_END_TIME,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="abcdef")
+        for x in ret0['data']:
+            self.assertEqual(x['data_quality'], None)
+
+    def test_data_quality_gps(self):
+        # Test that gps data quality works
+        ret0 = secondary.data_quality.data_quality(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + 2 * self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="gps")
+        self.assertEqual(ret0['data'][0]['data_quality'], 0.9166666666666666)
+        self.assertEqual(ret0['data'][1]['data_quality'], 0.7222222222222222)
+
+    def test_data_quality_bin_size(self):
+        # Test that bin size works
+        ret0 = secondary.data_quality.data_quality(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="gps",
+                                           bin_size=10000)
+        self.assertEqual(ret0['data'][0]['data_quality'], 0.05775462962962963)
+
+    def test_data_quality_acc(self):
+        # test that acc works
+        ret0 = secondary.data_quality.data_quality(id=self.TEST_PARTICIPANT,
+                                           start=self.TEST_START_TIME_JERK,
+                                           end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="accelerometer")
+        self.assertEqual(ret0['data'][0]['data_quality'], 0.001412037037037037)
+
 if __name__ == '__main__':
     unittest.main()
