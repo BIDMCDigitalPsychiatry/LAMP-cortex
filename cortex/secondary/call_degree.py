@@ -14,4 +14,4 @@ def call_degree(**kwargs):
     """
     _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
     _call_degree = np.unique([call['call_trace'] for call in _calls]).size
-    return {'timestamp':kwargs['start'], 'data': _call_degree}
+    return {'timestamp':kwargs['start'], 'value': _call_degree}
