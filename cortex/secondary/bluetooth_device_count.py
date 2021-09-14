@@ -19,4 +19,4 @@ def bluetooth_device_count(**kwargs):
     if len(_bluetooth) > 0:
         _device_count = len(np.unique(_bluetooth['bt_address'], return_counts=False))
 
-    return {'timestamp': kwargs['start'], 'bluetooth_device_count': _device_count}
+    return {'timestamp': kwargs['start'], 'data': _device_count}
