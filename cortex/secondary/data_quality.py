@@ -62,6 +62,6 @@ def _get_quality(_data, bin_size, start, end):
     count = 0
     total_bins = (end - start) / bin_size
     for i in range(start, end, bin_size):
-        if len(_data[(_data["timestamp"] < i + bin_size) & (i < _data["timestamp"])]) > 0:
+        if len(_data["timestamp"].between(i,i + bin_size,inclusive="right")) > 0:
             count += 1
     return count / total_bins
