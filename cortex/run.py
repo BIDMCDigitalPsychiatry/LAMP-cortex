@@ -164,7 +164,6 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
     # 5 Find start, end
     # FIXME: Seems to not work correctly in every case?
     if start is None:
-        _res = 
         start = min([getattr(mod, mod_name)(id=participant,
                                             start=0,
                                             end=int(time.time())*1000,

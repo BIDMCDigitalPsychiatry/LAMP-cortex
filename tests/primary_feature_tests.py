@@ -213,7 +213,6 @@ class TestPrimary(unittest.TestCase):
         self.assertEqual(ret[1]['longitude'], -71.105)
         self.assertEqual(len(ret), 2)
 
-
     # 2. Screen active
     def test_screenactive_no_data(self):
         # Test if the participant has no data
