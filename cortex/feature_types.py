@@ -355,7 +355,7 @@ def secondary_feature(name, dependencies):
 
 ### Auxilliary functions ###
 
-E
+## Attach ##
 
 def delete_attach(participant, features=None):
     """
@@ -373,6 +373,7 @@ def delete_attach(participant, features=None):
                 LAMP.Type.set_attachment(participant, 'me', attachment_key=feature, body=None)
                 log.info("Reset " + feature + "...")
 
+## Cache ##
 def delete_cache(id, features=None, cache_dir=None):
     """
     Deletes all cached raw features for a participant (requires LAMP-core 2021.4.7 or later)

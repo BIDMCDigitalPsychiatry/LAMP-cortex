@@ -164,18 +164,22 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
     # 5 Find start, end
     # FIXME: Seems to not work correctly in every case?
     if start is None:
+        _res = 
         start = min([getattr(mod, mod_name)(id=participant,
                                             start=0,
                                             end=int(time.time())*1000,
                                             cache=False,
                                             recursive=False,
+                                            attach=False,
                                             limit=-1)['data'][0]['timestamp']
                      for mod_name, mod in inspect.getmembers(raw, inspect.ismodule)
                      if len(getattr(mod, mod_name)(id=participant,
                                                    start=0,
                                                    end=int(time.time())*1000,
                                                    cache=False,
-                                                   recursive=False, limit=-1)['data']) > 0])
+                                                   recursive=False, 
+                                                   attach=False,
+                                                   limit=-1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
             start = set_date_9am(start, 1)
     if end is None:
