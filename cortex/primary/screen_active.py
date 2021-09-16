@@ -7,10 +7,10 @@ from ..raw.screen_state import screen_state
 
 @primary_feature(
     name="cortex.screen_active",
-    dependencies=[screen_state],
-    attach=True
+    dependencies=[screen_state]
 )
-def screen_active(**kwargs):
+def screen_active(attach=False,
+                  **kwargs):
     """ Builds bout of screen activity.
 
         Checks for both state = 0 --> ON

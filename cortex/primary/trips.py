@@ -10,10 +10,10 @@ TIME_THRESHOLD = 600
 
 @primary_feature(
     name="cortex.trips",
-    dependencies=[gps],
-    attach=True
+    dependencies=[gps]
 )
-def trips(**kwargs):
+def trips(attach=True,
+          **kwargs):
     """
     :param id (string):
     :param start (int):
@@ -74,13 +74,13 @@ def trips(**kwargs):
         gps_data['stationary_1'] = gps_data['stationary'].shift()
         gps_data['idx'] = gps_data.index
         new = gps_data[gps_data['stationary'] != gps_data['stationary_1']]
-        new['idx_shift'] = new['idx'].shift(-1, fill_value=0)
+        new.loc[:, 'idx_shift'] = new['idx'].shift(-1, fill_value=0)
         new = new[new['stationary'] == False]
         new = new[new['idx_shift'] != 0]
-        new['distance'] = new.apply(lambda row:
+        new.loc[:, 'distance'] = new.apply(lambda row:
                                 total_distance(gps_data, 'dx',
                                 row['idx'], row['idx_shift']), axis=1)
-        new['end'] = new.apply(lambda row: end_timestamp(gps_data, row['idx_shift']), axis=1)
+        new.loc[:, 'end'] = new.apply(lambda row: end_timestamp(gps_data, row['idx_shift']), axis=1)
         new = new[['timestamp', 'end', 'latitude', 'longitude', 'distance']]
         new.columns = ['start', 'end', 'latitude', 'longitude','distance']
         return list(new.T.to_dict().values())

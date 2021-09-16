@@ -7,10 +7,11 @@ from ..raw.accelerometer import accelerometer
 
 @primary_feature(
     name="cortex.acc_jerk",
-    dependencies=[accelerometer],
-    attach=False
+    dependencies=[accelerometer]
 )
-def acc_jerk(threshold=500, **kwargs):
+def acc_jerk(threshold=500,
+             attach=False,
+             **kwargs):
     """ Computes the jerk of the accelerometer data.
         Jerk is the squared differences in accelerometer.
 
@@ -18,6 +19,7 @@ def acc_jerk(threshold=500, **kwargs):
             threshold - the max difference between points to be computed in the sum in ms
                 (ie if there is too large of a gap in time between accelerometer
                 points, jerk has little meaning)
+            attach - indicates whether to use LAMP.Type.attachments in calculating the feature
         returns:
             the jerk in m / s^3
     """

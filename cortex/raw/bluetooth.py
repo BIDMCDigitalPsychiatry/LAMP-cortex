@@ -6,16 +6,17 @@ from ..feature_types import raw_feature
     name="lamp.bluetooth",
     dependencies=["lamp.bluetooth"]
 )
-def bluetooth(resolution=None, 
-              _limit=10000, 
+def bluetooth(_limit=10000, 
               cache=False, 
               recursive=True, 
               **kwargs):
     """
     Get all bluetooth data bounded by time interval and optionally subsample the data.
 
-    :param resolution (int): The subsampling resolution (TODO).
-    :param limit (int): The maximum number of Bluetooth events to query for (defaults to INT_MAX).
+    :param _limit (int): The maximum number of sensor events to query for in a single request
+    :param cache (bool): Indicates whether to save raw data locally in cache dir
+    :param recursive (bool): if True, continue requesting data until all data is returned; else just one request
+    
     :return timestamp (int): The UTC timestamp for the Bluetooth event.
     :return bt_rssi (int): The rssi for the Bluetooth event.
     :return bt_address (str): Address of Bluetooth event

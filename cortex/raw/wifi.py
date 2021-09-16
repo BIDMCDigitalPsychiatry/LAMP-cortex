@@ -6,21 +6,19 @@ import LAMP
     name="lamp.wifi",
     dependencies=["lamp.wifi"]
 )
-def wifi(resolution=None, 
-         _limit=10000, 
+def wifi(_limit=10000, 
          cache=False, 
-         recursive=True, 
+         recursive=False, 
          **kwargs):
     """
-    Get all wifi data bounded by time interval and optionally subsample the data.
+    Get all wifi data bounded by time interval
 
-    :param resolution (int): The subsampling resolution (TODO).
-    :param limit (int): The maximum number of wifi events to query for (defaults to INT_MAX).
-    :return timestamp (int): The UTC timestamp for the Wifi event.
-    :return bssid (str): BSSID of Wifi event
-    :return ssid (str): SSID of Wifi event
+    :param _limit (int): The maximum number of sensor events to query for in a single request
+    :param cache (bool): Indicates whether to save raw data locally in cache dir
+    :param recursive (bool): if True, continue requesting data until all data is returned; else just one request
+    
+    :return timestamp (int): The UTC timestamp for the wifi event.
     """
-
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.wifi",
                                                _from=kwargs['start'],
@@ -33,8 +31,9 @@ def wifi(resolution=None,
                                                         _from=kwargs['start'],
                                                         to=to,
                                                         _limit=_limit)['data']
-        if not data_next: break
-        if data_next[-1]['timestamp'] == to: break
+        if not data_next or data_next[-1]['timestamp'] == to:
+            break
         data += data_next
 
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+
