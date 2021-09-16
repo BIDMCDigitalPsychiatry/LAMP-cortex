@@ -1,5 +1,6 @@
 """ Module to compute the data quality from raw data """
 import pandas as pd
+import numpy as np
 
 from ..feature_types import secondary_feature, log
 from ..raw.accelerometer import accelerometer
@@ -36,10 +37,10 @@ def data_quality(feature, bin_size=-1, **kwargs):
             bin_width = 1000 * 10 * 60
     else:
         log.info("This feature is not yet supported.")
-        return {'timestamp':kwargs['start'], 'data_quality': None}
+        return {'timestamp':kwargs['start'], 'value': None}
 
     if len(_data) == 0:
-        return {'timestamp':kwargs['start'], 'data_quality': 0}
+        return {'timestamp':kwargs['start'], 'value': 0}
 
     _data_quality = _get_quality(pd.DataFrame(_data)[["timestamp"]],
                                 bin_width,
@@ -62,6 +63,7 @@ def _get_quality(_data, bin_size, start, end):
     count = 0
     total_bins = (end - start) / bin_size
     for i in range(start, end, bin_size):
-        if len(_data[(_data["timestamp"] < i + bin_size) & (i < _data["timestamp"])]) > 0:
+        arr = _data["timestamp"].to_numpy()
+        if np.any((arr < i + bin_size) & (arr >= i)):
             count += 1
     return count / total_bins
