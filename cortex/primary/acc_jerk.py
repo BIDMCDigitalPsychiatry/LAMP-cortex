@@ -41,7 +41,7 @@ def acc_jerk(threshold=500,
             z_sum = (acc_df['z_shift'] - acc_df['z']) / acc_df['dt']
             acc_df['acc_jerk'] = np.sqrt((x_sum.pow(2) + y_sum.pow(2) + z_sum.pow(2)))
             acc_df = acc_df.dropna()
-            acc_df = acc_df[['timestamp_shift', 'timestamp' , 'acc_jerk']]
+            acc_df = acc_df[['timestamp', 'timestamp_shift', 'acc_jerk']]
             acc_df.columns = ['start', 'end', 'acc_jerk']
             _ret = list(acc_df[['start', 'end', 'acc_jerk']].T.to_dict().values())
         else:
