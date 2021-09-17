@@ -218,6 +218,36 @@ def primary_feature(name, dependencies):
 
             # Get previously calculated primary feature results from attachments, if you do attach.
             has_raw_data = -1
+            
+            def _primary_filter(_res, has_raw_data, *args, **kwargs):
+                """
+                Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']]
+                
+                Arguments:
+                    
+                Returns:
+                """
+                _body_new_copy = copy.deepcopy(_res)
+                _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':
+                            [b for b in _body_new_copy if
+                                    ((b['start'] >= kwargs['start'] and b['end'] <= kwargs['end'])
+                                  or (b['start'] < kwargs['start'] and kwargs['start'] < b['end'] <= kwargs['end'])
+                                  or (kwargs['start'] < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))],
+                          'has_raw_data': has_raw_data }
+
+                # make sure start and end match kwargs
+                if len(_event['data']) > 0:
+                    if _event['data'][0]['start'] < kwargs['start']:
+                        _event['data'][0]['start'] = kwargs['start']
+                        _event['data'][0]['duration'] = _event['data'][0]['end'] - _event['data'][0]['start']
+                    if _event['data'][len(_event['data']) - 1]['end'] > kwargs['end']:
+                        _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
+                        _event['data'][len(_event['data']) - 1]['duration'] = (_event['data'][len(_event['data']) - 1]['end']
+                                                                - _event['data'][len(_event['data']) - 1]['start'])
+                        
+                return _event
+                
+                
             def _primary_attach(func, *args, **kwargs):
                 """
                 Utilize and update LAMP attachments to speed processing of primary feature
@@ -257,24 +287,7 @@ def primary_feature(name, dependencies):
                 unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
                 _body_new=sorted((unique_dict),key=lambda x: x['start'])
                 # need to use a copy so you don't overwrite the original
-                _body_new_copy = copy.deepcopy(_body_new)
-
-                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data':
-                            [b for b in _body_new_copy if
-                                    ((b['start'] >= start and b['end'] <= kwargs['end'])
-                                  or (b['start'] < start and start < b['end'] <= kwargs['end'])
-                                  or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))],
-                          'has_raw_data': has_raw_data }
-
-                # make sure start and end match kwargs
-                if len(_event['data']) > 0:
-                    if _event['data'][0]['start'] < start:
-                        _event['data'][0]['start'] = start
-                        _event['data'][0]['duration'] = _event['data'][0]['end'] - _event['data'][0]['start']
-                    if _event['data'][len(_event['data']) - 1]['end'] > kwargs['end']:
-                        _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
-                        _event['data'][len(_event['data']) - 1]['duration'] = (_event['data'][len(_event['data']) - 1]['end']
-                                                                - _event['data'][len(_event['data']) - 1]['start'])
+                _event = _primary_filter(_body_new, *args, **kwargs)
 
                 # Upload new features as attachment.
                 log.info(f"Saving primary feature \"{name}\"...")
@@ -288,7 +301,9 @@ def primary_feature(name, dependencies):
                 
             else:
                 has_raw_data = -1
-                _result = func(*args, **kwargs)
+                _result_init = func(*args, **kwargs)
+                _result = _primary_filter(_result_init['data'], _result_init['has_raw_data'], *args, **kwargs)
+                
                 if 'has_raw_data' in _result:
                     has_raw_data = _result['has_raw_data']
                 _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result['data'], 'has_raw_data': has_raw_data}

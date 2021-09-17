@@ -57,6 +57,8 @@ def screen_active(attach=False,
     else:
         # assume normal is correct
         _ret_screen_active = _screen_active
+        
+    # filter out events that 
     return {'data': _ret_screen_active, 'has_raw_data': has_raw_data}
 
 def _get_screen_state_data(_screen_state, flipped=0):
