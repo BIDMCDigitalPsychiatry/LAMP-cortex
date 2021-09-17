@@ -13,7 +13,7 @@ def acc_jerk(threshold=500,
              attach=False,
              **kwargs):
     """ Computes the jerk of the accelerometer data.
-        Jerk is the squared differences in accelerometer.
+        Rate at which the participant's accelerometer data changes with respect to time.
 
         params:
             threshold - the max difference between points to be computed in the sum in ms
@@ -29,11 +29,11 @@ def acc_jerk(threshold=500,
         acc_df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
         acc_df['timestamp_shift'] = acc_df['timestamp'].shift()
         acc_df = acc_df[acc_df['timestamp'] != acc_df['timestamp_shift']]
-        acc_df['dt'] = (acc_df['timestamp'].shift() - acc_df['timestamp']) * 1000
+        acc_df['dt'] = (acc_df['timestamp'].shift() - acc_df['timestamp']) / 1000
         acc_df['x_shift'] = acc_df['x'].shift()
         acc_df['y_shift'] = acc_df['y'].shift()
         acc_df['z_shift'] = acc_df['z'].shift()
-        acc_df = acc_df[acc_df['dt'] < (threshold * 1000)]
+        acc_df = acc_df[acc_df['dt'] < (threshold / 1000)]
         # if there are no datapoints with small enough dts then skip this computation
         if len(acc_df) > 0:
             x_sum = (acc_df['x_shift'] - acc_df['x']) / acc_df['dt']
@@ -43,7 +43,7 @@ def acc_jerk(threshold=500,
             acc_df = acc_df.dropna()
             acc_df = acc_df[['timestamp_shift', 'timestamp' , 'acc_jerk']]
             acc_df.columns = ['start', 'end', 'acc_jerk']
-            _ret = list(acc_df[['start', ' end', 'acc_jerk']].T.to_dict().values())
+            _ret = list(acc_df[['start', 'end', 'acc_jerk']].T.to_dict().values())
         else:
             _ret = []
     else:
