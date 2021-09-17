@@ -28,7 +28,7 @@ def all_features():
 # Raw features.
 def raw_feature(name, dependencies):
     """
-    Some explanation of how to use this decorator goes here.
+    Determines whether caching should be performed upon raw data request. Also adds data quality metrics to the results after the request is successfully completed
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
@@ -60,29 +60,22 @@ def raw_feature(name, dependencies):
 
             # Find a valid local cache directory
             cache = kwargs.get('cache')
+                
+            def _raw_caching(func, *args, **kwargs):
+                """
+                Finds cached data for raw features
+                
+                """
+                
+                if os.getenv('CORTEX_CACHE_DIR') is None:
+                    raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables. Please set it to a valid path, or disable caching.")
+                cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
+                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist. Please set 'CORTEX_CACHE_DIR' to a valid path, or disbale caching."                    
 
-            if cache is None or cache:
-                if kwargs.get('cache_dir') is not None:
-                    cache_dir = os.path.expanduser(kwargs['cache_dir'])
-                    assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
-                elif os.getenv('CORTEX_CACHE_DIR') is not None:
-                    cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
-                    assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
-                else:
-                    cache_dir = os.path.expanduser('~/.cache/cortex')
-                    if not os.path.exists(cache_dir):
-                        log.info("Caching directory does not yet exist, creating...")
-                        os.makedirs(cache_dir)
-                    assert os.path.exists(cache_dir), ("Default caching directory could" +
-                                    " not be used, specify an alternative locatiton as a " +
-                                    "keyword argument: 'cache', or as an enviornmental" +
-                                    " variable: 'CORTEX_CACHE_DIR'")
                 log.info("Cortex caching directory set to: " + cache_dir)
-
                 log.info("Processing raw feature " + name + "...")
-
+                
                 # local data caching TODO: combine pickle window with API data
-                found = False
                 for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
                     path = cache_dir + '/' + file
 
@@ -106,29 +99,35 @@ def raw_feature(name, dependencies):
                                                   compression=None)
                         else:
                             _result = pickle.load(path)
-                        found = True
+                            
                         log.info('Using saved raw data...')
-                        break
+                        return _result
+                    
+                # If a cached file could not be found, use function to get new data and save
 
-                if not found:
-                    log.info('No saved raw data found, getting new...')
-                    _result = func(*args, **kwargs)
-                    pickle_path = (cache_dir + '/' +
-                                   name.split('.')[-1] + '_' +
-                                   kwargs['id'] + '_' +
-                                   str(kwargs['start']) + '_' +
-                                   str(kwargs['end']) + '.cortex')
+                log.info('No saved raw data found, getting new...')
+                _result = func(**kwargs)
+                pickle_path = (cache_dir + '/' +
+                               name.split('.')[-1] + '_' +
+                               kwargs['id'] + '_' +
+                               str(kwargs['start']) + '_' +
+                               str(kwargs['end']) + '.cortex')
 
-                    if os.getenv('CORTEX_CACHE_COMPRESSION') is not None:
-                        assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
-                        pickle_path += '.' + os.getenv('CORTEX_CACHE_COMPRESSION')
+                if os.getenv('CORTEX_CACHE_COMPRESSION') is not None:
+                    assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
+                    pickle_path += '.' + os.getenv('CORTEX_CACHE_COMPRESSION')
 
-                    pickle.dump(_result,
-                                pickle_path,
-                                compression=kwargs.get('compression'),
-                                set_default_extension=False)
+                pickle.dump(_result,
+                            pickle_path,
+                            compression=kwargs.get('compression'),
+                            set_default_extension=False)
 
-                    log.info("Saving raw data as " + pickle_path + "...")
+                log.info("Saving raw data as " + pickle_path + "...")
+                return _result
+
+            #Get cached data if specified; otherwise get data via API request
+            if cache:
+                _result = _raw_caching(func=func, *args, **kwargs)
             else:
                 _result = func(*args, **kwargs)
 
@@ -138,44 +137,51 @@ def raw_feature(name, dependencies):
                                r['timestamp'] <= kwargs['end']]}
 
             # Add data quality metrics
-            TEN_MINUTES = 1000 * 60 * 10
-            RES = TEN_MINUTES # set the resolution for quality
-            HZ_THRESH = 0.5 # set threshold in hz
-            idx = 0
-            if len(_event['data']) > 0:
-                end_time = kwargs["end"]# int(_event['data'][0]['timestamp'])
-                start_time = kwargs["start"]# int(_event['data'][len(_event['data'])-1]['timestamp'])
-                res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
-                if res_counts.shape[0] > 0:
-                    for i, x in enumerate(range(end_time, start_time, -1 * RES)):
-                        while (idx + 1 < len(_event['data']) and
-                               _event['data'][idx]['timestamp'] > x - RES):
-                            res_counts[i] += 1
-                            idx += 1
-                    fs = res_counts / (RES / 1000)
-                    _event["fs_mean"] = fs.mean()
-                    _event["fs_var"] = fs.var()
-                    _event["percent_good_data"] = np.sum(fs > HZ_THRESH) / fs.shape[0]
+            def _raw_data_quality(event, *args, **kwargs):
+                """
+                Add data quality metrics to raw data event
+                """
+                TEN_MINUTES = 1000 * 60 * 10
+                RES = TEN_MINUTES # set the resolution for quality
+                HZ_THRESH = 0.5 # set threshold in hz
+                idx = 0
+                if len(event['data']) > 0:
+                    start_time, end_time = kwargs['start'], kwargs["end"]
+                    res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
+                    if res_counts.shape[0] > 0:
+                        for i, x in enumerate(range(end_time, start_time, -1 * RES)):
+                            while (idx + 1 < len(event['data']) and
+                                   event['data'][idx]['timestamp'] > x - RES):
+                                res_counts[i] += 1
+                                idx += 1
+                        fs = res_counts / (RES / 1000)
+                        event["fs_mean"] = fs.mean()
+                        event["fs_var"] = fs.var()
+                        event["percent_good_data"] = np.sum(fs > HZ_THRESH) / fs.shape[0]
+                    else:
+                        event["fs_mean"] = len(event['data']) / (RES / 1000)
+                        event["fs_var"] = 0
+                        event["percent_good_data"] = event["fs_mean"] > HZ_THRESH
                 else:
-                    _event["fs_mean"] = len(_event['data']) / (RES / 1000)
-                    _event["fs_var"] = 0
-                    _event["percent_good_data"] = _event["fs_mean"] > HZ_THRESH
-            else:
-                _event["fs_mean"] = 0
-                _event["fs_var"] = 0
-                _event["percent_good_data"] = 0
+                    event["fs_mean"] = 0
+                    event["fs_var"] = 0
+                    event["percent_good_data"] = 0
+                    
+                return event
+                    
+            _event = _raw_data_quality(_event, *args, **kwargs)
 
             return _event
 
         # When we register/save the function, make sure we
         # save the decorated and not the RAW function.
         _wrapper2.__name__ = func.__name__
-        __features__.append({ 'name': name, 'type': 'raw', 'dependencies': dependencies, 'callable': _wrapper2 })
+        __features__.append({'name': name, 'type': 'raw', 'dependencies': dependencies, 'callable': _wrapper2})
         return _wrapper2
     return _wrapper1
 
 # Primary features.
-def primary_feature(name, dependencies, attach):
+def primary_feature(name, dependencies):
     """
     Some explanation of how to use this decorator goes here.
     """
@@ -207,13 +213,45 @@ def primary_feature(name, dependencies, attach):
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
             log.info(f"Processing primary feature \"{name}\"...")
-            log.info(kwargs['start']) # delete this
             # TODO: Require primary feature dependencies to be raw features!
             # -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
 
             # Get previously calculated primary feature results from attachments, if you do attach.
             has_raw_data = -1
-            if attach:
+            
+            def _primary_filter(_res, has_raw_data, *args, **kwargs):
+                """
+                Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']]
+                
+                Arguments:
+                    
+                Returns:
+                """
+                _body_new_copy = copy.deepcopy(_res)
+                _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':
+                            [b for b in _body_new_copy if
+                                    ((b['start'] >= kwargs['start'] and b['end'] <= kwargs['end'])
+                                  or (b['start'] < kwargs['start'] and kwargs['start'] < b['end'] <= kwargs['end'])
+                                  or (kwargs['start'] < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))],
+                          'has_raw_data': has_raw_data }
+
+                # make sure start and end match kwargs
+                if len(_event['data']) > 0:
+                    if _event['data'][0]['start'] < kwargs['start']:
+                        _event['data'][0]['start'] = kwargs['start']
+                        _event['data'][0]['duration'] = _event['data'][0]['end'] - _event['data'][0]['start']
+                    if _event['data'][len(_event['data']) - 1]['end'] > kwargs['end']:
+                        _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
+                        _event['data'][len(_event['data']) - 1]['duration'] = (_event['data'][len(_event['data']) - 1]['end']
+                                                                - _event['data'][len(_event['data']) - 1]['start'])
+                        
+                return _event
+                
+                
+            def _primary_attach(func, *args, **kwargs):
+                """
+                Utilize and update LAMP attachments to speed processing of primary feature
+                """
                 try:
                     attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
                     # remove last in case interval still open
@@ -249,31 +287,23 @@ def primary_feature(name, dependencies, attach):
                 unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
                 _body_new=sorted((unique_dict),key=lambda x: x['start'])
                 # need to use a copy so you don't overwrite the original
-                _body_new_copy = copy.deepcopy(_body_new)
-
-                _event = { 'timestamp': start, 'duration': kwargs['end'] - start, 'data':
-                            [b for b in _body_new_copy if
-                                    ((b['start'] >= start and b['end'] <= kwargs['end'])
-                                  or (b['start'] < start and start < b['end'] <= kwargs['end'])
-                                  or (start < b['start'] < kwargs['end'] and b['end'] > kwargs['end']))],
-                          'has_raw_data': has_raw_data }
-
-                # make sure start and end match kwargs
-                if len(_event['data']) > 0:
-                    if _event['data'][0]['start'] < start:
-                        _event['data'][0]['start'] = start
-                        _event['data'][0]['duration'] = _event['data'][0]['end'] - _event['data'][0]['start']
-                    if _event['data'][len(_event['data']) - 1]['end'] > kwargs['end']:
-                        _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
-                        _event['data'][len(_event['data']) - 1]['duration'] = (_event['data'][len(_event['data']) - 1]['end']
-                                                                - _event['data'][len(_event['data']) - 1]['start'])
+                _event = _primary_filter(_body_new, *args, **kwargs)
 
                 # Upload new features as attachment.
                 log.info(f"Saving primary feature \"{name}\"...")
                 LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
+
+                return _event
+            
+            attach = kwargs.get('attach')
+            if attach:
+                _event = _primary_attach(func=func, *args, **kwargs)
+                
             else:
                 has_raw_data = -1
-                _result = func(*args, **kwargs)
+                _result_init = func(*args, **kwargs)
+                _result = _primary_filter(_result_init['data'], _result_init['has_raw_data'], *args, **kwargs)
+                
                 if 'has_raw_data' in _result:
                     has_raw_data = _result['has_raw_data']
                 _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result['data'], 'has_raw_data': has_raw_data}
@@ -338,6 +368,10 @@ def secondary_feature(name, dependencies):
         return _wrapper2
     return _wrapper1
 
+### Auxilliary functions ###
+
+## Attach ##
+
 def delete_attach(participant, features=None):
     """
     Deletes all saved primary features for a participant (requires LAMP-core 2021.4.7 or later)
@@ -354,6 +388,7 @@ def delete_attach(participant, features=None):
                 LAMP.Type.set_attachment(participant, 'me', attachment_key=feature, body=None)
                 log.info("Reset " + feature + "...")
 
+## Cache ##
 def delete_cache(id, features=None, cache_dir=None):
     """
     Deletes all cached raw features for a participant (requires LAMP-core 2021.4.7 or later)

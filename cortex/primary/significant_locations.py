@@ -10,11 +10,16 @@ from ..raw.gps import gps
 
 @primary_feature(
     name='cortex.significant_locations',
-    dependencies=[gps],
-    attach=False
+    dependencies=[gps]
 )
-def significant_locations(k_max=10, eps=1e-5, max_clusters=-1,
-                          min_cluster_size=0.01, max_dist=300, method='mode', **kwargs):
+def significant_locations(k_max=10, 
+                          eps=1e-5, 
+                          max_clusters=-1,
+                          min_cluster_size=0.01, 
+                          max_dist=300, 
+                          method='mode', 
+                          attach=False,
+                          **kwargs):
     """
     Get the coordinates of significant locations visited by the participant in
     the specified timeframe using the KMeans clustering method.
@@ -33,6 +38,7 @@ def significant_locations(k_max=10, eps=1e-5, max_clusters=-1,
     max_clusters=-1.
     :param min_cluster_size (float): The percentage of points that must be in
     a cluster for it to be significant.
+    
     :param method: 'mode' or 'k_means'. Method for computing sig_locs.
     :return latitude (float): The latitude of the SigLoc centroid.
     :return longitude (float): The longitude of the SigLoc centroid.

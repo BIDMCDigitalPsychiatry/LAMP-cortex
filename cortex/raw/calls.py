@@ -6,20 +6,34 @@ from ..feature_types import raw_feature
     name="lamp.calls",
     dependencies=["lamp.calls"]
 )
-def calls(resolution=None, limit=2147483647, cache=True, **kwargs):
+def calls(_limit=10000, 
+          cache=False, 
+          recursive=False, 
+          **kwargs):
     """
     Get all call data bounded by time interval and optionally subsample the data.
 
-    :param resolution (int): The subsampling resolution (TODO).
-    :param limit (int): The maximum number of GPS events to query for (defaults to INT_MAX).
-    :return timestamp (int): The UTC timestamp for the GPS event.
-    :return TODO
+    :param _limit (int): The maximum number of sensor events to query for in a single request
+    :param cache (bool): Indicates whether to save raw data locally in cache dir
+    :param recursive (bool): if True, continue requesting data until all data is returned; else just one request
+    
+    :return timestamp (int): The UTC timestamp for the calls event.
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.calls",
                                                _from=kwargs['start'],
                                                to=kwargs['end'],
-                                               _limit=limit)['data']
+                                               _limit=_limit)['data']
+    while data and recursive:
+        to = data[-1]['timestamp']
+        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
+                                                        origin="lamp.calls",
+                                                        _from=kwargs['start'],
+                                                        to=to,
+                                                        _limit=_limit)['data']
+        if not data_next or data_next[-1]['timestamp'] == to:
+            break
+        data += data_next
 
     return [{'timestamp': x['timestamp'], **x['data']} for x in data]
