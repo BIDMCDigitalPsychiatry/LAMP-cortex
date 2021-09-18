@@ -6,22 +6,24 @@ from ..feature_types import raw_feature
     name="lamp.gps",
     dependencies=["lamp.gps", "lamp.gps.contextual"]
 )
-def gps(_limit=10000, 
-        cache=False, 
-        recursive=True, 
+def gps(_limit=10000,
+        cache=False,
+        recursive=True,
         **kwargs):
-    """
-    Get all GPS data bounded by time interval and optionally subsample the data.
+    """ Get all GPS data bounded by time interval and optionally subsample the data.
 
-    :param _limit (int): The maximum number of sensor events to query for in a single request
-    :param cache (bool): Indicates whether to save raw data locally in cache dir
-    :param recursive (bool): if True, continue requesting data until all data is returned; else just one request
-    
-    :return timestamp (int): The UTC timestamp for the GPS event.
-    :return latitude (float): The latitude for the GPS event.
-    :return longitude (float): The longitude for the GPS event.
-    :return altitude (float): The altitude for the GPS event.
-    :return accuracy (float): The accuracy (in meters) for the GPS event.
+    Args:
+        _limit (int): The maximum number of sensor events to query for in a single request
+        cache (bool): Indicates whether to save raw data locally in cache dir
+        recursive (bool): if True, continue requesting data until all data is
+                returned; else just one request
+
+    Returns:
+        timestamp (int): The UTC timestamp for the GPS event.
+        latitude (float): The latitude for the GPS event.
+        longitude (float): The longitude for the GPS event.
+        altitude (float): The altitude for the GPS event.
+        accuracy (float): The accuracy (in meters) for the GPS event.
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

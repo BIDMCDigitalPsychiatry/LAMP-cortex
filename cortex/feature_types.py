@@ -13,7 +13,6 @@ import tarfile
 import re
 import copy
 import numpy as np
-#from .raw import sensors_results, cognitive_games_results, surveys_results # FIXME REMOVE LATER
 
 # Get a universal logger to share with all feature functions.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
@@ -28,7 +27,8 @@ def all_features():
 # Raw features.
 def raw_feature(name, dependencies):
     """
-    Determines whether caching should be performed upon raw data request. Also adds data quality metrics to the results after the request is successfully completed
+    Determines whether caching should be performed upon raw data request.
+    Also adds data quality metrics to the results after the request is successfully completed
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
@@ -60,13 +60,10 @@ def raw_feature(name, dependencies):
 
             # Find a valid local cache directory
             cache = kwargs.get('cache')
-                
+
             def _raw_caching(func, *args, **kwargs):
+                """ Finds cached data for raw features
                 """
-                Finds cached data for raw features
-                
-                """
-                
                 if os.getenv('CORTEX_CACHE_DIR') is None:
                     raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables. Please set it to a valid path, or disable caching.")
                 cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
@@ -74,9 +71,9 @@ def raw_feature(name, dependencies):
 
                 log.info("Cortex caching directory set to: " + cache_dir)
                 log.info("Processing raw feature " + name + "...")
-                
+
                 # local data caching TODO: combine pickle window with API data
-                for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']:  # .lamp
+                for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']: # .lamp
                     path = cache_dir + '/' + file
 
                     if not re.match('^' + name.split('.')[1], file):
@@ -92,17 +89,16 @@ def raw_feature(name, dependencies):
                         continue
 
                     if saved['start'] <= kwargs['start'] and saved['end'] >= kwargs['end'] and saved['id'] == kwargs['id']:
-                        #if no compression extension, use standard pkl loading
+                        # if no compression extension, use standard pkl loading
                         if file.split('.')[-1] == 'cortex':
                             _result = pickle.load(path,
                                                   set_default_extension=False,
                                                   compression=None)
                         else:
                             _result = pickle.load(path)
-                            
+
                         log.info('Using saved raw data...')
                         return _result
-                    
                 # If a cached file could not be found, use function to get new data and save
 
                 log.info('No saved raw data found, getting new...')
@@ -166,9 +162,9 @@ def raw_feature(name, dependencies):
                     event["fs_mean"] = 0
                     event["fs_var"] = 0
                     event["percent_good_data"] = 0
-                    
+
                 return event
-                    
+
             _event = _raw_data_quality(_event, *args, **kwargs)
 
             return _event
@@ -218,13 +214,11 @@ def primary_feature(name, dependencies):
 
             # Get previously calculated primary feature results from attachments, if you do attach.
             has_raw_data = -1
-            
+
             def _primary_filter(_res, has_raw_data, *args, **kwargs):
                 """
                 Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']]
-                
                 Arguments:
-                    
                 Returns:
                 """
                 _body_new_copy = copy.deepcopy(_res)

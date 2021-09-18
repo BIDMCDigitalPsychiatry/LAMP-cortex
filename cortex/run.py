@@ -148,13 +148,6 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     return _results
 
 
-# Helper function to generate a plot directly from a Cortex DF.
-# FIXME: currently only allows plotting first one; should be alt.layer()'ed charts.
-def plot(*args, **kwargs):
-    df_dict = run(*args, **kwargs)
-    return alt.Chart(list(df_dict.values())[0])
-
-
 def get_feature_for_participant(participant, feature, feature_params, start, end,
                                 resolution):
     """ Helper function to compute the data for a feature for an individual
@@ -176,7 +169,7 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                                                    start=0,
                                                    end=int(time.time())*1000,
                                                    cache=False,
-                                                   recursive=False, 
+                                                   recursive=False,
                                                    attach=False,
                                                    limit=-1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
