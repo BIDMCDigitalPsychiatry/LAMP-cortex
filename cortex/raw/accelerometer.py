@@ -6,21 +6,23 @@ from ..feature_types import raw_feature
     name="lamp.accelerometer",
     dependencies=["lamp.accelerometer"]
 )
-def accelerometer(_limit=10000, 
-                  cache=False, 
-                  recursive=True, 
+def accelerometer(_limit=10000,
+                  cache=False,
+                  recursive=True,
                   **kwargs):
-    """
-    Get all accelerometer data bounded by time interval and optionally subsample the data.
-    :param _limit (int): The maximum number of sensor events to query for in a single request
-    :param cache (bool): Indicates whether to save raw data locally in cache dir
-    :param recursive (bool): if True, continue requesting data until all data is returned; else just one request
-    
-    
-    :return timestamp (int): The UTC timestamp for the accelerometer event.
-    :return x (float): The x component of accelerometer reading.
-    :return y (float): The y component of accelerometer reading.
-    :return z (float): The z component of accelerometer reading.
+    """ Get all accelerometer data bounded by the time interval.
+
+    Args:
+        _limit (int): The maximum number of sensor events to query for in a single request
+        cache (bool): Indicates whether to save raw data locally in cache dir
+        recursive (bool): if True, continue requesting data until all data is
+                returned; else just one request
+
+    Returns:
+        timestamp (int): The UTC timestamp for the accelerometer event.
+        x (float): The x component of accelerometer reading.
+        y (float): The y component of accelerometer reading.
+        z (float): The z component of accelerometer reading.
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

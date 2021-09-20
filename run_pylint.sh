@@ -8,10 +8,10 @@ echo "${red}-----------RUNNING PYLINT----------${reset}"
 echo "${red}-----------------------------------${reset}"
 
 echo "${red} Running pylint for all main files ${reset}"
-#echo "${green} run.py ${reset}"
+echo "${green} run.py ${reset}"
 #pylint cortex/run.py
 #echo "${green} feature_types.py ${reset}"
-#pylint cortex/feature_types.py
+pylint cortex/feature_types.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
@@ -41,40 +41,40 @@ pylint cortex/raw/wifi.py
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
 echo "${green} significant_locations.py ${reset}"
-pylint cortex/primary/significant_locations.py
+#pylint cortex/primary/significant_locations.py
 echo "${green} trips.py ${reset}"
-pylint cortex/primary/trips.py
+#pylint cortex/primary/trips.py
 echo "${green} screen_active.py ${reset}"
-pylint cortex/primary/screen_active.py
+#pylint cortex/primary/screen_active.py
 echo "${green} sleep_periods.py ${reset}"
-pylint cortex/primary/sleep_periods.py
+#pylint cortex/primary/sleep_periods.py
 echo "${green} acc_jerk.py ${reset}"
-pylint cortex/primary/acc_jerk.py
+#pylint cortex/primary/acc_jerk.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
 # TODO: add these
 echo "${green} bluetooth_device_count.py ${reset}"
-pylint cortex/secondary/bluetooth_device_count.py
+#pylint cortex/secondary/bluetooth_device_count.py
 echo "${green} call_degree.py ${reset}"
-pylint cortex/secondary/call_degree.py
+#pylint cortex/secondary/call_degree.py
 echo "${green} call_duration.py ${reset}"
-pylint cortex/secondary/call_duration.py
+#pylint cortex/secondary/call_duration.py
 echo "${green} call_number.py ${reset}"
-pylint cortex/secondary/call_number.py
+#pylint cortex/secondary/call_number.py
 echo "${green} data_quality.py ${reset}"
-pylint cortex/secondary/data_quality.py
+#pylint cortex/secondary/data_quality.py
 echo "${green} entropy.py ${reset}"
-pylint cortex/secondary/entropy.py
+#pylint cortex/secondary/entropy.py
 echo "${green} hometime.py ${reset}"
-pylint cortex/secondary/hometime.py
+#pylint cortex/secondary/hometime.py
 echo "${green} screen_duration.py ${reset}"
-pylint cortex/secondary/screen_duration.py
+#pylint cortex/secondary/screen_duration.py
 echo "${green} sms_number.py ${reset}"
-pylint cortex/secondary/sms_number.py
+#pylint cortex/secondary/sms_number.py
 echo "${green} trip_duration.py ${reset}"
-pylint cortex/secondary/trip_duration.py
+#pylint cortex/secondary/trip_duration.py
 echo "${green} trip_distance.py ${reset}"
-pylint cortex/secondary/trip_distance.py
+#pylint cortex/secondary/trip_distance.py
 
- echo "${reset}"
+echo "${reset}"
