@@ -28,10 +28,10 @@ def all_features():
 def raw_feature(name, dependencies):
     """
     Determines whether caching should be performed upon raw data request.
-    
+
     Also adds data quality metrics to the results after the request is successfully completed.
     This function decorates all of the functions in module 'cortex.raw'.
-    
+
     Args:
         name: The name of the raw data-getting method being decorated.
         dependencies: The names of cortex methods that are being use within.
@@ -40,15 +40,15 @@ def raw_feature(name, dependencies):
             start: The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
             end: The UNIX timestamp to end querying (i.e. "to"). Required.
             cache: If True raw data will be loaded from and saved into the cache directory.
-            
+
     Returns:
-        A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
+        A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']),
         and data (the result of calling 'name') fields.
         Data quality metrics are also added (see docstring for '_raw_data_quality').
         Example:
-        
+
         {'timestamp': 1585355933805,
-         'duration': 600009, 
+         'duration': 600009,
          'data': [{'timestamp': 1585355993800,
                    'x': 1.35382
                    'y': 3.812935
@@ -57,9 +57,8 @@ def raw_feature(name, dependencies):
                  ],
          'fs_mean': 0.991,
          'fs_var': 0.411,
-         'percent_good_data': 0.8, 
         }
-        
+
     Raises:
         API Error (404). Too many requests were sent to the server.
     """
@@ -167,12 +166,22 @@ def raw_feature(name, dependencies):
 
             # Add data quality metrics
             def _raw_data_quality(event, *args, **kwargs):
-                """
-                Add data quality metrics to raw data event
+                """ Add data quality metrics to raw data event.
+                    Data frequency is estimated as the number of data points over time
+                        for each 10 minute interval between kwargs["start"] and kwargs["end"].
+                        These frequency estimates can then be averaged to compute a global estimate.
+                        The variance is taken to give a sense of how frequency varies over time.
+                    For a more granualar estimate of data quality, please see the secondary feature data_quality
+
+                    Args:
+                        event: the data
+                        kwargs: includes the start and end timestamps
+                    Returns:
+                        fs_mean: An estimate of the data quality in Hz as the number of datapoints divided by time
+                        fs_var: the variance in the mean data frequencies for each ten minute window
                 """
                 TEN_MINUTES = 1000 * 60 * 10
                 RES = TEN_MINUTES # set the resolution for quality
-                HZ_THRESH = 0.5 # set threshold in hz
                 idx = 0
                 if len(event['data']) > 0:
                     start_time, end_time = kwargs['start'], kwargs["end"]
@@ -186,15 +195,12 @@ def raw_feature(name, dependencies):
                         fs = res_counts / (RES / 1000)
                         event["fs_mean"] = fs.mean()
                         event["fs_var"] = fs.var()
-                        event["percent_good_data"] = np.sum(fs > HZ_THRESH) / fs.shape[0]
                     else:
                         event["fs_mean"] = len(event['data']) / (RES / 1000)
                         event["fs_var"] = 0
-                        event["percent_good_data"] = event["fs_mean"] > HZ_THRESH
                 else:
                     event["fs_mean"] = 0
                     event["fs_var"] = 0
-                    event["percent_good_data"] = 0
 
                 return event
 
@@ -321,16 +327,16 @@ def primary_feature(name, dependencies):
                 LAMP.Type.set_attachment(kwargs['id'], 'me', attachment_key=name, body=_body_new)
 
                 return _event
-            
+
             attach = kwargs.get('attach')
             if attach:
                 _event = _primary_attach(func=func, *args, **kwargs)
-                
+
             else:
                 has_raw_data = -1
                 _result_init = func(*args, **kwargs)
                 _result = _primary_filter(_result_init['data'], _result_init['has_raw_data'], *args, **kwargs)
-                
+
                 if 'has_raw_data' in _result:
                     has_raw_data = _result['has_raw_data']
                 _event = {'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data': _result['data'], 'has_raw_data': has_raw_data}
@@ -566,7 +572,6 @@ try:
     @app.route('/<feature_name>', methods=['GET', 'POST'])
     def index(feature_name=None):
         if feature_name is None:
-            
             # No feature was provided; return the list of functions and help info.
             return json.dumps({f['callable'].__name__: f['callable'] for f in all_features()}, indent=2)
         else:
