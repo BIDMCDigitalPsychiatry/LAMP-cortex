@@ -28,7 +28,17 @@ def all_features():
 # Raw features.
 def raw_feature(name, dependencies):
     """
-    Determines whether caching should be performed upon raw data request. Also adds data quality metrics to the results after the request is successfully completed
+    Determines whether caching should be performed upon raw data request.
+    
+    Also adds data quality metrics to the results after the request is successfully completed.
+    
+    Args:
+        name: the raw data-getting method being wrapped
+        dependencies: the names of cortex methods that are being use within
+        *args:
+        **kwargs:
+    Returns:
+    
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
