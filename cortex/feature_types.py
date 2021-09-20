@@ -38,13 +38,13 @@ def raw_feature(name, dependencies):
         **kwargs:
             id: The Participant LAMP id. Required.
             start: The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
-            end: The UNIX timestamp to end querying (i.e. "to"). Required.
+            end: The UNIX timestamp (in ms) to end querying (i.e. "to"). Required.
             cache: If True raw data will be loaded from and saved into the cache directory.
             
     Returns:
         A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
-        and data (the result of calling 'name') fields.
-        Data quality metrics are also added (see docstring for '_raw_data_quality').
+        and data (the result of calling 'name') fields.  Data quality metrics are also added 
+        (see docstring for '_raw_data_quality').
         Example:
         
         {'timestamp': 1585355933805,
@@ -212,7 +212,41 @@ def raw_feature(name, dependencies):
 # Primary features.
 def primary_feature(name, dependencies):
     """
-    Some explanation of how to use this decorator goes here.
+    Checks LAMP attachments to see if primary feature has previously processed data saved.
+    
+    Primary feature data in the appropriate [kwargs['start'], kwargs['end']] will be returned,
+    and, if kwargs['attach'] is True, attachments will be updated.
+    
+    Args:
+        name: The name of the primary feature-getting method being decorated.
+        dependencies: The cortex.raw methods used to query sensor/activity data to be processed.
+        **kwargs:
+            id: The Participant LAMP id. Required.
+            start: The UNIX timestamp (in ms) from which returned results are bound. (i.e. "_from"). 
+                Earier data may be processed in order to correctly updates attachments, 
+                but this out-of-bounds data will not be included in the return. Required.
+            end: The UNIX timestamp (in ms) to end processing (i.e. "to"). Required.
+    
+    Returns:
+        A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
+        and data (the result of calling 'name') fields. A 'has_raw_data' field is included, 
+        indicating whether there exists raw data to be processed in the 
+        [kwargs['start'], kwargs['end']] window.
+        Example:
+        
+        {'timestamp': 1585346933781,
+         'duration': 300000
+         'data': [{'start': 1585347000000,
+                   'end': 1585347013742, 
+                   'latitude': 47.34053109130787,
+                   'longitude': -71.08687582117113,
+                   'distance': 0.0192},
+                   ...]
+         'has_raw_data': 1
+        }
+    
+    Raises:
+    
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
@@ -347,7 +381,46 @@ def primary_feature(name, dependencies):
 # Secondary features.
 def secondary_feature(name, dependencies):
     """
-    Some explanation of how to use this decorator goes here.
+    Creates windows of the specified temporal resolution and processes data accordingly.
+    
+    Secondary features are densely-represented time-series data. They depend on raw data and/or
+    on primary features (which are sparsely-represented time-series data). E.g. when called for 
+    some time interval [t0, t1] with resolution "w", there will be math.floor((t1 - t0) / w)
+    values of (start, end) sequence:
+    {(t0, t0 + w), (t0 + w, t0 + 2 * w), ..., (t0 + (math.floor((t1 - t2) / w) - 1) * w, t1)}
+    
+    Args:
+        name: The name of the secondary feature-processing method being decorated.
+        dependencies: The cortex.primary, cortex.raw methods used to query the sensor/activity
+            features needed for processing.
+        **kwargs:
+            id: The Participant LAMP id. Required.
+            start: The UNIX timestamp (in ms) from which returned results are bound (i.e. "_from"). 
+                The first temporal window starts at this timepoint. Required.
+            end: The UNIX timestamp (in ms) to end processing (i.e. "to"). The last temporal window ends
+                at this timepoint. Required.
+            resolution: The duration (in ms) of each requested time window. 
+    
+    Returns:
+        A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
+        and data (the result of calling 'name') fields. A 'has_raw_data' field is included, 
+        indicating whether there exists raw data to be processed in the 
+        [kwargs['start'], kwargs['end']] window.
+        Example:
+        
+        {'timestamp': 1585346933781,
+         'duration': 300000
+         'data': [{'start': 1585347000000,
+                   'end': 1585347013742, 
+                   'latitude': 47.34053109130787,
+                   'longitude': -71.08687582117113,
+                   'distance': 0.0192},
+                   ...]
+         'has_raw_data': 1
+        }
+    
+    Raises:
+    
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
