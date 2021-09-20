@@ -24,7 +24,7 @@ def acc_jerk(threshold=500,
             A list of dicts, with each dict having 3 keys: 'start', 'end', and 'acc_jerk'
             'acc_jerk' is the accelerometer jerk in m / s^3
             
-            Example:
+        Example:
             [{'start': 1625171685730.0,
               'end': 1625171685929.0,
               'acc_jerk': 1.7460826170665855},
