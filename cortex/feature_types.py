@@ -26,15 +26,14 @@ def all_features():
 
 # Raw features.
 def raw_feature(name, dependencies):
-    """
-    Determines whether caching should be performed upon raw data request.
+    """Determines whether caching should be performed upon raw data request.
 
     Also adds data quality metrics to the results after the request is successfully completed.
     This function decorates all of the functions in module 'cortex.raw'.
 
     Args:
-        name: The name of the raw data-getting method being decorated.
-        dependencies: The names of cortex methods that are being use within.
+        name (string): The name of the raw data-getting method being decorated.
+        dependencies (list): The names of cortex methods that are being use within.
         **kwargs:
             id (string): The Participant LAMP id. Required.
             start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
@@ -93,8 +92,46 @@ def raw_feature(name, dependencies):
             # Find a valid local cache directory
             cache = kwargs.get('cache')
 
-            def _raw_caching(func, *args, **kwargs):
-                """ Finds cached data for raw features
+            def _raw_caching(func, name, *args, **kwargs):
+                """ Finds and returns cached data for raw features.
+                
+                For a cached file to be considered for use, it must completely contain the 
+                [kwargs['start'], kwargs['end']] interval. The first valid file found in 
+                the directory will be used and the data from which will be immediately returned.
+                
+                A compression method can be specified in the environment variable 'CORTEX_CACHE_COMPRESSION'.
+                Methods can be of type ['gz', 'bz2', 'lzma', 'zip']. Please see documentation for the package 
+                'compress_pickle' for more information on compatible methods.
+                
+                Args:
+                    func (method): The raw data-getting method, called if no valid cached data 
+                        is available. If called, the resuting data will itself be cached.
+                    name (string): The raw data type; used when searching the cache directory
+                        for valid files.
+                    **kwargs:
+                        id (string): The Participant LAMP id. Required.
+                        start (int): The starting UNIX timestamp (in ms). The cached file
+                            must enclose this timestamp. Required.
+                        end (int): The ending UNIX timestamp. The cached file must enclode
+                            this timestamp. Required
+                        
+                Returns:
+                    A list containing raw data of type 'name'.
+                    Example:
+                    
+                    [{'timestamp': 1584137124130, 
+                      'latitude':13.9023491984, 
+                      'longitude':32.109390505, 
+                      'altitude':100,
+                      'accuracy':1},
+                      ...]
+                    
+                Raises:
+                    Exception: 'CORTEX_CACHE_DIR' is not defined in your environment variables. 
+                        Please set it to a valid path, or disable caching.
+                    Exception: 'Caching directory ({cache_dir}) found in enviornmental variables 
+                        does not exist. Please set 'CORTEX_CACHE_DIR' to a valid path, or disbale caching.
+                    Exception: Compression method specified in 'CORTEX_CACHE_COMPRESSION\' does not exist.
                 """
                 if os.getenv('CORTEX_CACHE_DIR') is None:
                     raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables. Please set it to a valid path, or disable caching.")
@@ -142,7 +179,8 @@ def raw_feature(name, dependencies):
                                str(kwargs['end']) + '.cortex')
 
                 if os.getenv('CORTEX_CACHE_COMPRESSION') is not None:
-                    assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method for caching does not exist."
+                    assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method specified in 
+                    'CORTEX_CACHE_COMPRESSION\' does not exist."
                     pickle_path += '.' + os.getenv('CORTEX_CACHE_COMPRESSION')
 
                 pickle.dump(_result,
@@ -167,18 +205,25 @@ def raw_feature(name, dependencies):
             # Add data quality metrics
             def _raw_data_quality(event, *args, **kwargs):
                 """ Add data quality metrics to raw data event.
+                
                     Data frequency is estimated as the number of data points over time
-                        for each 10 minute interval between kwargs["start"] and kwargs["end"].
-                        These frequency estimates can then be averaged to compute a global estimate.
-                        The variance is taken to give a sense of how frequency varies over time.
-                    For a more granualar estimate of data quality, please see the secondary feature data_quality
+                    for each 10 minute interval between kwargs["start"] and kwargs["end"].
+                    These frequency estimates can then be averaged to compute a global estimate.
+                    The variance is taken to give a sense of how frequency varies over time.
+                    For a more granualar estimate of data quality, please see the feature 'cortex.secondary.data_quality'.
 
                     Args:
-                        event (dict): the data
-                        kwargs (dict): includes the start and end timestamps
+                        event (dict): The data.
+                        kwargs (dict): Includes the start and end timestamps.
+                        **kwargs:
+                            id (string): The Participant LAMP id. Required.
+                            start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
+                            end (int): The UNIX timestamp to end querying (i.e. "to"). Required.
+                        
                     Returns:
-                        fs_mean (float): An estimate of the data quality in Hz as the number of datapoints divided by time
-                        fs_var (float): the variance in the mean data frequencies for each ten minute window
+                        A dict containing the fields:
+                            fs_mean (float): An estimate of the data quality in Hz as the number of datapoints divided by time.
+                            fs_var (float): the variance in the mean data frequencies for each ten minute window.
                 """
                 TEN_MINUTES = 1000 * 60 * 10
                 RES = TEN_MINUTES # set the resolution for quality
@@ -217,24 +262,23 @@ def raw_feature(name, dependencies):
 
 # Primary features.
 def primary_feature(name, dependencies):
-    """
-    Checks LAMP attachments to see if primary feature has previously processed data saved.
+    """Checks LAMP attachments to see if primary feature has previously processed data saved.
     
     Primary feature data in the appropriate [kwargs['start'], kwargs['end']] will be returned,
     and, if kwargs['attach'] is True, attachments will be updated.
     
     Args:
-        name: The name of the primary feature-getting method being decorated.
-        dependencies: The cortex.raw methods used to query sensor/activity data to be processed.
+        name (string): The name of the primary feature-getting method being decorated.
+        dependencies (list): The cortex.raw methods used to query sensor/activity data to be processed.
         **kwargs:
-            id: The Participant LAMP id. Required.
-            start: The UNIX timestamp (in ms) from which returned results are bound. (i.e. "_from"). 
+            id (string): The Participant LAMP id. Required.
+            start (int): The UNIX timestamp (in ms) from which returned results are bound. (i.e. "_from"). 
                 Earier data may be processed in order to correctly updates attachments, 
                 but this out-of-bounds data will not be included in the return. Required.
-            end: The UNIX timestamp (in ms) to end processing (i.e. "to"). Required.
+            end (int): The UNIX timestamp (in ms) to end processing (i.e. "to"). Required.
     
     Returns:
-        A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
+        A dict with timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
         and data (the result of calling 'name') fields. A 'has_raw_data' field is included, 
         indicating whether there exists raw data to be processed in the 
         [kwargs['start'], kwargs['end']] window.
@@ -252,7 +296,8 @@ def primary_feature(name, dependencies):
         }
     
     Raises:
-    
+        Exception: You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` 
+            (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
@@ -289,10 +334,13 @@ def primary_feature(name, dependencies):
             has_raw_data = -1
 
             def _primary_filter(_res, has_raw_data, *args, **kwargs):
-                """
-                Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']]
-                Arguments:
+                """Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']]
+                
+                Args:
+                
                 Returns:
+                
+                Raises:
                 """
                 _body_new_copy = copy.deepcopy(_res)
                 _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':
@@ -385,8 +433,7 @@ def primary_feature(name, dependencies):
 
 # Secondary features.
 def secondary_feature(name, dependencies):
-    """
-    Creates windows of the specified temporal resolution and processes data accordingly.
+    """Creates windows of the specified temporal resolution and processes data accordingly.
     
     Secondary features are densely-represented time-series data. They depend on raw data and/or
     on primary features (which are sparsely-represented time-series data). E.g. when called for 
@@ -395,37 +442,33 @@ def secondary_feature(name, dependencies):
     {(t0, t0 + w), (t0 + w, t0 + 2 * w), ..., (t0 + (math.floor((t1 - t2) / w) - 1) * w, t1)}
     
     Args:
-        name: The name of the secondary feature-processing method being decorated.
-        dependencies: The cortex.primary, cortex.raw methods used to query the sensor/activity
+        name (string): The name of the secondary feature-processing method being decorated.
+        dependencies (list): The cortex.primary, cortex.raw methods used to query the sensor/activity
             features needed for processing.
         **kwargs:
-            id: The Participant LAMP id. Required.
-            start: The UNIX timestamp (in ms) from which returned results are bound (i.e. "_from"). 
+            id (string): The Participant LAMP id. Required.
+            start (int): The UNIX timestamp (in ms) from which returned results are bound (i.e. "_from"). 
                 The first temporal window starts at this timepoint. Required.
-            end: The UNIX timestamp (in ms) to end processing (i.e. "to"). The last temporal window ends
+            end (int): The UNIX timestamp (in ms) to end processing (i.e. "to"). The last temporal window ends
                 at this timepoint. Required.
-            resolution: The duration (in ms) of each requested time window. 
+            resolution: The duration (in ms) of each requested time window. Required.
     
     Returns:
         A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
-        and data (the result of calling 'name') fields. A 'has_raw_data' field is included, 
-        indicating whether there exists raw data to be processed in the 
-        [kwargs['start'], kwargs['end']] window.
+        and data (the result of calling 'name') fields. 
         Example:
         
         {'timestamp': 1585346933781,
-         'duration': 300000
-         'data': [{'start': 1585347000000,
-                   'end': 1585347013742, 
-                   'latitude': 47.34053109130787,
-                   'longitude': -71.08687582117113,
-                   'distance': 0.0192},
-                   ...]
-         'has_raw_data': 1
+         'duration': 604800
+         'data': [{'timestamp': 1585346933781, 'value': 11.93,},
+                  {'timestamp':1585347020181 ,'value': 15.50},
+                  ...,
+                  {'timestamp':1585347452181, 'value': 13.32}]
         }
-    
+        
     Raises:
-    
+        Exception: You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY` 
+            (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.    
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
