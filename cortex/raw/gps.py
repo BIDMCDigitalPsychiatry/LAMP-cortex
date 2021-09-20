@@ -10,7 +10,7 @@ def gps(_limit=10000,
         cache=False,
         recursive=True,
         **kwargs):
-    """ Get all GPS data bounded by time interval and optionally subsample the data.
+    """ Get all GPS data bounded by time interval.
 
     Args:
         _limit (int): The maximum number of sensor events to query for in a single request

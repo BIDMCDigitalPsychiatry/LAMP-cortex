@@ -21,7 +21,8 @@ def bluetooth(_limit=10000,
     Returns:
         timestamp (int): The UTC timestamp for the Bluetooth event.
         bt_rssi (int): The rssi for the Bluetooth event.
-        bt_address (str): Address of Bluetooth event
+        bt_name (str): The name of the Bluetooth device.
+        bt_address (str): Address of Bluetooth event.
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
