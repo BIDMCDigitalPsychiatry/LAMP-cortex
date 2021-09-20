@@ -36,10 +36,10 @@ def raw_feature(name, dependencies):
         name: The name of the raw data-getting method being decorated.
         dependencies: The names of cortex methods that are being use within.
         **kwargs:
-            id: The Participant LAMP id. Required.
-            start: The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
-            end: The UNIX timestamp to end querying (i.e. "to"). Required.
-            cache: If True raw data will be loaded from and saved into the cache directory.
+            id (string): The Participant LAMP id. Required.
+            start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
+            end (int): The UNIX timestamp to end querying (i.e. "to"). Required.
+            cache (boolean): If True raw data will be loaded from and saved into the cache directory.
 
     Returns:
         A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']),
@@ -174,11 +174,11 @@ def raw_feature(name, dependencies):
                     For a more granualar estimate of data quality, please see the secondary feature data_quality
 
                     Args:
-                        event: the data
-                        kwargs: includes the start and end timestamps
+                        event (dict): the data
+                        kwargs (dict): includes the start and end timestamps
                     Returns:
-                        fs_mean: An estimate of the data quality in Hz as the number of datapoints divided by time
-                        fs_var: the variance in the mean data frequencies for each ten minute window
+                        fs_mean (float): An estimate of the data quality in Hz as the number of datapoints divided by time
+                        fs_var (float): the variance in the mean data frequencies for each ten minute window
                 """
                 TEN_MINUTES = 1000 * 60 * 10
                 RES = TEN_MINUTES # set the resolution for quality
@@ -277,10 +277,9 @@ def primary_feature(name, dependencies):
                         _event['data'][len(_event['data']) - 1]['end'] = kwargs['end']
                         _event['data'][len(_event['data']) - 1]['duration'] = (_event['data'][len(_event['data']) - 1]['end']
                                                                 - _event['data'][len(_event['data']) - 1]['start'])
-                        
+
                 return _event
-                
-                
+
             def _primary_attach(func, *args, **kwargs):
                 """
                 Utilize and update LAMP attachments to speed processing of primary feature

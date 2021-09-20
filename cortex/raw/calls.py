@@ -20,6 +20,9 @@ def calls(_limit=10000,
 
     Returns:
         timestamp (int): The UTC timestamp for the calls event.
+        call_trace (str): the call trace to identify a call.
+        call_type (int): incoming = 1; outgoing = 2
+        call_duration (int): the duration of the call in seconds
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

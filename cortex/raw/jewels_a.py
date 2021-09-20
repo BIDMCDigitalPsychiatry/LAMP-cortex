@@ -1,23 +1,33 @@
-from ..feature_types import raw_feature
+""" Module for raw feature jewels_a """
 import LAMP
+from ..feature_types import raw_feature
 
 
 @raw_feature(
     name="lamp.jewels_a",
     dependencies=["lamp.jewels_a"]
 )
-def jewels_a(_limit=10000, 
+def jewels_a(_limit=10000,
              cache=False,
              recursive=True,
              **kwargs):
-    """
-    Get jewels_a data bounded by time interval
-    
-    :param _limit (int): The maximum number of sensor events to query for in a single request
-    :param cache (bool): Indicates whether to save raw data locally in cache dir
-    :param recursive (bool): if True, continue requesting data until all data is returned; else just one request
-    
-    :return timestamp (int): The UTC timestamp for the jewels_a event.
+    """ Get jewels_a data bounded by time interval.
+
+    Args:
+        _limit (int): The maximum number of sensor events to query for in a single request
+        cache (bool): Indicates whether to save raw data locally in cache dir
+        recursive (bool): if True, continue requesting data until all data is
+                returned; else just one request
+
+    Returns:
+        timestamp (int): The UTC timestamp for the jewels_a event.
+        duration (int): the duration in ms
+        activity (str): the activity id
+        activity_name (str): 'lamp.jewels_a'
+        static_data (dict): a dict which includes 'point', 'score', 'total_attempts',
+                'total_bonus_collected', 'total_jewels_collected'
+        temporal_slices (list): list of dicts which include the 'duration',
+                'item', 'level', 'status', and 'value' for each attempt
     """
 
     jewels_a_ids = [activity['id'] for activity in
@@ -50,8 +60,8 @@ def jewels_a(_limit=10000,
                                                                            _limit=_limit)['data']
                           if res['activity'] in jewels_a_ids]
 
-        if not _jewels_a_next: break
-        if _jewels_a_next[-1]['timestamp'] == to: break
+        if not _jewels_a_next or _jewels_a_next[-1]['timestamp'] == to:
+            break
         _jewels_a += _jewels_a_next
 
     return _jewels_a
