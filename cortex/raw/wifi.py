@@ -22,6 +22,10 @@ def wifi(_limit=10000,
         timestamp (int): The UTC timestamp for the wifi event.
         bssid: MAC address of wireless access point.
         ssid: Network name.
+
+    Example:
+        [{'timestamp': 1618015753796, 'bssid': 'a6:68:7e:82:48:72', 'ssid': 'ATTHFtEYgs'},
+         {'timestamp': 1618015452266, 'bssid': 'a6:68:7e:82:48:72', 'ssid': 'ATTHFtEYgs'},]
     """
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.wifi",

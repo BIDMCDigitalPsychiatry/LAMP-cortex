@@ -24,6 +24,15 @@ def gps(_limit=10000,
         longitude (float): The longitude for the GPS event.
         altitude (float): The altitude for the GPS event.
         accuracy (float): The accuracy (in meters) for the GPS event.
+    Example:
+        [{'timestamp': 1618016071000,
+           'altitude': -122.39560237705484,
+           'longitude': -110.39560237705484,
+           'latitude': 34.22454011010993},
+         {'timestamp': 1618016070000,
+           'altitude': -122.39560237705484,
+           'longitude': -110.39560237705484,
+           'latitude': 34.22454011010993},]
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

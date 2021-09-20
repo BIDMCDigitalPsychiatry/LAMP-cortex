@@ -1,19 +1,21 @@
+""" Module to hold wrapper functions for raw, primary, and secondary features as
+    well as auxillary functions for attachments and caching """
 import os
 import sys
 import json
-import yaml
-import LAMP
 import logging
 import argparse
-import pandas as pd
 from pprint import pprint
-from inspect import getargspec, getfullargspec
-import compress_pickle as pickle
+from inspect import getfullargspec
 import tarfile
 import re
 import copy
+import compress_pickle as pickle
 import numpy as np
-
+import pandas as pd
+import yaml
+import LAMP
+import time
 # Get a universal logger to share with all feature functions.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
                     format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
@@ -38,7 +40,8 @@ def raw_feature(name, dependencies):
             id (string): The Participant LAMP id. Required.
             start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
             end (int): The UNIX timestamp to end querying (i.e. "to"). Required.
-            cache (boolean): If True raw data will be loaded from and saved into the cache directory.
+            cache (boolean): If True raw data will be loaded from and saved
+                    into the cache directory.
 
     Returns:
         A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']),
@@ -134,9 +137,10 @@ def raw_feature(name, dependencies):
                     Exception: Compression method specified in 'CORTEX_CACHE_COMPRESSION\' does not exist.
                 """
                 if os.getenv('CORTEX_CACHE_DIR') is None:
-                    raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables. Please set it to a valid path, or disable caching.")
+                    raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables."
+                                        + " Please set it to a valid path, or disable caching.")
                 cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
-                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist. Please set 'CORTEX_CACHE_DIR' to a valid path, or disbale caching."                    
+                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist. Please set 'CORTEX_CACHE_DIR' to a valid path, or disbale caching."
 
                 log.info("Cortex caching directory set to: " + cache_dir)
                 log.info("Processing raw feature " + name + "...")
@@ -179,8 +183,8 @@ def raw_feature(name, dependencies):
                                str(kwargs['end']) + '.cortex')
 
                 if os.getenv('CORTEX_CACHE_COMPRESSION') is not None:
-                    assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], f"Compression method specified in 
-                    'CORTEX_CACHE_COMPRESSION\' does not exist."
+
+                    assert os.getenv('CORTEX_CACHE_COMPRESSION') in ['gz', 'bz2', 'lzma', 'zip'], "Compression method for caching does not exist."
                     pickle_path += '.' + os.getenv('CORTEX_CACHE_COMPRESSION')
 
                 pickle.dump(_result,
@@ -212,6 +216,7 @@ def raw_feature(name, dependencies):
                     The variance is taken to give a sense of how frequency varies over time.
                     For a more granualar estimate of data quality, please see the feature 'cortex.secondary.data_quality'.
 
+
                     Args:
                         event (dict): The data.
                         kwargs (dict): Includes the start and end timestamps.
@@ -224,24 +229,25 @@ def raw_feature(name, dependencies):
                         A dict containing the fields:
                             fs_mean (float): An estimate of the data quality in Hz as the number of datapoints divided by time.
                             fs_var (float): the variance in the mean data frequencies for each ten minute window.
+
                 """
-                TEN_MINUTES = 1000 * 60 * 10
-                RES = TEN_MINUTES # set the resolution for quality
+                ten_minutes = 1000 * 60 * 10
+                res = ten_minutes # set the window size
                 idx = 0
                 if len(event['data']) > 0:
                     start_time, end_time = kwargs['start'], kwargs["end"]
-                    res_counts = np.zeros((len(range(end_time, start_time, -1 * RES))))
+                    res_counts = np.zeros((len(range(end_time, start_time, -1 * res))))
                     if res_counts.shape[0] > 0:
-                        for i, x in enumerate(range(end_time, start_time, -1 * RES)):
+                        for i, x in enumerate(range(end_time, start_time, -1 * res)):
                             while (idx + 1 < len(event['data']) and
-                                   event['data'][idx]['timestamp'] > x - RES):
+                                   event['data'][idx]['timestamp'] > x - res):
                                 res_counts[i] += 1
                                 idx += 1
-                        fs = res_counts / (RES / 1000)
+                        fs = res_counts / (res / 1000)
                         event["fs_mean"] = fs.mean()
                         event["fs_var"] = fs.var()
                     else:
-                        event["fs_mean"] = len(event['data']) / (RES / 1000)
+                        event["fs_mean"] = len(event['data']) / (res / 1000)
                         event["fs_var"] = 0
                 else:
                     event["fs_mean"] = 0
@@ -557,7 +563,7 @@ def export_cache(cache_dir=None, export_dir=None):
     """
     Exports cached raw features as compressive *.tar.gz (saved as *.lamp)
     :param cache_dir (str): path to cache dir, where data will be read from
-    :param export_dir (str): path to export directory 
+    :param export_dir (str): path to export directory
     """
     cache_dir = cache_finder(cache_dir)
     #Export as *.tar.gz
@@ -569,12 +575,12 @@ def export_cache(cache_dir=None, export_dir=None):
 
     tar.add(cache_dir, 'cache_' + str(int(time.time())*1000) + '.lamp')
     tar.close()
-    
+
 def import_cache(cache_dir=None, import_dir=None):
     """
     Imports cached raw features from *.tar.gz (saved as *.lamp)
-    :param cache_dir (str): path to cache dir, where data will be 
-    :param import_dir (str): path to import directory 
+    :param cache_dir (str): path to cache dir, where data will be
+    :param import_dir (str): path to import directory
     """
     #Export as *.tar.gz
     if import_dir is not None:
@@ -605,17 +611,19 @@ def cache_finder(cache_dir):
     """
     if cache_dir is not None:
         cache_dir = os.path.expanduser(cache_dir)
-        assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) specified as a keyword argument does not exist"
+        assert os.path.exists(cache_dir), "Caching directory (" + cache_dir + ") specified as a keyword argument does not exist"
     elif os.getenv('CORTEX_CACHE_DIR') is not None:
         cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
-        assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist"
-    elif cache_dir is None: 
+        assert os.path.exists(cache_dir), "Caching directory (" + cache_dir + ") found in enviornmental variables does not exist"
+    elif cache_dir is None:
         cache_dir = os.path.expanduser('~/.cache/cortex')
         if not os.path.exists(cache_dir):
-            log.info(f"Caching directory does not yet exist.")
-            log.info(f"Creating default cache dir at ~/.cache/cortex")
+            log.info("Caching directory does not yet exist.")
+            log.info("Creating default cache dir at ~/.cache/cortex")
             os.makedirs(cache_dir)
-        assert os.path.exists(cache_dir), "Error in default caching directory at ~/.cache/cortex. Please specify an alternative locatiton as a keyword argument: 'cache_dir', or as an enviornmental variable: 'CORTEX_CACHE_DIR'"
+        assert os.path.exists(cache_dir), ("Error in default caching directory at ~/.cache/cortex."
+                    + " Please specify an alternative locatiton as a keyword argument: 'cache_dir',"
+                    + " or as an enviornmental variable: 'CORTEX_CACHE_DIR'")
     return cache_dir
 
 # Allows execution of feature functions from the command line, with argument parsing.
@@ -647,8 +655,8 @@ def _main():
         parser.add_argument(f"--end", dest='end', type=int, required=True,
                             help='time window end in UTC epoch milliseconds')
 
-        # Add feature-specific parameters and mark the parameter as required 
-        # if no default value is provided. Use the function docstring to get 
+        # Add feature-specific parameters and mark the parameter as required
+        # if no default value is provided. Use the function docstring to get
         # the parameter's description.
         opt_idx = len(getfullargspec(func)[0]) - len(getfullargspec(func)[3] or ())
         for idx, param in enumerate(getfullargspec(func)[0]):
@@ -666,7 +674,7 @@ def _main():
     if kwargs['_server_address'] is not None:
         os.environ['LAMP_SERVER_ADDRESS'] = kwargs.pop('_server_address')
     _result = funcs[kwargs['_feature']](**{k: v for k, v in kwargs.items() if not k.startswith('_')})
-    
+
     # Format and print the result to console (use bash redirection to output to a file).
     if _format == 'csv':
 

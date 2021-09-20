@@ -23,6 +23,16 @@ def calls(_limit=10000,
         call_trace (str): the call trace to identify a call.
         call_type (int): incoming = 1; outgoing = 2
         call_duration (int): the duration of the call in seconds
+
+    Example:
+        [{'timestamp': 1618007498408,
+          'call_trace': '012CEDEB-FC58-4792-B202-412B17C5A34A',
+          'call_type': 2,
+          'call_duration': 17},
+         {'timestamp': 1618002384809,
+          'call_trace': 'EDCFF499-E077-4E13-9AD0-5CFB7D9FBE02',
+          'call_type': 2,
+          'call_duration': 102},]
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

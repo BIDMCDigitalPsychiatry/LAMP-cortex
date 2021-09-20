@@ -23,6 +23,16 @@ def bluetooth(_limit=10000,
         bt_rssi (int): The rssi for the Bluetooth event.
         bt_name (str): The name of the Bluetooth device.
         bt_address (str): Address of Bluetooth event.
+
+    Example:
+        [{'timestamp': 1617990580971,
+          'bt_rssi': -97,
+          'bt_name': '[TV] Samsung 7 Series (65)',
+          'bt_address': '873C0B2B-6B43-6DBE-8ECC-369D59767ADF'},
+         {'timestamp': 1617990285117,
+          'bt_rssi': -100,
+          'bt_name': '[TV] Samsung Q900 Series (65)',
+          'bt_address': '049AD0D2-9CB1-E132-6347-0BDFCED3E8B8'},]
     """
 
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],

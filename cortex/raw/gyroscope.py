@@ -23,6 +23,16 @@ def gyroscope(_limit=10000,
         x (float): The x component of gyroscope reading.
         y (float): The y component of gyroscope reading.
         z (float): The z component of gyroscope reading.
+
+    Example:
+        [{'timestamp': 1618016071621,
+           'x': -0.0035776905715465546,
+           'y': 0.00388981308788061,
+           'z': -0.0010519486386328936},
+         {'timestamp': 1618016071421,
+           'x': -0.003683418035507202,
+           'y': 0.0021020330023020515,
+           'z': -0.0041864891536533815},]
     """
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.gyroscope",
