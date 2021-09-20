@@ -27,6 +27,13 @@ def screen_state(_limit=10000,
             "state". Additionally, not all devices will return a "valueString".
     ** value / state are also phone dependent, so state = 0 on one phone could be the
         same as state = 1 on a different phone.
+
+    Example:
+    [{'timestamp': 1618014245255, 'value': 1, 'valueString': 'Screen Off'},
+     {'timestamp': 1618014216292, 'value': 0, 'valueString': 'Screen On'},
+     {'timestamp': 1618013053261, 'value': 2, 'valueString': 'Screen Locked'},
+     {'timestamp': 1618013043261, 'value': 1, 'valueString': 'Screen Off'},
+     {'timestamp': 1618012058266, 'value': 0, 'valueString': 'Screen On'},]
     """
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.screen_state",

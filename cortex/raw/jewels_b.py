@@ -28,6 +28,23 @@ def jewels_b(_limit=10000,
                 'total_bonus_collected', 'total_jewels_collected'
         temporal_slices (list): list of dicts which include the 'duration',
                 'item', 'level', 'status', and 'value' for each attempt
+
+    Example:
+        [{'timestamp': 1621490047833,
+          'duration': 90184,
+          'activity': 'p05jxcyxhb3wtcw4aazx',
+          'activity_name': 'lamp.jewels_b',
+          'static_data': {'point': 1,
+                          'score': 100,
+                          'total_attempts': 4,
+                          'total_bonus_collected': 0,
+                          'total_jewels_collected': 4},
+          'temporal_slices': [
+              {'duration': 0,'item': 1, 'level': 1, 'status': True, 'value': None},
+              {'duration': 1561, 'item': 2, 'level': 1, 'status': True, 'value': None},
+              {'duration': 372, 'item': 3, 'level': 1, 'status': True, 'value': None},
+              {'duration': 613, 'item': 4, 'level': 1, 'status': True, 'value': None}]
+        }],
     """
 
     jewels_b_ids = [activity['id'] for activity in

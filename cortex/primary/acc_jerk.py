@@ -23,7 +23,7 @@ def acc_jerk(threshold=500,
         Returns:
             A list of dicts, with each dict having 3 keys: 'start', 'end', and 'acc_jerk'
             'acc_jerk' is the accelerometer jerk in m / s^3
-            
+
         Example:
             [{'start': 1625171685730.0,
               'end': 1625171685929.0,
@@ -33,7 +33,7 @@ def acc_jerk(threshold=500,
               'acc_jerk': 1.00943647205571},
              {'start': 1625171685334.0,
               'end': 1625171685532.0,
-              'acc_jerk': 0.051706493081616275}]        
+              'acc_jerk': 0.051706493081616275}]
     """
     _acc = accelerometer(**kwargs)['data']
     if _acc:

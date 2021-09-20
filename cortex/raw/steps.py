@@ -22,6 +22,13 @@ def steps(_limit=10000,
     Returns:
         timestamp (int): The UTC timestamp for the steps event.
         value (int): The step count.
+
+    Example:
+        [{'timestamp': 1618007651905, 'value': 2406},
+         {'timestamp': 1618007649334, 'value': 2402},
+         {'timestamp': 1618007646762, 'value': 2395},
+         {'timestamp': 1618007644190, 'value': 2390},
+         {'timestamp': 1618007641618, 'value': 2384},]
     """
     data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
                                                origin="lamp.steps",

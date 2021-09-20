@@ -1,3 +1,5 @@
+""" Module to hold wrapper functions for raw, primary, and secondary features as
+    well as auxillary functions for attachments and caching """
 import os
 import sys
 import json
@@ -39,7 +41,8 @@ def raw_feature(name, dependencies):
             id (string): The Participant LAMP id. Required.
             start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
             end (int): The UNIX timestamp to end querying (i.e. "to"). Required.
-            cache (boolean): If True raw data will be loaded from and saved into the cache directory.
+            cache (boolean): If True raw data will be loaded from and saved
+                    into the cache directory.
 
     Returns:
         A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']),
@@ -97,9 +100,10 @@ def raw_feature(name, dependencies):
                 """ Finds cached data for raw features
                 """
                 if os.getenv('CORTEX_CACHE_DIR') is None:
-                    raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables. Please set it to a valid path, or disable caching.")
+                    raise Exception("'CORTEX_CACHE_DIR' is not defined in your environment variables."
+                                        + " Please set it to a valid path, or disable caching.")
                 cache_dir = os.path.expanduser(os.getenv('CORTEX_CACHE_DIR'))
-                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist. Please set 'CORTEX_CACHE_DIR' to a valid path, or disbale caching."                    
+                assert os.path.exists(cache_dir), f"Caching directory ({cache_dir}) found in enviornmental variables does not exist. Please set 'CORTEX_CACHE_DIR' to a valid path, or disbale caching."
 
                 log.info("Cortex caching directory set to: " + cache_dir)
                 log.info("Processing raw feature " + name + "...")
