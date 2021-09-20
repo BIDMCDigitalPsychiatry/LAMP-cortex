@@ -30,13 +30,38 @@ def raw_feature(name, dependencies):
     Determines whether caching should be performed upon raw data request.
     
     Also adds data quality metrics to the results after the request is successfully completed.
+    This function decorates all of the functions in module 'cortex.raw'.
     
     Args:
-        name: the raw data-getting method being wrapped
-        dependencies: the names of cortex methods that are being use within
-        *args:
+        name: The name of the raw data-getting method being decorated.
+        dependencies: The names of cortex methods that are being use within.
         **kwargs:
+            id: The Participant LAMP id. Required.
+            start: The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
+            end: The UNIX timestamp to end querying (i.e. "to"). Required.
+            cache: If True raw data will be loaded from and saved into the cache directory.
+            
     Returns:
+        A dict with a timestamp (kwargs['start']), duration (kwargs['end'] - kwargs['start']), 
+        and data (the result of calling 'name') fields.
+        Data quality metrics are also added (see docstring for '_raw_data_quality').
+        Example:
+        
+        {'timestamp': 1585355933805,
+         'duration': 600009, 
+         'data': [{'timestamp': 1585355993800,
+                   'x': 1.35382
+                   'y': 3.812935
+                   'z': 1.00002},
+                   ...
+                 ],
+         'fs_mean': 0.991,
+         'fs_var': 0.411,
+         'percent_good_data': 0.8, 
+        }
+        
+    Raises:
+        API Error (404). Too many requests were sent to the server.
     """
     def _wrapper1(func):
         def _wrapper2(*args, **kwargs):
