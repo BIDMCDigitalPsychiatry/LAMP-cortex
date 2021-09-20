@@ -261,7 +261,7 @@ class TestPrimary(unittest.TestCase):
         ret1 = primary.acc_jerk.acc_jerk(id=self.TEST_PARTICIPANT,
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1)
-        ACC_DEFAULT = 4.132388383691913e-05
+        ACC_DEFAULT = 41.32388383691913
         self.assertEqual(ret1['data'][0]["acc_jerk"], ACC_DEFAULT)
         self.assertEqual(len(ret1['data']), 1)
 
@@ -275,8 +275,8 @@ class TestPrimary(unittest.TestCase):
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
                                            threshold=5000)
-        ACC_JERK1_0 = 3.4714133045562506e-08
-        ACC_JERK1_1 = 1.4439344535270027e-07
+        ACC_JERK1_0 = 0.034714133045562506
+        ACC_JERK1_1 = 0.14439344535270027
         self.assertEqual(ret1["data"][0]['acc_jerk'], ACC_JERK1_0)
         self.assertEqual(ret1["data"][1]['acc_jerk'], ACC_JERK1_1)
         self.assertEqual(len(ret1["data"]), 4)

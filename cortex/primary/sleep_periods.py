@@ -10,10 +10,10 @@ from ..raw.accelerometer import accelerometer
 
 @primary_feature(
     name="cortex.feature.sleep_periods",
-    dependencies=[accelerometer],
-    attach=True
+    dependencies=[accelerometer]
 )
-def sleep_periods(**kwargs):
+def sleep_periods(attach=True,
+                  **kwargs):
     """
     Generate sleep periods with given data
     """
