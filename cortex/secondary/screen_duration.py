@@ -9,8 +9,28 @@ MS_IN_A_DAY = 86400000
     dependencies=[screen_active]
 )
 def screen_duration(**kwargs):
-    """ Computes screen_duration by summing the screen_active periods over a
+    """Computes screen_duration (in ms) by summing the screen_active periods over a
         given time.
+
+    
+    The (kwargs['start'], kwargs['end']) timestamps used within the function are
+    different than the ones that should be passed in as parameters --
+    'cortex.feature_types.secondary_features' is being called first. Please
+    see documentation there for more detail. 
+    
+    Args:
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+    
+    Returns:
+        A dict consisting of:
+            timestamp (int): The beginning of the window (same as kwargs['start']).
+            value (float): The time (in ms) spent with the device screen on. 
+    
     """
     _screen_active = screen_active(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
     _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])

@@ -12,18 +12,29 @@ MS_IN_A_DAY = 86400000
     dependencies=[accelerometer, gps]
 )
 def data_quality(feature, bin_size=-1, **kwargs):
-    """ Compute the data quality of raw data over time.
+    """Compute the data quality of raw data over time.
 
-        Args:
-            feature - the feature to compute quality as a string
-            bin_size - how to split up time in ms
-                default: -1 will result in default settings
-                    for accelerometer: 1000 (1 Hz, every 1s)
-                    for gps: 1000 * 10 * 60 (every 10min)
-        Returns:
-            the percent of the time that there was at least one
-            data point in each time window of size bin_size
-        Supported features: accelerometer, gps
+    Supported features: accelerometer, gps
+
+    Args:
+        feature (string): The feature to compute quality.
+        bin_size (int): How to split up time in ms. 
+            Default: -1 will result in default settings
+            for accelerometer: 1000 (1 Hz, every 1s)
+            for gps: 1000 * 10 * 60 (every 10min)
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            
+            
+    Returns:
+        A dict consisting:
+            timestamp (int): The beginning of the window (same as kwargs['start']).
+            value (float): The percent of the time that there was at least one
+                    data point in each time window of size "bin_size".        
     """
     _data_quality = 0
     bin_width = bin_size

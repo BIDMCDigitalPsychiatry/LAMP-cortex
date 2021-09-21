@@ -384,6 +384,10 @@ def primary_feature(name, dependencies):
             def _primary_attach(func, *args, **kwargs):
                 """Utilize and update LAMP attachments to speed up processing of primary feature.
                 
+                Based on both (kwargs['start'], kwargs['end']) timestamps and previously 
+                saved attachments, primary featurization occurs and attachments are updated 
+                to include these newly generated events.
+                
                 Args:
                     func (method): The raw data-getting method, called if attached data needs to 
                         be updated.
@@ -392,7 +396,9 @@ def primary_feature(name, dependencies):
                         end (int): The end UNIX timestamp (in ms).
                         
                 Returns:
-                
+                    A list of both previously saved (in the the form of LAMP attachments) and newly generated 
+                    primary feature events.
+                    
                 Raises:
                     LAMP.ApiException: 
                 """
@@ -557,7 +563,7 @@ def delete_attach(participant, features=None):
     :param features (list): features to reset, defaults to all features (optional)
     """
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+                 os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
     attachments= LAMP.Type.list_attachments(participant)['data']
     if features is None: features=attachments
     for feature in attachments:
