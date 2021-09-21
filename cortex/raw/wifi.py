@@ -1,5 +1,4 @@
 """ Module for raw feature wifi """
-import LAMP
 from ..feature_types import raw_feature
 
 @raw_feature(
@@ -27,20 +26,4 @@ def wifi(_limit=10000,
         [{'timestamp': 1618015753796, 'bssid': 'a6:68:7e:82:48:72', 'ssid': 'ATTHFtEYgs'},
          {'timestamp': 1618015452266, 'bssid': 'a6:68:7e:82:48:72', 'ssid': 'ATTHFtEYgs'},]
     """
-    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                               origin="lamp.wifi",
-                                               _from=kwargs['start'],
-                                               to=kwargs['end'],
-                                               _limit=_limit)['data']
-    while data and recursive:
-        to = data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                                        origin="lamp.wifi",
-                                                        _from=kwargs['start'],
-                                                        to=to,
-                                                        _limit=_limit)['data']
-        if not data_next or data_next[-1]['timestamp'] == to:
-            break
-        data += data_next
-
-    return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+    return

@@ -1,5 +1,4 @@
 """ Module for raw feature calls """
-import LAMP
 from ..feature_types import raw_feature
 
 @raw_feature(
@@ -34,21 +33,4 @@ def calls(_limit=10000,
           'call_type': 2,
           'call_duration': 102},]
     """
-
-    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                               origin="lamp.calls",
-                                               _from=kwargs['start'],
-                                               to=kwargs['end'],
-                                               _limit=_limit)['data']
-    while data and recursive:
-        to = data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                                        origin="lamp.calls",
-                                                        _from=kwargs['start'],
-                                                        to=to,
-                                                        _limit=_limit)['data']
-        if not data_next or data_next[-1]['timestamp'] == to:
-            break
-        data += data_next
-
-    return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+    return

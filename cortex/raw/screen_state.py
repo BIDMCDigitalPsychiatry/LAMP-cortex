@@ -1,5 +1,4 @@
 """ Module for raw feature screen state """
-import LAMP
 from ..feature_types import raw_feature
 
 
@@ -35,20 +34,4 @@ def screen_state(_limit=10000,
      {'timestamp': 1618013043261, 'value': 1, 'valueString': 'Screen Off'},
      {'timestamp': 1618012058266, 'value': 0, 'valueString': 'Screen On'},]
     """
-    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                               origin="lamp.screen_state",
-                                               _from=kwargs['start'],
-                                               to=kwargs['end'],
-                                               _limit=_limit)['data']
-    while data and recursive:
-        to = data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                                        origin="lamp.screen_state",
-                                                        _from=kwargs['start'],
-                                                        to=to,
-                                                        _limit=_limit)['data']
-        if not data_next or data_next[-1]['timestamp'] == to:
-            break
-        data += data_next
-
-    return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+    return
