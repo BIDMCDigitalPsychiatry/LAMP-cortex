@@ -1,5 +1,4 @@
 """ Module for raw feature steps """
-import LAMP
 from ..feature_types import raw_feature
 
 
@@ -30,20 +29,4 @@ def steps(_limit=10000,
          {'timestamp': 1618007644190, 'value': 2390},
          {'timestamp': 1618007641618, 'value': 2384},]
     """
-    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                               origin="lamp.steps",
-                                               _from=kwargs['start'],
-                                               to=kwargs['end'],
-                                               _limit=_limit)['data']
-    while data and recurisve:
-        to = data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                                        origin="lamp.steps",
-                                                        _from=kwargs['start'],
-                                                        to=to,
-                                                        _limit=_limit)['data']
-        if not data_next or data_next[-1]['timestamp'] == to:
-            break
-        data += data_next
-
-    return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+    return

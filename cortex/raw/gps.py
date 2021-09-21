@@ -1,5 +1,4 @@
 """ Module for raw feature gps """
-import LAMP
 from ..feature_types import raw_feature
 
 @raw_feature(
@@ -34,21 +33,4 @@ def gps(_limit=10000,
            'longitude': -110.39560237705484,
            'latitude': 34.22454011010993},]
     """
-
-    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                               origin="lamp.gps",
-                                               _from=kwargs['start'],
-                                               to=kwargs['end'],
-                                               _limit=_limit)['data']
-    while data and recursive:
-        to = data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                                        origin="lamp.gps",
-                                                        _from=kwargs['start'],
-                                                        to=to,
-                                                        _limit=_limit)['data']
-        if not data_next or data_next[-1]['timestamp']:
-            break
-        data += data_next
-
-    return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+    return

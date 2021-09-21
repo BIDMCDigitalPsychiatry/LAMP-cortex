@@ -285,10 +285,10 @@ class TestPrimary(unittest.TestCase):
                                            start=self.TEST_START_TIME_JERK,
                                            end=self.TEST_START_TIME_JERK + self.MS_IN_DAY + 1,
                                            threshold=550000)
-        ACC_JERK2_0 = 3.4714133045562506e-08
-        ACC_JERK2_1 = 1.4439344535270027e-07
-        ACC_JERK2_2 = 2.673282483361155e-08
-        ACC_JERK2_3 = 2.8462423632716186e-10
+        ACC_JERK2_0 = 0.034714133045562506
+        ACC_JERK2_1 = 0.14439344535270027
+        ACC_JERK2_2 = 0.02673282483361155
+        ACC_JERK2_3 = 0.00028462423632716186
         self.assertEqual(ret2["data"][0]['acc_jerk'], ACC_JERK2_0)
         self.assertEqual(ret2["data"][1]['acc_jerk'], ACC_JERK2_1)
         self.assertEqual(ret2["data"][2]['acc_jerk'], ACC_JERK2_2)

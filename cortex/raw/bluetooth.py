@@ -1,5 +1,4 @@
 """ Module for raw feature bluetooth """
-import LAMP
 from ..feature_types import raw_feature
 
 @raw_feature(
@@ -34,21 +33,4 @@ def bluetooth(_limit=10000,
           'bt_name': '[TV] Samsung Q900 Series (65)',
           'bt_address': '049AD0D2-9CB1-E132-6347-0BDFCED3E8B8'},]
     """
-
-    data = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                               origin="lamp.bluetooth",
-                                               _from=kwargs['start'],
-                                               to=kwargs['end'],
-                                               _limit=_limit)['data']
-    while data and recursive:
-        to = data[-1]['timestamp']
-        data_next = LAMP.SensorEvent.all_by_participant(kwargs['id'],
-                                                        origin="lamp.bluetooth",
-                                                        _from=kwargs['start'],
-                                                        to=to,
-                                                        _limit=_limit)['data']
-        if not data_next or data_next[-1]['timestamp'] == to:
-            break
-        data += data_next
-
-    return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+    return
