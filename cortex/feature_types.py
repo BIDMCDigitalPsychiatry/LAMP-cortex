@@ -97,15 +97,15 @@ def raw_feature(name, dependencies):
 
             def _raw_caching(func, name, *args, **kwargs):
                 """ Finds and returns cached data for raw features.
-                
+
                 For a cached file to be considered for use, it must completely contain the 
                 [kwargs['start'], kwargs['end']] interval. The first valid file found in 
                 the directory will be used and the data from which will be immediately returned.
-                
+
                 A compression method can be specified in the environment variable 'CORTEX_CACHE_COMPRESSION'.
                 Methods can be of type ['gz', 'bz2', 'lzma', 'zip']. Please see documentation for the package 
                 'compress_pickle' for more information on compatible methods.
-                
+
                 Args:
                     func (method): The raw data-getting method, called if no valid cached data 
                         is available. If called, the resuting data will itself be cached.
@@ -117,18 +117,18 @@ def raw_feature(name, dependencies):
                             must enclose this timestamp. Required.
                         end (int): The ending UNIX timestamp. The cached file must enclode
                             this timestamp. Required
-                        
+
                 Returns:
                     A list containing raw data of type 'name'.
                     Example:
-                    
+
                     [{'timestamp': 1584137124130, 
                       'latitude':13.9023491984, 
                       'longitude':32.109390505, 
                       'altitude':100,
                       'accuracy':1},
                       ...]
-                    
+
                 Raises:
                     Exception: 'CORTEX_CACHE_DIR' is not defined in your environment variables. 
                         Please set it to a valid path, or disable caching.
@@ -340,13 +340,26 @@ def primary_feature(name, dependencies):
             has_raw_data = -1
 
             def _primary_filter(_res, has_raw_data, *args, **kwargs):
-                """Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']]
-                
+                """Filter out primary feature results that do not belong in interval [kwargs['start'], kwargs['end']].
+
+                For each event in _res, only one of the {event['start'], event['end']} must be in the interval.
+                Before that final filtering, only the two bounding events can have a start, ends that are outside
+                the interval; these ( start, end)points are changed to be kwargs['start'], kwargs['end'], respectively.
+
+                *** NOTE: Currently we are not adjusting the event data based on the (start, end adjustment).
+                E.g. if a trip is of time interval [1, 9], but is changed to be [3, 9] because kwargs['start'] == 3,
+                the distance traveled is not reduced to reflect that lost time travelling. ***
+
                 Args:
-                
+                    _res (list): The result returned by the primary featurization.
+                    _has_raw_data (int): 1 if True; -1 else
+                    **kwargs:
+                        start (int): The start UNIX timestamp (in ms). All events in _res that occur before this
+                            are filtered out.
+                        end (int): The end UNIX timestamp. All events that occur after this are filtered out.
+
                 Returns:
-                
-                Raises:
+                    A list of filtered primary feature events. The same format as what primary feature results.
                 """
                 _body_new_copy = copy.deepcopy(_res)
                 _event = { 'timestamp': kwargs['start'], 'duration': kwargs['end'] - kwargs['start'], 'data':
@@ -369,8 +382,19 @@ def primary_feature(name, dependencies):
                 return _event
 
             def _primary_attach(func, *args, **kwargs):
-                """
-                Utilize and update LAMP attachments to speed processing of primary feature
+                """Utilize and update LAMP attachments to speed up processing of primary feature.
+                
+                Args:
+                    func (method): The raw data-getting method, called if attached data needs to 
+                        be updated.
+                    **kwargs:
+                        start (int): The start UNIX timestamp (in ms). 
+                        end (int): The end UNIX timestamp (in ms).
+                        
+                Returns:
+                
+                Raises:
+                    LAMP.ApiException: 
                 """
                 try:
                     attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']
@@ -405,7 +429,7 @@ def primary_feature(name, dependencies):
                 # Combine old attachments with new results
                 unique_dict = _result + attachments
                 unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
-                _body_new=sorted((unique_dict),key=lambda x: x['start'])
+                _body_new = sorted((unique_dict),key=lambda x: x['start'])
                 # need to use a copy so you don't overwrite the original
                 _event = _primary_filter(_body_new, *args, **kwargs)
 
