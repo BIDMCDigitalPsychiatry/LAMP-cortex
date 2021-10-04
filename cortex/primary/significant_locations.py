@@ -13,16 +13,16 @@ from ..raw.gps import gps
     dependencies=[gps]
 )
 def significant_locations(k_max=10, 
-                          eps=1e-5, 
                           max_clusters=-1,
                           min_cluster_size=0.01, 
                           max_dist=300, 
                           method='mode', 
                           attach=False,
                           **kwargs):
-    """
-    Get the coordinates of significant locations visited by the participant in
-    the specified timeframe using the KMeans clustering method.
+    """Get the coordinates and proportional time of significant locations visited by the participant.
+    
+
+    This method uses the the KMeans clustering method.
     NOTE: Via DBSCan, this algorithm first reduces the amount of gps readings
     used to generate significant locations. If there is a large amount of new
     gps data to reduce, this step can take a long time
@@ -31,27 +31,39 @@ def significant_locations(k_max=10,
 
     NOTE: This algorithm does NOT return the centroid radius and thus cannot
     be used to coalesce multiple SigLocs into one.
-
-    :param k_max (int): The maximum KMeans clusters to test (FIXME).
-    :param max_clusters (int): The number of clusters to create using
-    ethod='mode'. Note: default is to use min_cluster_size when
-    max_clusters=-1.
-    :param min_cluster_size (float): The percentage of points that must be in
-    a cluster for it to be significant.
     
-    :param method: 'mode' or 'k_means'. Method for computing sig_locs.
-    :return latitude (float): The latitude of the SigLoc centroid.
-    :return longitude (float): The longitude of the SigLoc centroid.
-    :return radius (float): The radius of the SigLoc centroid (in meters).
-    :return proportion (float): The proportion of GPS events located within
-    this centeroid compared to all GPS events over the entire time window.
-    :return duration (int): The duration of time spent by the participant in
-    the centroid.
+    Args:
+        k_max (int): The maximum KMeans clusters to test (FIXME).
+        max_clusters (int): The number of clusters to create using
+            method='mode'. Note: default is to use min_cluster_size when
+            max_clusters=-1.
+        min_cluster_size (float): The percentage of points that must be in
+            a cluster for it to be significant.
+        max_dist (int): The farthest distance, in m, that two points can be separated by.
+        method (string): 'mode' or 'k_means'. Method for computing sig_locs.
+        attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+        
+    Returns:
+        A dict containing the fields:
+            data (list): A list of sig locs, in the time periods, with the fields:
+                latitude (float): The latitude of the SigLoc centroid.
+                longitude (float): The longitude of the SigLoc centroid.
+                radius (float): The radius of the SigLoc centroid (in meters).
+                proportion (float): The proportion of GPS events located within
+                    this centeroid compared to all GPS events over the entire time window.
+                duration (int): The duration of time spent by the participant in
+                    the centroid.
+            has_raw_data (int): Indicates whether there is raw data present.
     """
     if method == 'k_means':
         return _significant_locations_kmeans(k_max, eps, **kwargs)
     return _significant_locations_mode(max_clusters, min_cluster_size, max_dist, **kwargs)
-
 
 def euclid(gps0, gps1):
     """ Calculates euclidean distance
@@ -78,10 +90,10 @@ def distance(cluster1, cluster2):
     """ Function to find the distance
 
         Args:
-            cluster1: (tuple) Geo coordinate
-            cluster2: (tuple) Geo Coordinate
+            cluster1 (tuple): Geo coordinate
+            cluster2 (tuple) Geo Coordinate
         Returns:
-            return: distance in meters
+            A float, the distance in meters.
     """
     R = 6378.137
     d_lat = cluster2[0] * math.pi / 180 - cluster1[0] * math.pi / 180
@@ -99,8 +111,11 @@ def remove_clusters(clusters, max_dist):
         (MAX_DIST) away from at least one other cluster
 
         Args:
-            clusters: (list of dicts) Each dict in the list is a significant location
-            max_dist: (int) Maximum distance allowed between clusters (in meters)
+            clusters (list): Each item a dict containing a significant location.
+            max_dist (int): Maximum distance allowed between clusters (in meters).
+            
+        Returns:
+            A list, the same as clusters, with {'rank'} fields added.
     """
     n = len(clusters)
     for i in range(n - 1):
@@ -123,10 +138,11 @@ def _location_duration(df, cluster):
     """ Helper function to get location duration
 
         Args:
-            df_cluster - the original dataframe
-            cluster - the cluster index
+            df_cluster (pd.DataFrame): The original dataframe of GPS reads.
+            cluster (int): The cluster index (i.e. rank).
+            
         Returns:
-            Duration in that cluster in ms
+            A float, duration in that cluster (in ms).
     """
     df = df[::-1].reset_index()
     arr_ext = np.r_[False, df['cluster'] == cluster, False]
@@ -145,8 +161,16 @@ def _location_duration(df, cluster):
     return sum(hometime_list)
 
 def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
-    """ Function to return significant locations using kmeans
+    """Function to return significant locations using kmeans
         clustering.
+        
+        Args:
+            k_max (int): The maximum number of clusters ot use.
+            eps (float): The maximum distance separating points in the
+                same cluster.
+            **kwargs:
+            
+        Returns:
     """
     # Get DB scan metadata fir
     try:

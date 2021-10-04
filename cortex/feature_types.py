@@ -27,6 +27,9 @@ __features__ = []
 def all_features():
     return __features__
 
+ACTIVITIES = ['lamp.survey', 'lamp.jewels_a', 'lamp.jewels_b']
+MAX_RETURN_SIZE = 10000 #maximum number of events that the API will return
+
 # Raw features.
 def raw_feature(name, dependencies):
     """Determines whether caching should be performed upon raw data request.
@@ -37,6 +40,8 @@ def raw_feature(name, dependencies):
     Args:
         name (string): The name of the raw data-getting method being decorated.
         dependencies (list): The names of cortex methods that are being use within.
+        TODO: event_type (string): Either "activity" or "sensor"; the correct API method
+            is chosen accordingly.
         **kwargs:
             id (string): The Participant LAMP id. Required.
             start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from"). Required.
@@ -205,7 +210,9 @@ def raw_feature(name, dependencies):
                 # If a cached file could not be found, use function to get new data and save
 
                 log.info('No saved raw data found, getting new...')
-                _result = _get_raw_feature(name, **kwgs)
+                
+
+                _result = _get_raw_feature(func, name, **kwgs)
                 pickle_path = (cache_dir + '/' +
                                name.split('.')[-1] + '_' +
                                kwargs['id'] + '_' +
@@ -230,7 +237,7 @@ def raw_feature(name, dependencies):
             if cache:
                 _result = _raw_caching(name=name, **kwgs)
             else:
-                _result = _get_raw_feature(name, **kwgs)
+                _result = _get_raw_feature(func, name, **kwgs)
 
             _event = {'timestamp': kwargs['start'],
                       'duration': kwargs['end'] - kwargs['start'],
@@ -294,8 +301,8 @@ def raw_feature(name, dependencies):
 
             return _event
 
-        def _get_raw_feature(name, **kwgs):
-            """ Function to call the LAMP API and get the raw data.
+        def _get_sensor_feature(name, **kwgs):
+            """Function to call the LAMP.SensorEvent API and return data.
 
                 Args:
                     name (str): the name of the raw feature (ex: "lamp.gps")
@@ -317,7 +324,7 @@ def raw_feature(name, dependencies):
                                                to=kwgs['end'],
                                                _limit=kwgs['_limit'])['data']
             while (kwgs['recursive'] and
-                   (len(data) == kwgs['_limit'] or len(data_next) == kwgs['_limit'])):
+                   (len(data) == MAX_RETURN_SIZE) or len(data_next) == MAX_RETURN_SIZE):
                 to = data[-1]['timestamp']
                 data_next = LAMP.SensorEvent.all_by_participant(kwgs['id'],
                                                         origin=name,
@@ -327,6 +334,33 @@ def raw_feature(name, dependencies):
                 data += data_next
 
             return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+            
+        def _get_raw_feature(func, name, **kwgs):
+            """ Function to call the LAMP API and get the raw data.
+
+                Args:
+                    func (method): The raw function to call. Needed if not a
+                        sensor event.
+                    name (str): The name of the raw feature (ex: "lamp.gps").
+                    **kwgs:
+                        id (str): The participant id
+                        start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from")
+                        end (int): The UNIX timestamp to end querying (i.e. "to")
+                        _limit (int): The maximum number of sensor events to query for in a
+                            single request
+                        recursive (bool): if True, continue requesting data until all data is
+                                returned; else just one request
+                Returns:
+                    A dict of the timestamps and raw data events
+            """
+            ## TODO: select event getter based on kwgs['event_type']
+            ## need API functionality for activity event 'origin' query
+#             if kwgs['event_type'] == 'activity':
+#                 event_func = LAMP.SensorEvent.all_by_participant
+            if name in ACTIVITIES:
+                return func(**kwgs)
+            else:
+                return _get_sensor_feature(name, **kwgs)
 
         # When we register/save the function, make sure we
         # save the decorated and not the RAW function.
@@ -413,6 +447,24 @@ def primary_feature(name, dependencies):
             # Get previously calculated primary feature results from attachments, if you do attach.
             has_raw_data = -1
 
+            def _get_default_args(func):
+                """ Get the default arguments for the function.
+
+                    Args:
+                        func: the function
+                    Returns:
+                        a dictionary with key value pairs for the default arguments
+                """
+                signature = inspect.signature(func)
+                return {
+                    k: v.default
+                    for k, v in signature.parameters.items()
+                    if v.default is not inspect.Parameter.empty
+                }
+
+            kwgs = _get_default_args(func)
+            kwgs.update(kwargs)
+
             def _primary_filter(_res, has_raw_data, **kwargs):
                 """ Filter out primary feature results that do not belong in interval
                     [kwargs['start'], kwargs['end']].
@@ -467,7 +519,7 @@ def primary_feature(name, dependencies):
 
                 return _event
 
-            def _primary_attach(func, *args, **kwargs):
+            def _primary_attach(func, name, *args, **kwargs):
                 """Utilize and update LAMP attachments to speed up processing of primary feature.
                 
                 Based on both (kwargs['start'], kwargs['end']) timestamps and previously 
@@ -509,13 +561,16 @@ def primary_feature(name, dependencies):
                     _from = 0
                     log.info("Saved " + name + " could not be parsed, discarding...")
 
-                start=kwargs.pop('start')
+                start = kwargs['start']
                 if _from > kwargs['end']:
-                    _result=[]
+                    _result = []
+                    has_raw_data = -1
                 else:
                     _result = func(*args, **{**kwargs, 'start':_from})
                     if 'has_raw_data' in _result:
                         has_raw_data = _result['has_raw_data']
+                    else:
+                        has_raw_data = -1
                     _result = _result['data']
 
                 # Combine old attachments with new results
@@ -523,7 +578,7 @@ def primary_feature(name, dependencies):
                 unique_dict = [k for j, k in enumerate(unique_dict) if k not in unique_dict[j + 1:]]
                 _body_new = sorted((unique_dict),key=lambda x: x['start'])
                 # need to use a copy so you don't overwrite the original
-                _event = _primary_filter(_body_new, *args, **kwargs)
+                _event = _primary_filter(_body_new, has_raw_data, *args, **kwargs)
 
                 # Upload new features as attachment.
                 log.info(f"Saving primary feature \"{name}\"...")
@@ -531,20 +586,32 @@ def primary_feature(name, dependencies):
 
                 return _event
 
-            attach = kwargs.get('attach')
+            attach = kwgs['attach']
             if attach:
-                _event = _primary_attach(func=func, *args, **kwargs)
+                _event = _primary_attach(func=func, name=name, *args, **kwgs)
 
             else:
                 has_raw_data = -1
-                _result_init = func(*args, **kwargs)
+                _result_init = func(*args, **kwgs)
                 _result = _primary_filter(_result_init['data'],
-                                          _result_init['has_raw_data'], *args, **kwargs)
+                                          _result_init['has_raw_data'], *args, **kwgs)
+                diff = [e for e in _result['data'] if e not in _result_init['data']]
+                for d in diff:
+                    if d['start'] < kwgs['start']:
+                        print("START")
+                    elif d['end'] > kwgs['end']:
+                        if d['start'] < kwgs['end']:
+                            print('BORDER')
+                        else:
+                            print("END")
+                    else:
+                        pass
+                        #print("NEITHER", d, kwgs['start'], kwgs['end'])                
 
                 if 'has_raw_data' in _result:
                     has_raw_data = _result['has_raw_data']
-                _event = {'timestamp': kwargs['start'],
-                          'duration': kwargs['end'] - kwargs['start'],
+                _event = {'timestamp': kwgs['start'],
+                          'duration': kwgs['end'] - kwgs['start'],
                           'data': _result['data'],
                           'has_raw_data': has_raw_data}
 
@@ -628,19 +695,35 @@ def secondary_feature(name, dependencies):
                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
             log.info("Processing secondary feature " + name + "...")
+            def _get_default_args(func):
+                """ Get the default arguments for the function.
 
-            timestamp_list = list(range(kwargs['start'], kwargs['end'], kwargs['resolution']))
+                    Args:
+                        func: the function
+                    Returns:
+                        a dictionary with key value pairs for the default arguments
+                """
+                signature = inspect.signature(func)
+                return {
+                    k: v.default
+                    for k, v in signature.parameters.items()
+                    if v.default is not inspect.Parameter.empty
+                }
+
+            kwgs = _get_default_args(func)
+            kwgs.update(kwargs)
+            timestamp_list = list(range(kwgs['start'], kwgs['end'], kwgs['resolution']))
             data = []
             for window in reversed([*zip(timestamp_list[:-1], timestamp_list[1:])]):
                 window_start, window_end = window[0], window[1]
-                _result = func(**{**kwargs, 'start':window_start, 'end':window_end})
+                _result = func(**{**kwgs, 'start':window_start, 'end':window_end})
                 data.append(_result)
 
             # TODO: Require primary feature dependencies to be primary features (or raw features?)!
             data = sorted(data,key=lambda x: x['timestamp']) if data else []
-            _event = {'timestamp': kwargs['start'],
-                      'duration': kwargs['end'] - kwargs['start'],
-                      'resolution':kwargs['resolution'],
+            _event = {'timestamp': kwgs['start'],
+                      'duration': kwgs['end'] - kwgs['start'],
+                      'resolution':kwgs['resolution'],
                       'data': data}
 
             return _event

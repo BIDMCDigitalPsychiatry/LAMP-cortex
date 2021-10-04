@@ -14,11 +14,21 @@ TIME_THRESHOLD = 600
 )
 def trips(attach=True,
           **kwargs):
-    """
-    :param id (string):
-    :param start (int):
-    :param end (int):
-    :return (list): all trips in the given timeframe; each one has (start, end)
+    """Finds bouts of movement, based on the gps sensor.
+    
+    Args:
+        attach
+        **kwargs:
+            d (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+    
+    Returns:
+        A dict with fields:
+            data (list): All trips in the given timeframe; seach one has (start, end).
+            has_raw_data (int): Indicates whether there is raw data.
     """
     ### Helper functions ###
     def haversine_np(lon1, lat1, lon2, lat2):

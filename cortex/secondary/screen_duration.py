@@ -33,6 +33,7 @@ def screen_duration(**kwargs):
     
     """
     _screen_active = screen_active(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
+    #print('SA: ', _screen_active)
     _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])
     # screen duration should be None if there is no data
     if _screen_active['has_raw_data'] == 0:
