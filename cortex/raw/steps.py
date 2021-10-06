@@ -8,7 +8,7 @@ import LAMP
 )
 def steps(_limit=10000, 
           cache=False,
-          recurisve=False,
+          recursive=False,
           **kwargs):
     """
     Get all step count bounded by time interval 
