@@ -9,7 +9,7 @@ import LAMP
 )
 def screen_state(_limit=10000, 
                  cache=False,
-                 recursive=False,
+                 rrecursive=False,
                  **kwargs):
     """
     Get all screen state data bounded by time interval and optionally subsample the data.
