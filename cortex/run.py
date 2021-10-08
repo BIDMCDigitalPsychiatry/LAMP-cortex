@@ -98,7 +98,6 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     _results = {}
     # Loop through all participants
     for i, participant in enumerate(participants):
-        print(i, participant)
         # loop through all features
         for f in features:
             # Make sure we aren't calling non-existant feature functions.
@@ -127,6 +126,14 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 else:
                     _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')                
                 _results[f] = pd.concat([_results[f], _res2])
+                if path_to_save != "":
+                    log.info("Saving output locally..")
+
+                    # create subdir if doesn't exist
+                    if not os.path.exists(os.path.join(path_to_save, f)):
+                        os.makedir(os.path.join(path_to_save, f))
+                
+                    _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
 #             except:
 #                 log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
         if run_part_and_feats != "":
@@ -156,7 +163,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     if path_to_save != "":
                         if path_to_save[len(path_to_save) - 1] != "/":
                             path_to_save += "/"
-                        _results[f].to_pickle(path_to_save + f + ".pkl")
+                        _results[f].to_pickle(path_to_save + '_'.join([participant, f]) + ".pkl")
             except:
                 log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
 
