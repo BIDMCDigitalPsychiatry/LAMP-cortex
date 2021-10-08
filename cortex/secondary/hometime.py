@@ -30,10 +30,7 @@ def hometime(**kwargs):
             value (float): The time (in ms) spent in the most visited location.
     
     """
-    _significant_locations = significant_locations(id=kwargs['id'],
-                                                   start=kwargs['start'],
-                                                   end=kwargs['end'], 
-                                                   **kwargs)
+    _significant_locations = significant_locations(**kwargs)
     if len(_significant_locations['data']) == 0:
         _hometime = None
     else:

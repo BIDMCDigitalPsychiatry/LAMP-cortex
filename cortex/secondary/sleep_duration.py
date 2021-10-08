@@ -35,7 +35,7 @@ def sleep_duration(**kwargs):
             value (float): The time (in hours) spent sleeping during nightime periods.
     
     """
-    _sleep_periods = sleep_periods(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)
+    _sleep_periods = sleep_periods(**kwargs)
     #_sleep_duration = sum([res['duration'] for res in _sleep_periods['data']])
     _sleep_duration = sum([res['end'] - res['start'] for res in _sleep_periods['data']])
     # if there is no accelerometer data, sleep should be None

@@ -31,7 +31,7 @@ def trip_distance(**kwargs):
     
     """
     log.info('Loading Trips data...')
-    _trips = trips(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)
+    _trips = trips(**kwargs)
     if _trips['has_raw_data'] == 0:
         return {'timestamp': kwargs['start'], 'trip_distance': None}
     _trips = _trips["data"]

@@ -32,16 +32,9 @@ def entropy(**kwargs):
     
     """
     if kwargs.get('method') is not None:
-        _significant_locations = significant_locations(id=kwargs['id'],
-                                                       start=kwargs['start'],
-                                                       end=kwargs['end'],
-                                                       method=kwargs['method'], 
-                                                       **kwargs)
+        _significant_locations = significant_locations(**kwargs)
     else:
-        _significant_locations = significant_locations(id=kwargs['id'],
-                                                       start=kwargs['start'],
-                                                       end=kwargs['end'],
-                                                       **kwargs)
+        _significant_locations = significant_locations(**kwargs)
 
     if len(_significant_locations['data']) == 0:
         _entropy = None

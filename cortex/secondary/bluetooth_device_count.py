@@ -26,8 +26,7 @@ def bluetooth_device_count(**kwargs):
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): Number of unique bluetooth devices that were nearby.
     """
-    _bluetooth = pd.DataFrame(bluetooth(id=kwargs['id'], start=kwargs['start'],
-                   end=kwargs['end'], **kwargs)['data'])
+    _bluetooth = pd.DataFrame(bluetooth(**kwargs)['data'])
     _device_count = None
     if len(_bluetooth) > 0:
         _device_count = len(np.unique(_bluetooth['bt_address'], return_counts=False))

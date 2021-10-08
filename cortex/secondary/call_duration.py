@@ -31,9 +31,7 @@ def call_duration(incoming=True, **kwargs):
     incoming_dict = {True: 1, False: 2}
     label = incoming_dict[incoming]
     log.info('Loading raw calls data...')
-    _calls = calls(id=kwargs['id'], start=kwargs['start'],
-                   end=kwargs['end'],
-                   **kwargs)['data']
+    _calls = calls(**kwargs)['data']
     log.info('Computing call duration...')
     _call_duration = np.sum([call['call_duration'] for call in _calls
                              if call['call_type'] == label])
