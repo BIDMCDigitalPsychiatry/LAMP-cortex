@@ -30,6 +30,6 @@ def trip_duration(**kwargs):
                 [kwargs['start'], kwargs['end']].
     
     """
-    _trips = trips(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
-    _duration = sum([trip['end']['timestamp'] - trip['start']['timestamp'] for trip in _trips])
+    _trips = trips(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)
+    _duration = sum([trip['end'] - trip['start'] for trip in _trips['data']])
     return {'timestamp': kwargs['start'], 'value': _duration}

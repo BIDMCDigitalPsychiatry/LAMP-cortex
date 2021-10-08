@@ -35,11 +35,13 @@ def entropy(**kwargs):
         _significant_locations = significant_locations(id=kwargs['id'],
                                                        start=kwargs['start'],
                                                        end=kwargs['end'],
-                                                       method=kwargs['method'])
+                                                       method=kwargs['method'], 
+                                                       **kwargs)
     else:
         _significant_locations = significant_locations(id=kwargs['id'],
                                                        start=kwargs['start'],
-                                                       end=kwargs['end'])
+                                                       end=kwargs['end'],
+                                                       **kwargs)
 
     if len(_significant_locations['data']) == 0:
         _entropy = None

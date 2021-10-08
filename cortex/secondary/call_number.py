@@ -28,6 +28,6 @@ def call_number(incoming=True, **kwargs):
     """
     incoming_dict = {True: 1, False:2}
     label = incoming_dict[incoming]
-    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
+    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)['data']
     _call_number = len([call for call in _calls if call['call_type'] == label])
     return {'timestamp':kwargs['start'], 'value': _call_number}

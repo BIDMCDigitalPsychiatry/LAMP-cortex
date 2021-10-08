@@ -26,6 +26,6 @@ def call_degree(**kwargs):
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): The number of unique phone numbers.
     """
-    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
+    _calls = calls(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)['data']
     _call_degree = np.unique([call['call_trace'] for call in _calls]).size
     return {'timestamp':kwargs['start'], 'value': _call_degree}

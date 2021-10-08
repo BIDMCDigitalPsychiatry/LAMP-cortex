@@ -131,7 +131,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
 
                     # create subdir if doesn't exist
                     if not os.path.exists(os.path.join(path_to_save, f)):
-                        os.makedir(os.path.join(path_to_save, f))
+                        os.makedirs(os.path.join(path_to_save, f))
                 
                     _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
 #             except:

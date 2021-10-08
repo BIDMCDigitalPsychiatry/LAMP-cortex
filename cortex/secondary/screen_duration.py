@@ -32,7 +32,7 @@ def screen_duration(**kwargs):
             value (float): The time (in ms) spent with the device screen on. 
     
     """
-    _screen_active = screen_active(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
+    _screen_active = screen_active(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)
     #print('SA: ', _screen_active)
     _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])
     # screen duration should be None if there is no data

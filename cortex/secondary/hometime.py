@@ -32,7 +32,8 @@ def hometime(**kwargs):
     """
     _significant_locations = significant_locations(id=kwargs['id'],
                                                    start=kwargs['start'],
-                                                   end=kwargs['end'])
+                                                   end=kwargs['end'], 
+                                                   **kwargs)
     if len(_significant_locations['data']) == 0:
         _hometime = None
     else:

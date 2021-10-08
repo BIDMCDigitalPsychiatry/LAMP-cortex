@@ -34,6 +34,6 @@ def sms_number(incoming=True, **kwargs):
     """
     incoming_dict = {True: 1, False:2}
     label = incoming_dict[incoming]
-    _sms = sms(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])['data']
+    _sms = sms(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'], **kwargs)['data']
     _sms_number = len([sms for sms in _sms if sms['sms_type'] == label])
     return {'timestamp':kwargs['start'], 'value': _sms_number}
