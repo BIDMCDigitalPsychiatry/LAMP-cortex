@@ -15,12 +15,11 @@ def call_degree(**kwargs):
     Args:
         **kwargs:
             id (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            
-            
+
     Returns:
         A dict consisting:
             timestamp (int): The beginning of the window (same as kwargs['start']).

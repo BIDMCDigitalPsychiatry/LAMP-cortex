@@ -12,15 +12,16 @@ from ..raw.gps import gps
     name='cortex.significant_locations',
     dependencies=[gps]
 )
-def significant_locations(k_max=10, 
+def significant_locations(k_max=10,
+                          eps=1e-5,
                           max_clusters=-1,
-                          min_cluster_size=0.01, 
-                          max_dist=300, 
-                          method='mode', 
+                          min_cluster_size=0.01,
+                          max_dist=300,
+                          method='mode',
                           attach=False,
                           **kwargs):
     """Get the coordinates and proportional time of significant locations visited by the participant.
-    
+
 
     This method uses the the KMeans clustering method.
     NOTE: Via DBSCan, this algorithm first reduces the amount of gps readings
@@ -31,7 +32,7 @@ def significant_locations(k_max=10,
 
     NOTE: This algorithm does NOT return the centroid radius and thus cannot
     be used to coalesce multiple SigLocs into one.
-    
+
     Args:
         k_max (int): The maximum KMeans clusters to test (FIXME).
         max_clusters (int): The number of clusters to create using
@@ -44,11 +45,11 @@ def significant_locations(k_max=10,
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         **kwargs:
             id (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-        
+
     Returns:
         A dict containing the fields:
             data (list): A list of sig locs, in the time periods, with the fields:

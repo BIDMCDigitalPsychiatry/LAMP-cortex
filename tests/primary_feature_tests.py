@@ -243,7 +243,7 @@ class TestPrimary(unittest.TestCase):
                                                    start=self.TEST_SCREEN_ACTIVE_START_1,
                                                    end=self.TEST_SCREEN_ACTIVE_END_1)
         num_bouts = len(ret0['data'])
-        self.assertEqual(num_bouts, 2)
+        self.assertEqual(num_bouts, 7)
 
     # 3. Acc_jerk
     def test_acc_jerk_no_data(self):

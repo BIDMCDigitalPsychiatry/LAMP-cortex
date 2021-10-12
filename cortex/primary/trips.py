@@ -15,7 +15,7 @@ TIME_THRESHOLD = 600
 def trips(attach=True,
           **kwargs):
     """Finds bouts of movement, based on the gps sensor.
-    
+
     Args:
         attach
         **kwargs:
@@ -24,7 +24,7 @@ def trips(attach=True,
                 is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window for which the feature 
                 is being generated. Required.
-    
+
     Returns:
         A dict with fields:
             data (list): All trips in the given timeframe; seach one has (start, end).

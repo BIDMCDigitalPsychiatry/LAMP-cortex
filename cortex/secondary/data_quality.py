@@ -24,17 +24,16 @@ def data_quality(feature, bin_size=-1, **kwargs):
             for gps: 1000 * 10 * 60 (every 10min)
         **kwargs:
             id (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            
-            
+
     Returns:
         A dict consisting:
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): The percent of the time that there was at least one
-                    data point in each time window of size "bin_size".        
+                    data point in each time window of size "bin_size".
     """
     _data_quality = 0
     bin_width = bin_size

@@ -17,20 +17,20 @@ def screen_active(attach=True,
 
     Relies on the 'screen_state' raw sensor. On events/off events are encoded differently for iOS and Android devices.
     Accordingly, device type is found first using lamp.analytics.
-    
+
     Args:
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         duration_threshold (int): The maximum allowable duration of a screen active bout, in ms.
         **kwargs:
             id (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-       
+
     Returns:
         A dict with fields:
-            data (list): The screen-on bouts, each one with a (start, end) timestamp. 
+            data (list): The screen-on bouts, each one with a (start, end) timestamp.
             has_raw_data (int): Indicates whether there is raw data.
     """
     # if attach then run it for the entrire thing and return the entire thing
@@ -84,25 +84,25 @@ def screen_active(attach=True,
     else:
         # assume normal is correct
         _ret_screen_active = _screen_active
-        
-    # filter out events that 
+
+    # filter out events that
     return {'data': _ret_screen_active, 'has_raw_data': has_raw_data}
 
-def _get_screen_state_data(_screen_state, 
-                           device_type, 
+def _get_screen_state_data(_screen_state,
+                           device_type,
                            duration_threshold=1000 * 60 * 60 * 2,
                            flipped=0):
-    
+
     if device_type == 'iOS':
         on_events = [0] #[1, 3]
         off_events = [1, 2] #[0, 2]
     elif device_type == 'Android':
-        #ANDROID STUFF EDIT
-        on_events = [0] #[1, 3]
+        # ANDROID STUFF
+        on_events = [0, 3] #[1, 3]
         off_events = [1, 2] #[0, 2]
     else:
         raise Exception('Unknown device type')
-    
+
     if flipped:
         on_copy, off_copy = [n for n in on_events], [n for n in off_events]
         on_events = off_copy
@@ -111,7 +111,7 @@ def _get_screen_state_data(_screen_state,
     _screen_active = []
     start = True # if looking for start
     bout = {}
-    #FOR TESTING 
+
     for i in range(len(_screen_state) - 1):
         elapsed = _screen_state[i+1]['timestamp'] - _screen_state[i]['timestamp']
         if (elapsed < 1000 and _screen_state[i+1]['state'] in on_events
@@ -123,7 +123,7 @@ def _get_screen_state_data(_screen_state,
         elif not start and _screen_state[i]['state'] in off_events:
             bout['end'] = _screen_state[i]['timestamp']
             bout['duration'] = bout['end'] - bout['start']
-            
+
             #If bout duration too long, ignore it
             if bout['duration'] <= duration_threshold:
                 _screen_active.append(bout)
