@@ -10,8 +10,15 @@ import altair as alt
 
 import LAMP
 import cortex.raw as raw
+import cortex.primary as primary
 import cortex.secondary as secondary
 from cortex.feature_types import all_features, log
+
+import sys
+import logging
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
+                    format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
+log = logging.getLogger('cortex')
 
 
 # Convenience to avoid extra imports/time-mangling nonsense...
@@ -91,7 +98,6 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     _results = {}
     # Loop through all participants
     for i, participant in enumerate(participants):
-
         # loop through all features
         for f in features:
             # Make sure we aren't calling non-existant feature functions.
@@ -104,19 +110,32 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 params_f = feature_params[f]
             else:
                 params_f = {}
-            try:
-                _res = get_feature_for_participant(participant, f, params_f, start, end, resolution)
+            #try:
+            _res = get_feature_for_participant(participant, f, params_f, start, end, resolution)
+            if _res is None:
+                _results[f] = pd.DataFrame()
+                continue
+            # Make this into a df
+            _res2 = pd.DataFrame.from_dict(_res['data'])
+            if _res2.shape[0] > 0:
+                # If no data exists, don't bother appending the df.
+                _res2.insert(0, 'id', participant) # prepend 'id' column
+                 # convert to datetime
+                if hasattr(primary, f):
+                    _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
+                else:
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')                
+                _results[f] = pd.concat([_results[f], _res2])
+                if path_to_save != "":
+                    log.info("Saving output locally..")
 
-                # Make this into a df
-                _res2 = pd.DataFrame.from_dict(_res['data'])
-                if _res2.shape[0] > 0:
-                    # If no data exists, don't bother appending the df.
-                    _res2.insert(0, 'id', participant) # prepend 'id' column
-                     # convert to datetime
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
-                    _results[f] = pd.concat([_results[f], _res2])
-            except:
-                log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
+                    # create subdir if doesn't exist
+                    if not os.path.exists(os.path.join(path_to_save, f)):
+                        os.makedirs(os.path.join(path_to_save, f))
+                
+                    _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
+#             except:
+#                 log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
         if run_part_and_feats != "":
             f = features_by_participant[i]
             # Make sure we aren't calling non-existant feature functions.
@@ -134,25 +153,21 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     # If no data exists, don't bother appending the df.
                     _res2.insert(0, 'id', participant) # prepend 'id' column
                     # convert to datetime
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
+                    if hasattr(primary, f):
+                        _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
+                    else:
+                        _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
+                    
+                    # Save if there is a file path specified
+                    if path_to_save != "":
+                        if path_to_save[len(path_to_save) - 1] != "/":
+                            path_to_save += "/"
+                        _results[f].to_pickle(path_to_save + '_'.join([participant, f]) + ".pkl")
             except:
                 log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
 
-    # Save if there is a file path specified
-    if path_to_save != "":
-        if path_to_save[len(path_to_save) - 1] != "/":
-            path_to_save += "/"
-        for k in _results.keys():
-            _results[k].to_pickle(path_to_save + k + ".pkl")
     return _results
-
-
-# Helper function to generate a plot directly from a Cortex DF.
-# FIXME: currently only allows plotting first one; should be alt.layer()'ed charts.
-def plot(*args, **kwargs):
-    df_dict = run(*args, **kwargs)
-    return alt.Chart(list(df_dict.values())[0])
 
 
 def get_feature_for_participant(participant, feature, feature_params, start, end,
@@ -164,21 +179,27 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
     # 5 Find start, end
     # FIXME: Seems to not work correctly in every case?
     if start is None:
-        start = min([getattr(mod, mod_name)(id=participant,
+        starts = [getattr(mod, mod_name)(id=participant,
                                             start=0,
                                             end=int(time.time())*1000,
                                             cache=False,
                                             recursive=False,
                                             attach=False,
-                                            limit=-1)['data'][0]['timestamp']
+                                            _limit=-1)['data'][0]['timestamp']
                      for mod_name, mod in inspect.getmembers(raw, inspect.ismodule)
                      if len(getattr(mod, mod_name)(id=participant,
                                                    start=0,
                                                    end=int(time.time())*1000,
                                                    cache=False,
-                                                   recursive=False, 
+                                                   recursive=False,
                                                    attach=False,
-                                                   limit=-1)['data']) > 0])
+                 
+                                                   _limit=-1)['data']) > 0]
+        if len(starts) == 0: #no data: return none
+            log.info("Participant " + participant + " has no data. Returning 'None' for all features.")
+            return None
+        
+        start = min(starts)
         if resolution % MS_PER_DAY == 0:
             start = set_date_9am(start, 1)
     if end is None:
@@ -186,13 +207,15 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                                           start=0,
                                           end=int(time.time())*1000,
                                           cache=False,
-                                          recursive=False, limit=1)['data'][0]['timestamp']
+                                          recursive=False, 
+                                          _limit=1)['data'][0]['timestamp']
                     for mod_name, mod in inspect.getmembers(raw, inspect.ismodule)
                     if len(getattr(mod, mod_name)(id=participant,
                                                   start=0,
                                                   end=int(time.time())*1000,
                                                   cache=False,
-                                                  recursive=False, limit=1)['data']) > 0])
+                                                  recursive=False, 
+                                                  _limit=1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
             end = set_date_9am(end, 1)
     if hasattr(secondary, feature):

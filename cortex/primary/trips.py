@@ -14,11 +14,21 @@ TIME_THRESHOLD = 600
 )
 def trips(attach=True,
           **kwargs):
-    """
-    :param id (string):
-    :param start (int):
-    :param end (int):
-    :return (list): all trips in the given timeframe; each one has (start, end)
+    """Finds bouts of movement, based on the gps sensor.
+
+    Args:
+        attach
+        **kwargs:
+            d (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+
+    Returns:
+        A dict with fields:
+            data (list): All trips in the given timeframe; seach one has (start, end).
+            has_raw_data (int): Indicates whether there is raw data.
     """
     ### Helper functions ###
     def haversine_np(lon1, lat1, lon2, lat2):
@@ -63,16 +73,16 @@ def trips(attach=True,
         :return (list): list of dicts, where each dict is a trip, with the
             following keys: 'start', 'end', 'latitude', 'longitude','distance'
         """
-        gps_data['dt'] = (gps_data['timestamp'] - gps_data['timestamp'].shift()) / (1000*3600)
-        gps_data['dx'] = haversine_np(
+        gps_data.loc[:, 'dt'] = (gps_data['timestamp'] - gps_data['timestamp'].shift()) / (1000*3600)
+        gps_data.loc[:, 'dx'] = haversine_np(
             gps_data.latitude.shift(fill_value=0), gps_data.longitude.shift(fill_value=0),
             gps_data.loc[1:, 'latitude'], gps_data.loc[1:, 'longitude']
         )
-        gps_data['speed'] = gps_data['dx'] / gps_data['dt']
-        gps_data['stationary'] = ((gps_data['speed'] < SPEED_THRESHOLD) |
+        gps_data.loc[:, 'speed'] = gps_data['dx'] / gps_data['dt']
+        gps_data.loc[:, 'stationary'] = ((gps_data['speed'] < SPEED_THRESHOLD) |
                                   (gps_data['dt'] > TIME_THRESHOLD))
-        gps_data['stationary_1'] = gps_data['stationary'].shift()
-        gps_data['idx'] = gps_data.index
+        gps_data.loc[:, 'stationary_1'] = gps_data['stationary'].shift()
+        gps_data.loc[:, 'idx'] = gps_data.index
         new = gps_data[gps_data['stationary'] != gps_data['stationary_1']]
         new.loc[:, 'idx_shift'] = new['idx'].shift(-1, fill_value=0)
         new = new[new['stationary'] == False]

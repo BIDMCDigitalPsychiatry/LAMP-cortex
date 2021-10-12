@@ -13,7 +13,29 @@ from functools import reduce
     dependencies=[sleep_periods]
 )
 def sleep_duration(**kwargs):
-    _sleep_periods = sleep_periods(id=kwargs['id'], start=kwargs['start'], end=kwargs['end'])
+    """Compute the time (in hours) spent sleeping during nightime periods.
+
+    
+    The (kwargs['start'], kwargs['end']) timestamps used within the function are
+    different than the ones that should be passed in as parameters --
+    'cortex.feature_types.secondary_features' is being called first. Please
+    see documentation there for more detail. 
+    
+    Args:
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+    
+    Returns:
+        A dict consisting of:
+            timestamp (int): The beginning of the window (same as kwargs['start']).
+            value (float): The time (in hours) spent sleeping during nightime periods.
+    
+    """
+    _sleep_periods = sleep_periods(**kwargs)
     #_sleep_duration = sum([res['duration'] for res in _sleep_periods['data']])
     _sleep_duration = sum([res['end'] - res['start'] for res in _sleep_periods['data']])
     # if there is no accelerometer data, sleep should be None

@@ -13,15 +13,35 @@ def acc_jerk(threshold=500,
              attach=False,
              **kwargs):
     """ Computes the jerk of the accelerometer data.
-        Rate at which the participant's accelerometer data changes with respect to time.
+        Jerk is the rate at which acceleration changes with respect to time.
 
-        params:
-            threshold - the max difference between points to be computed in the sum in ms
-                (ie if there is too large of a gap in time between accelerometer
+        Args:
+            threshold (int): The max difference between points to be computed in the sum, in ms.
+                (I.e. if there is too large of a gap in time between accelerometer
                 points, jerk has little meaning)
-            attach - indicates whether to use LAMP.Type.attachments in calculating the feature
-        returns:
-            the jerk in m / s^3
+            attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
+            **kwargs:
+                id (string): The participant's LAMP id. Required.
+                start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                    is being generated. Required.
+                end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                    is being generated. Required.
+        Returns:
+            A dict with fields:
+                data (list): A list of dicts, with each dict having 3 keys: 'start', 'end', and 'acc_jerk'.
+                    'acc_jerk' is the accelerometer jerk in m / s^3
+                has_raw_data (int): Indicates whether raw data is present. 
+
+        Example:
+            [{'start': 1625171685730.0,
+              'end': 1625171685929.0,
+              'acc_jerk': 1.7460826170665855},
+             {'start': 1625171685532.0,
+              'end': 1625171685730.0,
+              'acc_jerk': 1.00943647205571},
+             {'start': 1625171685334.0,
+              'end': 1625171685532.0,
+              'acc_jerk': 0.051706493081616275}]
     """
     _acc = accelerometer(**kwargs)['data']
     if _acc:

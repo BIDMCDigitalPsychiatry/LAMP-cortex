@@ -11,10 +11,22 @@ MS_IN_A_DAY = 86400000
     dependencies=[bluetooth]
 )
 def bluetooth_device_count(**kwargs):
-    """ Number of unique bluetooth devices that were nearby.
+    """Number of unique bluetooth devices that were nearby.
+
+    Args:
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
+                is being generated. Required.
+
+    Returns:
+        A dict consisting:
+            timestamp (int): The beginning of the window (same as kwargs['start']).
+            value (float): Number of unique bluetooth devices that were nearby.
     """
-    _bluetooth = pd.DataFrame(bluetooth(id=kwargs['id'], start=kwargs['start'],
-                   end=kwargs['end'])['data'])
+    _bluetooth = pd.DataFrame(bluetooth(**kwargs)['data'])
     _device_count = None
     if len(_bluetooth) > 0:
         _device_count = len(np.unique(_bluetooth['bt_address'], return_counts=False))

@@ -16,6 +16,18 @@ def sleep_periods(attach=True,
                   **kwargs):
     """
     Generate sleep periods with given data
+    
+    Args:
+        attach (boolean): 
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                is being generated. Required.
+                
+    Returns:
+        
     """
     def _expected_sleep_period(accelerometer_data_reduced):
         """
