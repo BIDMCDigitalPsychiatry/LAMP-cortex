@@ -8,7 +8,7 @@ from ..feature_types import raw_feature
 )
 def screen_state(_limit=10000,
                  cache=False,
-                 rrecursive=False,
+                 recursive=False,
                  **kwargs):
     """ Get all screen state data bounded by the time interval.
 
