@@ -320,17 +320,17 @@ def raw_feature(name, dependencies):
             data_next = []
             data = LAMP.SensorEvent.all_by_participant(kwgs['id'],
                                                origin=name,
-                                               _from=kwgs['start'],
-                                               to=kwgs['end'],
-                                               _limit=kwgs['_limit'])['data']
+                                               _from=int(kwgs['start']),
+                                               to=int(kwgs['end']),
+                                               _limit=int(kwgs['_limit']))['data']
             while (kwgs['recursive'] and
                    (len(data) == MAX_RETURN_SIZE) or len(data_next) == MAX_RETURN_SIZE):
                 to = data[-1]['timestamp']
                 data_next = LAMP.SensorEvent.all_by_participant(kwgs['id'],
                                                         origin=name,
-                                                        _from=kwgs['start'],
-                                                        to=to,
-                                                        _limit=kwgs['_limit'])['data']
+                                                        _from=int(kwgs['start']),
+                                                        to=int(to),
+                                                        _limit=int(kwgs['_limit']))['data']
                 data += data_next
 
             return [{'timestamp': x['timestamp'], **x['data']} for x in data]
