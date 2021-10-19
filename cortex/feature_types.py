@@ -332,8 +332,11 @@ def raw_feature(name, dependencies):
                                                         to=int(to),
                                                         _limit=int(kwgs['_limit']))['data']
                 data += data_next
-
-            return [{'timestamp': x['timestamp'], **x['data']} for x in data]
+            ret = [{'timestamp': x['timestamp'], **x['data']} for x in data]
+            # some Androids have a motion field in accelerometer, unravel that
+            if name == "lamp.accelerometer":
+                ret = [{'timestamp': x['timestamp'], **x["motion"]} if "motion" in x else x for x in ret]
+            return ret
             
         def _get_raw_feature(func, name, **kwgs):
             """ Function to call the LAMP API and get the raw data.
