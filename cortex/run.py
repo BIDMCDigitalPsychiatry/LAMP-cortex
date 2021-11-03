@@ -32,7 +32,7 @@ MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
 
 
 def run(id_or_set, features=[], feature_params={}, start=None, end=None,
-        resolution=MS_PER_DAY, path_to_save="", run_part_and_feats=""):
+        resolution=MS_PER_DAY, path_to_save="", run_part_and_feats="", cache=False):
     """ Function to get features from cortex.
 
         Args:
@@ -111,7 +111,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             else:
                 params_f = {}
             #try:
-            _res = get_feature_for_participant(participant, f, params_f, start, end, resolution)
+            _res = get_feature_for_participant(participant, f, params_f, start, end, resolution, cache)
             if _res is None:
                 _results[f] = pd.DataFrame()
                 continue
@@ -124,7 +124,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 if hasattr(primary, f):
                     _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
                 else:
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')                
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                 _results[f] = pd.concat([_results[f], _res2])
                 if path_to_save != "":
                     log.info("Saving output locally..")
@@ -132,10 +132,9 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     # create subdir if doesn't exist
                     if not os.path.exists(os.path.join(path_to_save, f)):
                         os.makedirs(os.path.join(path_to_save, f))
-                
+
                     _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
-#             except:
-#                 log.info("Participant: " + participant + ", Feature: " + f + " crashed.")
+
         if run_part_and_feats != "":
             f = features_by_participant[i]
             # Make sure we aren't calling non-existant feature functions.
@@ -145,7 +144,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 _results[f] = pd.DataFrame()
 
             try:
-                _res = get_feature_for_participant(participant, f, {}, start, end, resolution)
+                _res = get_feature_for_participant(participant, f, {}, start, end, resolution, cache)
 
                 # Make this into a df
                 _res2 = pd.DataFrame.from_dict(_res['data'])
@@ -158,7 +157,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     else:
                         _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
                     _results[f] = pd.concat([_results[f], _res2])
-                    
+
                     # Save if there is a file path specified
                     if path_to_save != "":
                         if path_to_save[len(path_to_save) - 1] != "/":
@@ -171,7 +170,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
 
 
 def get_feature_for_participant(participant, feature, feature_params, start, end,
-                                resolution):
+                                resolution, cache):
     """ Helper function to compute the data for a feature for an individual
         participant.
     """
@@ -193,12 +192,10 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                                                    cache=False,
                                                    recursive=False,
                                                    attach=False,
-                 
                                                    _limit=-1)['data']) > 0]
         if len(starts) == 0: #no data: return none
             log.info("Participant " + participant + " has no data. Returning 'None' for all features.")
             return None
-        
         start = min(starts)
         if resolution % MS_PER_DAY == 0:
             start = set_date_9am(start, 1)
@@ -217,19 +214,21 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                                                   recursive=False, 
                                                   _limit=1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
-            end = set_date_9am(end, 1)
+            end = set_date_9am(end, 0)
     if hasattr(secondary, feature):
         _res = func_list[feature]['callable'](
                  id=participant,
                  start=start,
                  end=end,
                  resolution=MS_PER_DAY,
+                 cache=cache,
                  **feature_params)
     else:
         _res = func_list[feature]['callable'](
                 id=participant,
                 start=start,
                 end=end,
+                cache=cache,
                 **feature_params)
     return _res
 
