@@ -132,7 +132,7 @@ def sleep_periods(attach=True,
             # set attachment
             LAMP.Type.set_attachment(kwargs['id'], 'me',
                                      attachment_key='cortex.sleep_periods.reduced',
-                                     body={'end': kwargs['end'],
+                                     body={'end': int(kwargs['end']),
                                            'data': save_reduced_data})
             log.info("Saving reduced data...")
 
