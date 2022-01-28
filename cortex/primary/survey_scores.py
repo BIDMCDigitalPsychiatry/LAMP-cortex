@@ -9,13 +9,15 @@ from ..raw.survey import survey
     name="cortex.survey_scores",
     dependencies=[survey]
 )
-def survey_scores(question_categories=None, 
+def survey_scores(question_categories=None,
+                  attach=False,
                   **kwargs):
     """
     Get survey scores
     
     Args:
         question_categories (dict): Maps survey questions to categories, for scoring.
+        attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         **kwargs:
             id (string): The participant's LAMP id. Required.
             start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
