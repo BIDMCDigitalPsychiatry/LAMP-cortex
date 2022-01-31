@@ -9,14 +9,14 @@ from ..raw.survey import survey
     name="cortex.survey_scores",
     dependencies=[survey]
 )
-def survey_scores(question_categories=None,
+def survey_scores(scoring_dict=None,
                   attach=False,
                   **kwargs):
     """
     Get survey scores
     
     Args:
-        question_categories (dict): Maps survey questions to categories, for scoring.
+        scoring_dict (dict): Maps survey questions to categories, for scoring.
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         **kwargs:
             id (string): The participant's LAMP id. Required.
@@ -46,7 +46,70 @@ def survey_scores(question_categories=None,
         has_raw_data = 1
     else:
         has_raw_data = 0
-        
+    #### Danielle redo survey scoring ####
+    acts = LAMP.ActivityEvent.all_by_participant(p)["data"]
+    ret = {k: [] for k in scoring_dict["survey_group_list"]}
+    for survey in acts:
+        ret0 = {k: {"timestamp": survey["timestamp"], "value": 0} for k in scoring_dict["survey_group_list"]}
+        for temp in survey["temporal_slices"]:
+            if "value" not in temp or "item" not in temp:
+                continue
+            if (temp["item"] not in scoring_dict["questions"] or
+                (temp["item"] in scoring_dict["questions"]
+                 and scoring_dict["questions"][temp["item"]]["group"] not in scoring_dict["survey_group_list"])):
+                continue
+            else:
+                ques_info = scoring_dict["questions"][temp["item"]]
+                # score acording to what the scoring type is
+                val = score_question(temp["value"], temp["item"], scoring_dict)
+                if val is None:
+                    ret0[ques_info["group"]]["value"] += val
+        for k in ret0.keys():
+            if len(ret0[k]) > 0:
+                ret[k].append({
+                    "timestamp": ret0[k]["timestamp"],
+                    "question_category": k,
+                    "value": ret0[k]["value"],
+                }
+    return ret
+
+def score_question(val, ques, scoring_dict):
+    """ Score an individual question.
+
+        Args:
+            val - the value from temporal slices
+            ques - the question (or the question that the question maps to)
+            ques_info - the scoring info for this question
+            json_info - the json info with scoring maps
+        Returns:
+            ret0 updated to include the current score
+    """
+    if "map_to" in scoring_dict["questions"][ques]:
+        return score_question(val,
+                              scoring_dict["questions"][ques],
+                              scoring_dict)
+    ques_info = scoring_dict["questions"][ques]
+    if val is None:
+        return None
+    if ques_info["scoring"] == "value":
+        return int(val)
+    elif ques_info["scoring"] == "raw":
+        return val
+    elif ques_info["scoring"] == "boolean":
+        return int(val == "Yes")
+    elif ques_info["scoring"] in json_info:
+        if val in scoring_dict[ques_info["scoring"]]:
+            mapped_val = scoring_dict[ques_info["scoring"]][val]
+        else:
+            log.info("*" + val + "* is not in the scoring key " + ques_info["scoring"] + " for question *" + ques + "* please try again.")
+            return None
+        return mapped_val
+    log.info("Scoring type is not valid. Please try again.")
+    return None
+
+    #### end danielle redo scoring ####
+    
+    
     # maps survey_type to occurence of scores
     _survey_scores = {}
     for result in participant_results:
