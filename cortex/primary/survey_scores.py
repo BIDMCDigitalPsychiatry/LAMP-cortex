@@ -14,9 +14,24 @@ def survey_scores(scoring_dict=None,
                   **kwargs):
     """
     Get survey scores
-    
+
     Args:
         scoring_dict (dict): Maps survey questions to categories, for scoring.
+            Must have keys: "category": [list of category strings]
+                            "questions": {
+                                "question text": {"category": something from list, "scoring": type of scoring},
+                            }
+                            "map0": {
+                                "none": 0,
+                                "some": 1,
+                                "all": 2
+                            }
+            Types of scoring:
+                "value": will cast the result to an int
+                "boolean": "Yes" --> 1, "No" --> 0
+                map to a dictionary: give the name of the dictionary (ex: "map0",
+                    and create a corresponding dictionary in the scoring_dict)
+                Non-numeric scores are not supported at this time.
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         **kwargs:
             id (string): The participant's LAMP id. Required.
@@ -24,17 +39,15 @@ def survey_scores(scoring_dict=None,
                 is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window for which the feature 
                 is being generated. Required.
-                
+
     Returns:
         A dictionary with fields:
             data (dict): Survey categories mapped to individual scores.
             has_raw_data (int): Indicates whether there is raw data.
     """
 
-    # Grab the list of surveys and ALL ActivityEvents which are filtered locally.    
-    activities = LAMP.Activity.all_by_participant(kwargs['id'])['data']
-    surveys = {x['id']: x for x in activities if x['spec'] == 'lamp.survey'}
-    _grp = groupby(survey(replace_ids=False, **kwargs)['data'],
+    # Grab the list of surveys and ALL ActivityEvents which are filtered locally.
+    _grp = groupby(survey(replace_ids=True, **kwargs)['data'],
                    lambda x: (x['timestamp'], x['survey']))
     participant_results = [{
         'timestamp': key[0],
@@ -46,32 +59,36 @@ def survey_scores(scoring_dict=None,
         has_raw_data = 1
     else:
         has_raw_data = 0
-    #### Danielle redo survey scoring ####
-    acts = LAMP.ActivityEvent.all_by_participant(p)["data"]
-    ret = {k: [] for k in scoring_dict["survey_group_list"]}
-    for survey in acts:
-        ret0 = {k: {"timestamp": survey["timestamp"], "value": 0} for k in scoring_dict["survey_group_list"]}
-        for temp in survey["temporal_slices"]:
+
+    ret = []
+
+    for s in participant_results:
+        ret0 = {}
+        survey_end_time = s['timestamp'] + sum([q['duration'] for q in s['temporal_slices']])
+        for temp in s["temporal_slices"]:
             if "value" not in temp or "item" not in temp:
                 continue
             if (temp["item"] not in scoring_dict["questions"] or
                 (temp["item"] in scoring_dict["questions"]
-                 and scoring_dict["questions"][temp["item"]]["group"] not in scoring_dict["survey_group_list"])):
+                 and scoring_dict["questions"][temp["item"]]["category"] not in scoring_dict["category_list"])):
                 continue
             else:
                 ques_info = scoring_dict["questions"][temp["item"]]
-                # score acording to what the scoring type is
                 val = score_question(temp["value"], temp["item"], scoring_dict)
-                if val is None:
-                    ret0[ques_info["group"]]["value"] += val
+                if val is not None:
+                    if ques_info["category"] not in ret0:
+                        ret0[ques_info["category"]] = {"timestamp": s["timestamp"], "value": 0}
+                    ret0[ques_info["category"]]["value"] += val
         for k in ret0.keys():
             if len(ret0[k]) > 0:
-                ret[k].append({
-                    "timestamp": ret0[k]["timestamp"],
-                    "question_category": k,
-                    "value": ret0[k]["value"],
-                }
-    return ret
+                ret.append({
+                    "start": ret0[k]["timestamp"],
+                    "end": survey_end_time,
+                    "category": k,
+                    "score": ret0[k]["value"],
+                })
+    return {'data': ret,
+            'has_raw_data': has_raw_data}
 
 def score_question(val, ques, scoring_dict):
     """ Score an individual question.
@@ -79,10 +96,9 @@ def score_question(val, ques, scoring_dict):
         Args:
             val - the value from temporal slices
             ques - the question (or the question that the question maps to)
-            ques_info - the scoring info for this question
-            json_info - the json info with scoring maps
+            scoring_dict - the json info with scoring maps
         Returns:
-            ret0 updated to include the current score
+            The score
     """
     if "map_to" in scoring_dict["questions"][ques]:
         return score_question(val,
@@ -97,7 +113,7 @@ def score_question(val, ques, scoring_dict):
         return val
     elif ques_info["scoring"] == "boolean":
         return int(val == "Yes")
-    elif ques_info["scoring"] in json_info:
+    elif ques_info["scoring"] in scoring_dict:
         if val in scoring_dict[ques_info["scoring"]]:
             mapped_val = scoring_dict[ques_info["scoring"]][val]
         else:
@@ -106,105 +122,3 @@ def score_question(val, ques, scoring_dict):
         return mapped_val
     log.info("Scoring type is not valid. Please try again.")
     return None
-
-    #### end danielle redo scoring ####
-    
-    
-    # maps survey_type to occurence of scores
-    _survey_scores = {}
-    for result in participant_results:
-
-        # Make sure the activity actually exists and is not deleted (this was a server issue)
-        if result['activity'] not in surveys:
-            continue
-        result_settings = surveys[result['activity']]['settings']
-
-        survey_start_time = result['timestamp']
-        survey_end_time = result['timestamp'] + sum([q['duration'] for q in result['temporal_slices']])
-        survey_result = {} #maps question domains to scores
-        for event in result['temporal_slices']: #individual questions in a survey
-            question = event['item']
-
-            exists = False
-            for i in range(len(result_settings)) : #match question info to question
-                if result_settings[i]['text'] == question:
-                    current_question_info=result_settings[i]
-                    exists = True
-                    break
-
-            if not exists: #question text is different from the activity setting; skip
-                continue
-
-            #score based on question type:
-            event_value = event.get('value') #safely get event['value'] to protect from missing keys
-            # initialize score if, in the case of list parsing, it can't find a proper score
-            score = None
-
-            # invalid (TODO: change these events to ensure this is not being returned)
-            if event_value == 'NULL' or event_value is None:
-                continue
-
-            elif current_question_info['type'] == 'likert' and event_value is not None:
-                score = float(event_value)
-
-            elif current_question_info['type'] == 'boolean':
-                if event_value.upper() == 'NO':
-                    score = 0.0 #no is healthy in standard scoring
-                elif event_value.upper() == 'YES':
-                    score = 3.0 # yes is healthy in reverse scoring
-
-            elif current_question_info['type'] == 'list' :
-                for option_index in range(len(current_question_info['options'])) :
-                    if event_value == current_question_info['options'][option_index] :
-                        score = option_index * 3 / (len(current_question_info['options'])-1)
-
-            # elif current_question_info['type'] == 'text':  #skip
-            #     continue
-
-            else:
-                log.info('skipping!!')
-                continue #no valid score to be used
-
-            #add event to a category, either user-defined or default activity
-            if question_categories:
-                # See if there is an extra space in the string
-                if question not in question_categories:
-                    if question[:-1] in question_categories:
-                        question = question[:-1]
-                    else:
-                        continue
-
-                event_category = question_categories[question]['category']
-                #flip score if necessary
-                if question_categories[question]['reverse_scoring']:
-                    score = 3.0 - score
-
-                if event_category in survey_result:
-                    survey_result[event_category].append(score)
-                else:
-                    survey_result[event_category] = [score]
-
-            else:
-                if event['survey'] not in survey_result:
-                    survey_result[event['survey']] = []
-
-                if score:
-                    survey_result[event['survey']].append(score)
-
-        #log.info(survey_result)
-        #add mean to each cat to master dictionary
-        for category in survey_result:
-            survey_result[category] = np.mean(survey_result[category])
-            _event = {
-                'category': category, #surveys[category]['name'],
-                'start': survey_start_time,
-                'end': survey_end_time,
-                'score': survey_result[category]
-            }
-            if category not in _survey_scores:
-                _survey_scores[category] = [_event]
-            else:
-                _survey_scores[category].append(_event)
-
-    return {'data': [j for i in _survey_scores.values() for j in i],
-            'has_raw_data': has_raw_data}
