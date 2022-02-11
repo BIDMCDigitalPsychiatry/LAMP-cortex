@@ -10,9 +10,9 @@ from ..raw.screen_state import screen_state
     name="cortex.new_inactive",
     dependencies=[accelerometer, screen_state]
 )
-def new_inactive(jerk_threshold=500,**kwargs):
+def new_inactive(attach=True, jerk_threshold=500,**kwargs):
     _acc = accelerometer(**kwargs)['data']
-    _ss = screen_state(**kwargs)['data']
+    ss = screen_state(**kwargs)['data']
     if _acc:
         acc_df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
         acc_df = acc_jerk(acc_df)
@@ -22,12 +22,17 @@ def new_inactive(jerk_threshold=500,**kwargs):
     
     if ss:
         ss = pd.DataFrame(ss)[['timestamp', 'value']]
-        ss = ss.ss['dt'] = ss['timestamp'] - ss['timestamp'].shift()
-        ss['prev_state'] = ss['value'].shift()
+        ss = ss[['timestamp', 'value']]
+        ss['start'] = ss.timestamp.shift()
+        ss['prev_state'] = ss.value.shift()
+        ss['dt'] = ss.timestamp - ss.start
+        ss_start, ss_end = get_longest_bouts(ss)
     else:
         _ret = []
-        
-    return _ret
+    
+    intersection = max_intersection(acc_start, acc_end, ss_start, ss_end)
+    _ret = [intersection]
+    return {'data': _ret}
 
 def acc_jerk(acc_df, threshold=500):
     acc_df['timestamp_shift'] = acc_df['timestamp'].shift()
@@ -74,3 +79,15 @@ def get_nonzero(df, THRESHOLD=3.0, state=False, inclusive=True):
             acc_end = df['start'][tup[1]]
     return (acc_start, acc_end)
 
+def get_longest_bouts(df):  
+    tmp = df[df['value'] == 0].sort_values(by='dt').dropna() 
+    ss_start = tmp.iloc[-1]['start']
+    ss_end = tmp.iloc[-1]['timestamp']
+    return (ss_start, ss_end)
+
+def max_intersection(acc_start, acc_end, ss_start, ss_end):
+    intersection = min(acc_end, ss_end) - max(acc_start, ss_start)
+    if intersection >= 0:
+        return intersection / (60 * 60 * 1000)
+    else:
+        return None
