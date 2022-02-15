@@ -72,6 +72,8 @@ echo "${green} screen_duration.py ${reset}"
 pylint cortex/secondary/screen_duration.py
 echo "${green} sms_number.py ${reset}"
 pylint cortex/secondary/sms_number.py
+echo "${green} step_count.py ${reset}"
+pylint cortex/secondary/step_count.py
 echo "${green} trip_duration.py ${reset}"
 pylint cortex/secondary/trip_duration.py
 echo "${green} trip_distance.py ${reset}"
