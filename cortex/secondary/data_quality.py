@@ -1,12 +1,12 @@
 """ Module to compute the data quality from raw data """
+import os
 import pandas as pd
 import numpy as np
-import os
 
+import LAMP
 from ..feature_types import secondary_feature, log
 from ..raw.accelerometer import accelerometer
 from ..raw.gps import gps
-import LAMP
 
 MS_IN_A_DAY = 86400000
 @secondary_feature(

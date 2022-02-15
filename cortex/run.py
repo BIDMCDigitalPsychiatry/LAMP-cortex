@@ -1,12 +1,13 @@
 """ Module for getting features from cortex """
 import os
+import sys
+import logging
 import time
 from functools import reduce
 import inspect
 import datetime
 
 import pandas as pd
-import altair as alt
 
 import LAMP
 import cortex.raw as raw
@@ -14,8 +15,6 @@ import cortex.primary as primary
 import cortex.secondary as secondary
 from cortex.feature_types import all_features, log
 
-import sys
-import logging
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
                     format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
 log = logging.getLogger('cortex')
@@ -111,7 +110,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             else:
                 params_f = {}
             #try:
-            _res = get_feature_for_participant(participant, f, params_f, start, end, resolution, cache)
+            _res = get_feature_for_participant(participant, f, params_f, start,
+                                               end, resolution, cache)
             if _res is None:
                 _results[f] = pd.DataFrame()
                 continue
@@ -144,7 +144,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 _results[f] = pd.DataFrame()
 
             try:
-                _res = get_feature_for_participant(participant, f, {}, start, end, resolution, cache)
+                _res = get_feature_for_participant(participant, f, {}, start,
+                                                   end, resolution, cache)
 
                 # Make this into a df
                 _res2 = pd.DataFrame.from_dict(_res['data'])
@@ -193,8 +194,9 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                                                    recursive=False,
                                                    attach=False,
                                                    _limit=-1)['data']) > 0]
-        if len(starts) == 0: #no data: return none
-            log.info("Participant " + participant + " has no data. Returning 'None' for all features.")
+        if len(starts) == 0: # no data: return none
+            log.info("Participant " + participant +
+                     " has no data. Returning 'None' for all features.")
             return None
         start = min(starts)
         if resolution % MS_PER_DAY == 0:
@@ -204,14 +206,14 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                                           start=0,
                                           end=int(time.time())*1000,
                                           cache=False,
-                                          recursive=False, 
+                                          recursive=False,
                                           _limit=1)['data'][0]['timestamp']
                     for mod_name, mod in inspect.getmembers(raw, inspect.ismodule)
                     if len(getattr(mod, mod_name)(id=participant,
                                                   start=0,
                                                   end=int(time.time())*1000,
                                                   cache=False,
-                                                  recursive=False, 
+                                                  recursive=False,
                                                   _limit=1)['data']) > 0])
         if resolution % MS_PER_DAY == 0:
             end = set_date_9am(end, 0)
