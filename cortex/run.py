@@ -79,6 +79,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
 
     # Check id to generate list of participants
     participants = generate_ids(id_or_set)
+    
     # if run_part_and_feats is called, generate participant list from here
     if run_part_and_feats != "":
         df = pd.read_csv(run_part_and_feats)
