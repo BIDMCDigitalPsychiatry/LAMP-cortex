@@ -43,6 +43,10 @@ def step_count(**kwargs):
         _device_type = device
         break
 
+    if len(_device_types) == 0:
+        if "source" in _steps and len(_steps[_steps["source"] == "com.google.android.gms"]) > 0:
+            _device_type = "Android"
+
     if _device_type == "iOS":
         if "unit" in _steps:
             _steps = _steps[_steps["unit"] == "count"]
