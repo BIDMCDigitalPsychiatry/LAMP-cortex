@@ -53,7 +53,6 @@ def acc_jerk(acc_df, threshold=500):
         acc_df.columns = ['start', 'end', 'acc_jerk']
         #_ret = list(acc_df[['start', 'end', 'acc_jerk']].T.to_dict().values())
         return acc_df
-    
     else:
         return []
 
