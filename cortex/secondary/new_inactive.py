@@ -7,7 +7,7 @@ from ..raw.screen_state import screen_state
 
 
 @secondary_feature(
-    name="cortex.new_inactive",
+    name="cortex.feature.new_inactive",
     dependencies=[accelerometer, screen_state]
 )
 def new_inactive(attach=True, jerk_threshold=500,**kwargs):
@@ -18,7 +18,7 @@ def new_inactive(attach=True, jerk_threshold=500,**kwargs):
         acc_df = acc_jerk(acc_df)
         acc_start, acc_end = get_nonzero(acc_df)
     else:
-        _ret = []
+        return None
     
     if ss:
         ss = pd.DataFrame(ss)[['timestamp', 'value']]
@@ -28,11 +28,10 @@ def new_inactive(attach=True, jerk_threshold=500,**kwargs):
         ss['dt'] = ss.timestamp - ss.start
         ss_start, ss_end = get_longest_bouts(ss)
     else:
-        _ret = []
+        return None
     
     intersection = max_intersection(acc_start, acc_end, ss_start, ss_end)
-    _ret = [intersection]
-    return {'data': _ret}
+    return {'timestamp': kwargs['start'], 'value': intersection}
 
 def acc_jerk(acc_df, threshold=500):
     acc_df['timestamp_shift'] = acc_df['timestamp'].shift()
@@ -64,25 +63,31 @@ def get_nonzero(df, THRESHOLD=3.0, state=False, inclusive=True):
     arr = np.array(df['above_threshold'])
     arr_ext = np.r_[False, arr==state, False]
     idx = np.flatnonzero(arr_ext[:-1] != arr_ext[1:])
-    
     idx_list = list(zip(idx[:-1:2], idx[1::2] - int(inclusive)))
     max_length = 1
     acc_start = 0 
     acc_end = 0 
-    for tup in idx_list:
-        interval = (df['start'][tup[0]], df['start'][tup[1]])
-        length = df['start'][tup[1]] - df['start'][tup[0]]
-        if length > max_length:
-            max_length = length
-            acc_start = df['start'][tup[0]]
-            acc_end = df['start'][tup[1]]
+    if idx_list:
+        for tup in idx_list:
+            tmp_start = df['start'].iloc[tup[0]]
+            tmp_end = df['start'].iloc[tup[1]]
+            interval = (tmp_start, tmp_end)
+            print(interval)
+            length = tmp_end - tmp_start
+            if length > max_length:
+                max_length = length
+                acc_start = df['start'][tup[0]]
+                acc_end = df['start'][tup[1]]
     return (acc_start, acc_end)
 
 def get_longest_bouts(df):  
-    tmp = df[df['value'] == 0].sort_values(by='dt').dropna() 
-    ss_start = tmp.iloc[-1]['start']
-    ss_end = tmp.iloc[-1]['timestamp']
-    return (ss_start, ss_end)
+    if not df.empty:        
+        tmp = df[df['value'] == 0].sort_values(by='dt').dropna() 
+        ss_start = tmp.iloc[-1]['start']
+        ss_end = tmp.iloc[-1]['timestamp']
+        return (ss_start, ss_end)
+    else:
+        return (0, 0)
 
 def max_intersection(acc_start, acc_end, ss_start, ss_end):
     intersection = min(acc_end, ss_end) - max(acc_start, ss_start)
