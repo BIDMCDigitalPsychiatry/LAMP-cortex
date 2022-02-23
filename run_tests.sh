@@ -21,6 +21,8 @@ find tests -name '*tests.py' -print0 |
             coverage report -m cortex/secondary/bluetooth_device_count.py
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/secondary/data_quality.py
+            echo "${cyan} Coverage Report for ${line}"
+            coverage report -m cortex/secondary/step_count.py
         else
             echo "TODO: add other tests here"
             # coverage report
