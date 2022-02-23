@@ -1,3 +1,4 @@
+""" Module to compute the longest inactive bout from accelerometer and screen state """
 import numpy as np
 import pandas as pd
 
@@ -10,7 +11,7 @@ from ..raw.screen_state import screen_state
     name="cortex.feature.new_inactive",
     dependencies=[accelerometer, screen_state]
 )
-def new_inactive(jerk_threshold=500, **kwargs):
+def inactive_duration(jerk_threshold=500, **kwargs):
     """ Returns the duration in ms of the longest bout of inactive
         accelerometer and screen state.
 
@@ -32,15 +33,16 @@ def new_inactive(jerk_threshold=500, **kwargs):
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): The inactive bout length in ms.
     """
-    ss = screen_state(**kwargs)['data']
-    if ss:
-        ss = pd.DataFrame(ss)[['timestamp', 'value']]
-        ss = ss[['timestamp', 'value']]
-        ss['start'] = ss.timestamp.shift()
-        ss['prev_state'] = ss.value.shift()
-        ss['dt'] = ss.timestamp - ss.start
-        ss_start, ss_end = get_screen_bouts(ss)
+    _ss = screen_state(**kwargs)['data']
+    if _ss:
+        _ss = pd.DataFrame(_ss)[['timestamp', 'value']]
+        _ss = _ss[['timestamp', 'value']]
+        _ss['start'] = _ss.timestamp.shift()
+        _ss['prev_state'] = _ss.value.shift()
+        _ss['dt'] = _ss.timestamp - _ss.start
+        ss_start, ss_end = get_screen_bouts(_ss)
     else:
+        print("no ss")
         return {'timestamp': kwargs['start'], 'value': None}
 
     _acc = accelerometer(**kwargs)['data']
@@ -49,16 +51,24 @@ def new_inactive(jerk_threshold=500, **kwargs):
         acc_df = acc_jerk(acc_df, jerk_threshold)
         acc_start, acc_end = get_nonzero_jerk(acc_df)
     else:
+        print("no acc")
         return {'timestamp': kwargs['start'], 'value': None}
 
+    print(acc_start)
+    print(acc_end)
+    print(ss_start)
+    print(ss_end)
     intersection = max_intersection(acc_start, acc_end, ss_start, ss_end)
     return {'timestamp': kwargs['start'], 'value': intersection}
 
-def acc_jerk(acc_df):
+def acc_jerk(acc_df, threshold):
     """ Function to compute jerk.
 
         Args:
             acc_df: the dataframe with raw accelerometer
+            threshold (int): The max difference between points to be computed
+                in the sum, in ms.(i.e. if there is too large of a gap in time
+                between accelerometer points, jerk has little meaning)
         Returns:
             the computed jerk
     """
@@ -79,20 +89,20 @@ def acc_jerk(acc_df):
         acc_df = acc_df[['timestamp', 'timestamp_shift', 'acc_jerk']]
         acc_df.columns = ['start', 'end', 'acc_jerk']
         return acc_df
-    else:
-        return []
+    print("no acc above thresh")
+    return []
 
-def get_nonzero_jerk(df, threshold=3.0, state=False, inclusive=True):
+def get_nonzero_jerk(df, threshold=3.0, inclusive=True):
     """ Get the intervals of non-zero jerk.
 
         Args:
             df: the df holding the jerk
             threshold: the threshold below which jerk is considered "inactive"
-            state: 
             inclusive: whether to include the end points
         Returns:
             list of intervals of non-zero jerk
     """
+    state = False
     df['above_threshold'] = df['acc_jerk'] > threshold
     arr = np.array(df['above_threshold'])
     arr_ext = np.r_[False, arr==state, False]
@@ -102,11 +112,11 @@ def get_nonzero_jerk(df, threshold=3.0, state=False, inclusive=True):
     acc_start = 0
     acc_end = 0
     if idx_list:
+        print("no acc points")
         for tup in idx_list:
             tmp_start = df['start'].iloc[tup[0]]
             tmp_end = df['start'].iloc[tup[1]]
             interval = (tmp_start, tmp_end)
-            print(interval)
             length = tmp_end - tmp_start
             if length > max_length:
                 max_length = length
@@ -127,8 +137,7 @@ def get_screen_bouts(df):
         ss_start = tmp.iloc[-1]['start']
         ss_end = tmp.iloc[-1]['timestamp']
         return (ss_start, ss_end)
-    else:
-        return (0, 0)
+    return (0, 0)
 
 def max_intersection(acc_start, acc_end, ss_start, ss_end):
     """ Helper function to get the maximum overlap of the accelerometer
@@ -137,5 +146,4 @@ def max_intersection(acc_start, acc_end, ss_start, ss_end):
     intersection = min(acc_end, ss_end) - max(acc_start, ss_start)
     if intersection >= 0:
         return intersection
-    else:
-        return None
+    return None
