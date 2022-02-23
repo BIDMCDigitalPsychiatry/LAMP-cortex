@@ -1,6 +1,6 @@
 """ Module for raw feature jewels_a """
-from ..feature_types import raw_feature
 import LAMP
+from ..feature_types import raw_feature
 
 
 @raw_feature(
@@ -63,7 +63,7 @@ def jewels_a(_limit=10000,
                  if res['activity'] in jewels_a_ids]
 
     while _jewels_a and recursive:
-        to = _jewels_a[-1]['timestamp']
+        _to = _jewels_a[-1]['timestamp']
         _jewels_a_next = [{'timestamp': res['timestamp'],
                            'duration': res['duration'],
                            'activity':res['activity'],
@@ -72,12 +72,12 @@ def jewels_a(_limit=10000,
                            'temporal_slices':res['temporal_slices']}
                           for res in LAMP.ActivityEvent.all_by_participant(kwargs['id'],
                                                                            _from=kwargs['start'],
-                                                                           to=to,
+                                                                           to=_to,
                                                                            _limit=_limit)['data']
                           if res['activity'] in jewels_a_ids]
 
         if not _jewels_a_next: break
-        if _jewels_a_next[-1]['timestamp'] == to: break
+        if _jewels_a_next[-1]['timestamp'] == _to: break
         _jewels_a += _jewels_a_next
 
     return _jewels_a

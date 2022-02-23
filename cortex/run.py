@@ -1,12 +1,12 @@
 """ Module for getting features from cortex """
 import os
+import sys
 import time
 from functools import reduce
 import inspect
 import datetime
 
 import pandas as pd
-import altair as alt
 
 import LAMP
 import cortex.raw as raw
@@ -14,7 +14,6 @@ import cortex.primary as primary
 import cortex.secondary as secondary
 from cortex.feature_types import all_features, log
 
-import sys
 import logging
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
                     format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")

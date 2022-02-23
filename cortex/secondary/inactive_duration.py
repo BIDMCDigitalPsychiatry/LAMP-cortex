@@ -10,30 +10,58 @@ from ..raw.screen_state import screen_state
     name="cortex.feature.new_inactive",
     dependencies=[accelerometer, screen_state]
 )
-def new_inactive(attach=True, jerk_threshold=500,**kwargs):
-    _acc = accelerometer(**kwargs)['data']
+def new_inactive(jerk_threshold=500, **kwargs):
+    """ Returns the duration in ms of the longest bout of inactive
+        accelerometer and screen state.
+
+        Jerk is recomputed here for speed purposes.
+
+    Args:
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for
+                which the feature is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for
+                which the feature is being generated. Required.
+        jerk_threshold (int): The max difference between points to be computed
+                in the sum, in ms.(i.e. if there is too large of a gap in time
+                between accelerometer points, jerk has little meaning)
+
+    Returns:
+        A dict consisting:
+            timestamp (int): The beginning of the window (same as kwargs['start']).
+            value (float): The inactive bout length in ms.
+    """
     ss = screen_state(**kwargs)['data']
-    if _acc:
-        acc_df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
-        acc_df = acc_jerk(acc_df)
-        acc_start, acc_end = get_nonzero(acc_df)
-    else:
-        return None
-    
     if ss:
         ss = pd.DataFrame(ss)[['timestamp', 'value']]
         ss = ss[['timestamp', 'value']]
         ss['start'] = ss.timestamp.shift()
         ss['prev_state'] = ss.value.shift()
         ss['dt'] = ss.timestamp - ss.start
-        ss_start, ss_end = get_longest_bouts(ss)
+        ss_start, ss_end = get_screen_bouts(ss)
     else:
-        return None
-    
+        return {'timestamp': kwargs['start'], 'value': None}
+
+    _acc = accelerometer(**kwargs)['data']
+    if _acc:
+        acc_df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
+        acc_df = acc_jerk(acc_df, jerk_threshold)
+        acc_start, acc_end = get_nonzero_jerk(acc_df)
+    else:
+        return {'timestamp': kwargs['start'], 'value': None}
+
     intersection = max_intersection(acc_start, acc_end, ss_start, ss_end)
     return {'timestamp': kwargs['start'], 'value': intersection}
 
-def acc_jerk(acc_df, threshold=500):
+def acc_jerk(acc_df):
+    """ Function to compute jerk.
+
+        Args:
+            acc_df: the dataframe with raw accelerometer
+        Returns:
+            the computed jerk
+    """
     acc_df['timestamp_shift'] = acc_df['timestamp'].shift()
     acc_df = acc_df[acc_df['timestamp'] != acc_df['timestamp_shift']]
     acc_df['dt'] = (acc_df['timestamp'].shift() - acc_df['timestamp']) / 1000
@@ -50,23 +78,29 @@ def acc_jerk(acc_df, threshold=500):
         acc_df = acc_df.dropna()
         acc_df = acc_df[['timestamp', 'timestamp_shift', 'acc_jerk']]
         acc_df.columns = ['start', 'end', 'acc_jerk']
-        #_ret = list(acc_df[['start', 'end', 'acc_jerk']].T.to_dict().values())
         return acc_df
     else:
         return []
 
-def get_nonzero(df, THRESHOLD=3.0, state=False, inclusive=True):
-    '''    
-    Returns: list of intervals of non-zero jerk
-    '''
-    df['above_threshold'] = df['acc_jerk'] > THRESHOLD
+def get_nonzero_jerk(df, threshold=3.0, state=False, inclusive=True):
+    """ Get the intervals of non-zero jerk.
+
+        Args:
+            df: the df holding the jerk
+            threshold: the threshold below which jerk is considered "inactive"
+            state: 
+            inclusive: whether to include the end points
+        Returns:
+            list of intervals of non-zero jerk
+    """
+    df['above_threshold'] = df['acc_jerk'] > threshold
     arr = np.array(df['above_threshold'])
     arr_ext = np.r_[False, arr==state, False]
     idx = np.flatnonzero(arr_ext[:-1] != arr_ext[1:])
     idx_list = list(zip(idx[:-1:2], idx[1::2] - int(inclusive)))
     max_length = 1
-    acc_start = 0 
-    acc_end = 0 
+    acc_start = 0
+    acc_end = 0
     if idx_list:
         for tup in idx_list:
             tmp_start = df['start'].iloc[tup[0]]
@@ -80,9 +114,16 @@ def get_nonzero(df, THRESHOLD=3.0, state=False, inclusive=True):
                 acc_end = df['start'][tup[1]]
     return (acc_start, acc_end)
 
-def get_longest_bouts(df):  
-    if not df.empty:        
-        tmp = df[df['value'] == 0].sort_values(by='dt').dropna() 
+def get_screen_bouts(df):
+    """ Get the bouts of screen activity.
+
+        Args:
+            df: the dataframe holding screen state data
+        Returns:
+            The screen state start / end
+    """
+    if not df.empty:
+        tmp = df[df['value'] == 0].sort_values(by='dt').dropna()
         ss_start = tmp.iloc[-1]['start']
         ss_end = tmp.iloc[-1]['timestamp']
         return (ss_start, ss_end)
@@ -90,8 +131,11 @@ def get_longest_bouts(df):
         return (0, 0)
 
 def max_intersection(acc_start, acc_end, ss_start, ss_end):
+    """ Helper function to get the maximum overlap of the accelerometer
+        and screen state inactive periods.
+    """
     intersection = min(acc_end, ss_end) - max(acc_start, ss_start)
     if intersection >= 0:
-        return intersection / (60 * 60 * 1000)
+        return intersection
     else:
         return None
