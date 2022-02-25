@@ -41,10 +41,8 @@ def inactive_duration(jerk_threshold=500, **kwargs):
         _ss['start'] = _ss.timestamp.shift()
         _ss['prev_state'] = _ss.value.shift()
         _ss['dt'] = _ss.timestamp - _ss.start
-        #print(_ss)
         ss_start, ss_end = get_screen_bouts(_ss)
     else:
-        print("no ss")
         return {'timestamp': kwargs['start'], 'value': None}
 
     _acc = accelerometer(**kwargs)['data']
@@ -52,16 +50,10 @@ def inactive_duration(jerk_threshold=500, **kwargs):
         acc_df = pd.DataFrame(_acc)[['x', 'y', 'z', 'timestamp']]
         acc_df = acc_df.iloc[::-1]
         acc_df = acc_jerk(acc_df, jerk_threshold)
-        print(acc_df)
         acc_start, acc_end = get_nonzero_jerk(acc_df)
-        #print(acc_start)
-        #print(acc_end)
     else:
-        print("no acc")
         return {'timestamp': kwargs['start'], 'value': None}
 
-    print(ss_start)
-    print(ss_end)
     intersection = max_intersection(acc_start, acc_end, ss_start, ss_end)
     return {'timestamp': kwargs['start'], 'value': intersection}
 
@@ -93,7 +85,6 @@ def acc_jerk(acc_df, threshold):
         acc_df = acc_df[['timestamp', 'timestamp_shift', 'acc_jerk']]
         acc_df.columns = ['start', 'end', 'acc_jerk']
         return acc_df
-    print("no acc above thresh")
     return []
 
 def get_nonzero_jerk(df, threshold=3.0, inclusive=True):
@@ -116,18 +107,14 @@ def get_nonzero_jerk(df, threshold=3.0, inclusive=True):
     acc_start = 0
     acc_end = 0
     if idx_list:
-        print(idx_list)
         for tup in idx_list:
             tmp_start = df['start'].iloc[tup[0]]
             tmp_end = df['start'].iloc[tup[1]]
-            interval = (tmp_start, tmp_end)
             length = tmp_end - tmp_start
             if length > max_length:
                 max_length = length
                 acc_start = df['start'][tup[1]]
                 acc_end = df['start'][tup[0]]
-    print(acc_start)
-    print(acc_end)
     return (acc_start, acc_end)
 
 def get_screen_bouts(df):
@@ -141,7 +128,6 @@ def get_screen_bouts(df):
     if not df.empty:
         tmp = df[df['value'] == 0].sort_values(by='dt').dropna()
         if not tmp.empty:
-            print(tmp)
             ss_start = tmp.iloc[-1]['start']
             ss_end = tmp.iloc[-1]['timestamp']
             return (ss_start, ss_end)
@@ -152,7 +138,6 @@ def max_intersection(acc_start, acc_end, ss_start, ss_end):
         and screen state inactive periods.
     """
     intersection = min(acc_end, ss_end) - max(acc_start, ss_start)
-    print('Intersection:  ', intersection)
     if intersection >= 0:
         return intersection
     return None
