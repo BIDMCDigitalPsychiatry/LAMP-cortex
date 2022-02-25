@@ -41,7 +41,7 @@ def inactive_duration(jerk_threshold=500, **kwargs):
         _ss['start'] = _ss.timestamp.shift()
         _ss['prev_state'] = _ss.value.shift()
         _ss['dt'] = _ss.timestamp - _ss.start
-        print(_ss)
+        #print(_ss)
         ss_start, ss_end = get_screen_bouts(_ss)
     else:
         print("no ss")
@@ -140,9 +140,11 @@ def get_screen_bouts(df):
     """
     if not df.empty:
         tmp = df[df['value'] == 0].sort_values(by='dt').dropna()
-        ss_start = tmp.iloc[-1]['start']
-        ss_end = tmp.iloc[-1]['timestamp']
-        return (ss_start, ss_end)
+        if not tmp.empty:
+            print(tmp)
+            ss_start = tmp.iloc[-1]['start']
+            ss_end = tmp.iloc[-1]['timestamp']
+            return (ss_start, ss_end)
     return (0, 0)
 
 def max_intersection(acc_start, acc_end, ss_start, ss_end):
