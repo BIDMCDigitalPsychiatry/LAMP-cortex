@@ -31,14 +31,11 @@ def entropy(**kwargs):
             value (float): The entropy of significant locations visited.
 
     """
-    if kwargs.get('method') is not None:
-        _significant_locations = significant_locations(**kwargs)
-    else:
-        _significant_locations = significant_locations(**kwargs)
+    _significant_locations = significant_locations(**kwargs)
 
     if len(_significant_locations['data']) == 0:
         _entropy = None
-
-    _entropy = -sum([loc['proportion'] * math.log(loc['proportion'])
+    else:
+        _entropy = -sum([loc['proportion'] * math.log(loc['proportion'])
                      for loc in _significant_locations['data'] if 0 < loc['proportion'] <= 1])
     return {'timestamp': kwargs['start'], 'value': _entropy}
