@@ -1,7 +1,5 @@
 """ Module to create data graphs and attach them to the data portal """
-import sys
 import os
-import argparse
 import time
 import datetime
 import json
@@ -421,7 +419,7 @@ def data_quality(researcher_id):
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
-    if len(LAMP.Researcher.view(researcher_id)["data"]) == 0:
+    if len(researcher_id) == 0 or len(LAMP.Researcher.view(researcher_id)["data"]) == 0:
         log.warning('Invalid researcher id. Aborting.')
         return
 
@@ -440,17 +438,3 @@ def data_quality(researcher_id):
     make_passive_data_graphs(participants, researcher_id, qual_df1)
     time_elapsed = "{:.2f}".format((time.time() - start_time) / 60)
     log.info("Run time: %s minutes", time_elapsed)
-
-def main():
-    """ Create graphs.
-    """
-    parser = argparse.ArgumentParser(description='Run data monitoring for a researcher.')
-    parser.add_argument('--researcher-id', type=str, required=True,
-                        help='The researcher id to use')
-
-    args = parser.parse_args()
-    researcher_id = args.researcher_id
-    data_quality(researcher_id)
-
-if __name__ == "__main__":
-    main()
