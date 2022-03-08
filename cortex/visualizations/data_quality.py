@@ -87,12 +87,23 @@ def get_data_tags_df(participants):
                                                      _from=d,
                                                      to=d+MS_IN_DAY,
                                                      _limit=1)["data"]
+            if len(ss) == 0:
+                ss = LAMP.SensorEvent.all_by_participant(participant_id=p["participant_id"],
+                                                     origin="lamp.device_state",
+                                                     _from=d,
+                                                     to=d+MS_IN_DAY,
+                                                     _limit=1)["data"]
             if len(ss) > 0:
                 screen_state += 1
         prev_screen_state = LAMP.SensorEvent.all_by_participant(participant_id=p["participant_id"],
                                                      origin="lamp.screen_state",
                                                      _limit=1)["data"]
 
+        if len(prev_screen_state) == 0:
+            prev_screen_state = LAMP.SensorEvent.all_by_participant(
+                                                     participant_id=p["participant_id"],
+                                                     origin="lamp.device_state",
+                                                     _limit=1)["data"]
         if len(prev_screen_state) == 0:
             prev_screen_state = None
         else:
@@ -290,8 +301,8 @@ def make_passive_data_graphs(participants, researcher_id, qual_df1):
     for p in participants:
         steps = pd.DataFrame(
             cortex.secondary.step_count.step_count(id=p["participant_id"],
-                                                   start=cortex.now() - 7 * MS_IN_DAY,
-                                                   end=cortex.now() + 1,
+                                                   start=int(time.time() * 1000) - 7 * MS_IN_DAY,
+                                                   end=int(time.time() * 1000) + 1,
                                                    resolution=MS_IN_DAY)["data"])
         steps = steps.dropna()
         if len(steps) > 0:
@@ -311,9 +322,9 @@ def make_passive_data_graphs(participants, researcher_id, qual_df1):
                 ["screen_state_quality"])[0] == "good"):
             screen = pd.DataFrame(
                 cortex.secondary.screen_duration.screen_duration(id=p["participant_id"],
-                                                                 start=cortex.now() - 7 * MS_IN_DAY,
-                                                                 end=cortex.now() + 1,
-                                                                 resolution=MS_IN_DAY)["data"])
+                                             start=int(time.time() * 1000) - 7 * MS_IN_DAY,
+                                             end=int(time.time() * 1000) + 1,
+                                             resolution=MS_IN_DAY)["data"])
             screen = screen.dropna()
             if len(screen) > 0:
                 screen = screen["value"].mean() / (3600 * 1000)
@@ -330,8 +341,8 @@ def make_passive_data_graphs(participants, researcher_id, qual_df1):
         if gps_qual in ["good", "okay"]:
             home = pd.DataFrame(
                 cortex.secondary.hometime.hometime(id=p["participant_id"],
-                                                   start=cortex.now() - 7 * MS_IN_DAY,
-                                                   end=cortex.now() + 1,
+                                                   start=int(time.time() * 1000) - 7 * MS_IN_DAY,
+                                                   end=int(time.time() * 1000) + 1,
                                                    resolution=MS_IN_DAY)["data"])
             home = home.dropna()
             if len(home) > 0:
@@ -414,7 +425,7 @@ def data_quality(researcher_id):
     """
     # Connect to LAMP
     if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-        raise Exception(f"You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
+        raise Exception("You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
                         + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))

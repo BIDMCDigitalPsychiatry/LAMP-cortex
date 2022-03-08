@@ -14,6 +14,11 @@ echo "${green} feature_types.py ${reset}"
 pylint cortex/feature_types.py
 
 echo "${red}----------------------------------${reset}"
+echo "${red} Running pylint for visualization code ${reset}"
+echo "${green} data_quality.py ${reset}"
+pylint cortex/visualizations/data_quality.py
+
+echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
 echo "${green} accelerometer.py ${reset}"
 pylint cortex/raw/accelerometer.py
