@@ -9,7 +9,8 @@ from ..raw.survey import survey
     name="cortex.survey_scores",
     dependencies=[survey]
 )
-def survey_scores(scoring_dict=None,
+def survey_scores(scoring_dict={"category_list": [],
+                                "questions": {}},
                   attach=False,
                   **kwargs):
     """

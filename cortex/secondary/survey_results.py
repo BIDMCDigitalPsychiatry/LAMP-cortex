@@ -7,7 +7,7 @@ import pandas as pd
     name="cortex.survey_results",
     dependencies=[survey_scores]
 )
-def survey_results(**kwargs, category):
+def survey_results(category, **kwargs):
     """ Returns the survey scores binned by resolution for a
         certain survey category.
 
