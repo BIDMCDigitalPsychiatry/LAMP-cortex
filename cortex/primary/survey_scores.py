@@ -17,7 +17,7 @@ def survey_scores(scoring_dict=None,
 
     Args:
         scoring_dict (dict): Maps survey questions to categories, for scoring.
-            Must have keys: "category": [list of category strings]
+            Must have keys: "category_list": [list of category strings]
                             "questions": {
                                 "question text": {"category": something from list, "scoring": type of scoring},
                             }
