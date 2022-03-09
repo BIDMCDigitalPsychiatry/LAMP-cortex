@@ -102,7 +102,7 @@ def score_question(val, ques, scoring_dict):
     """
     if "map_to" in scoring_dict["questions"][ques]:
         return score_question(val,
-                              scoring_dict["questions"][ques],
+                              scoring_dict["questions"][scoring_dict["questions"]["map_to"]],
                               scoring_dict)
     ques_info = scoring_dict["questions"][ques]
     if val is None:
