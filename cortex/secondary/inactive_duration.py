@@ -34,8 +34,12 @@ def inactive_duration(jerk_threshold=500, **kwargs):
             value (float): The inactive bout length in ms.
     """
     _ss = screen_state(**kwargs)['data']
+    print(kwargs["start"])
+    print(kwargs["end"])
     if _ss:
-        _ss = pd.DataFrame(_ss)[['timestamp', 'value']]
+        _ss = pd.DataFrame(_ss)
+        if 'state' in _ss and 'value' not in _ss:
+            _ss = _ss.rename(columns={"state": "value"})
         _ss = _ss[['timestamp', 'value']]
         _ss = _ss.iloc[::-1].reset_index(drop=True)
         _ss['start'] = _ss.timestamp.shift()
@@ -55,7 +59,7 @@ def inactive_duration(jerk_threshold=500, **kwargs):
     else:
         return {'timestamp': kwargs['start'], 'value': None}
 
-    if ss_tups is None or acc_tups is None:
+    if ss_tups is None or acc_tups is None or len(ss_tups) == 0 or len(acc_tups) == 0:
         return {'timestamp': kwargs['start'], 'value': None}
     ss_max_index = get_max_index(ss_tups)
     ss_start, ss_end = get_max_bout(ss_tups, ss_max_index)
