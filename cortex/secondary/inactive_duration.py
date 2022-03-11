@@ -34,8 +34,6 @@ def inactive_duration(jerk_threshold=500, **kwargs):
             value (float): The inactive bout length in ms.
     """
     _ss = screen_state(**kwargs)['data']
-    print(kwargs["start"])
-    print(kwargs["end"])
     if _ss:
         _ss = pd.DataFrame(_ss)
         if 'state' in _ss and 'value' not in _ss:
