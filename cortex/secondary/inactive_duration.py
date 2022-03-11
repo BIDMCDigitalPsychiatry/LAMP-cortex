@@ -42,7 +42,7 @@ def inactive_duration(jerk_threshold=500, **kwargs):
         _ss['prev_state'] = _ss.value.shift()
         _ss['dt'] = _ss.timestamp - _ss.start
         ss_tups = get_screen_bouts(_ss)
-        
+
     else:
         return {'timestamp': kwargs['start'], 'value': None}
 
@@ -54,7 +54,9 @@ def inactive_duration(jerk_threshold=500, **kwargs):
         acc_tups = get_acc_bouts(acc_df)
     else:
         return {'timestamp': kwargs['start'], 'value': None}
-    
+
+    if ss_tups is None or acc_tups is None:
+        return {'timestamp': kwargs['start'], 'value': None}
     ss_max_index = get_max_index(ss_tups)
     ss_start, ss_end = get_max_bout(ss_tups, ss_max_index)
     acc_max_index = get_max_index(acc_tups)
@@ -102,11 +104,29 @@ def max_intersection(acc_start, acc_end, ss_start, ss_end):
     return None
 
 def get_max_bout(tup_list, start_idx, gap_threshold=10*1000):
+    """ Helper function to get the maximum bout.
+
+        Args:
+            tup_list: the list of tuples
+            start_idx: the starting index
+            gap_threshold (int, ms, default: 10s): the time threshold to merge bouts
+        Returns:
+            the start of the bout
+    """
     bout_start = get_bout_start(tup_list, start_idx, gap_threshold)
     bout_end = get_bout_end(tup_list, start_idx, gap_threshold)
     return (bout_start, bout_end)
 
 def get_bout_start(tup_list, start_idx, gap_threshold):
+    """ Helper function to find the start of the bout.
+
+        Args:
+            tup_list: the list of tuples
+            start_idx: the starting index
+            gap_threshold: the time threshold to merge bouts
+        Returns:
+            the start of the bout
+    """
     n = len(tup_list)
     bout_start = tup_list[start_idx][0]
     while start_idx != 0:
@@ -116,10 +136,19 @@ def get_bout_start(tup_list, start_idx, gap_threshold):
             bout_start = tup_list[start_idx - 1][0]
             start_idx -= 1
         else:
-            break 
+            break
     return bout_start
 
 def get_bout_end(tup_list, start_idx, gap_threshold):
+    """ Helper function to find the end of the bout.
+
+        Args:
+            tup_list: the list of tuples
+            start_idx: the starting index
+            gap_threshold: the time threshold to merge bouts
+        Returns:
+            the end of the bout
+    """
     n = len(tup_list)
     bout_end = tup_list[start_idx][1]
     while start_idx != n - 1:
@@ -154,18 +183,20 @@ def get_acc_bouts(df, jerk_threshold=0.5):
         Args:
             df: the dataframe holding accelerometer jerk data
         Returns:
-            List of tuples (start, end) of inactive periods based on acc_jerk 
+            List of tuples (start, end) of inactive periods based on acc_jerk
     """
     df['above_threshold'] = df['acc_jerk'] > jerk_threshold
     df['prev_above'] = df['above_threshold'].shift()
     df = df[df['above_threshold'] == False]
     df = df[df['prev_above'] == True]
     if not df.empty:
-        df['end'] = df['start'].shift()   
+        df['end'] = df['start'].shift()
         df = df.dropna()
         tuples = [tuple(x) for x in df[['end', 'start']].values]
         return tuples
     return None 
 
 def get_max_index(tup_list):
+    """ Helper function to get the max index of the tuple list.
+    """
     return tup_list.index(max(tup_list, key=lambda x: x[1] - x[0]))
