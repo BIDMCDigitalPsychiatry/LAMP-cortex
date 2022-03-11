@@ -139,7 +139,7 @@ def get_screen_bouts(df):
         Args:
             df: the dataframe holding screen state data
         Returns:
-            The screen state start / end
+            List of tuples (start, end) of inactive periods based on Screen State
     """
     if not df.empty:
         tmp = df[df['value'] == 0].dropna()
