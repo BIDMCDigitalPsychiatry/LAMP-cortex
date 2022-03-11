@@ -9,7 +9,7 @@ from ..raw.survey import survey
     name="cortex.survey_scores",
     dependencies=[survey]
 )
-def survey_scores(scoring_dict=None,
+def survey_scores(scoring_dict,
                   attach=False,
                   **kwargs):
     """
@@ -17,7 +17,7 @@ def survey_scores(scoring_dict=None,
 
     Args:
         scoring_dict (dict): Maps survey questions to categories, for scoring.
-            Must have keys: "category": [list of category strings]
+            Must have keys: "category_list": [list of category strings]
                             "questions": {
                                 "question text": {"category": something from list, "scoring": type of scoring},
                             }
@@ -102,7 +102,7 @@ def score_question(val, ques, scoring_dict):
     """
     if "map_to" in scoring_dict["questions"][ques]:
         return score_question(val,
-                              scoring_dict["questions"][ques],
+                              scoring_dict["questions"][scoring_dict["questions"]["map_to"]],
                               scoring_dict)
     ques_info = scoring_dict["questions"][ques]
     if val is None:

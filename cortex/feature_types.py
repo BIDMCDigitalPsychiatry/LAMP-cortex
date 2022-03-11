@@ -210,7 +210,7 @@ def raw_feature(name, dependencies):
                 # If a cached file could not be found, use function to get new data and save
 
                 log.info('No saved raw data found, getting new...')
-                
+
 
                 _result = _get_raw_feature(func, name, **kwgs)
                 pickle_path = (cache_dir + '/' +
@@ -332,12 +332,32 @@ def raw_feature(name, dependencies):
                                                         to=int(to),
                                                         _limit=int(kwgs['_limit']))['data']
                 data += data_next
+            # Special case for screen_ state and device state mapping to the same thing
+            if name == "lamp.screen_state":
+                data_next = []
+                data_device_state = LAMP.SensorEvent.all_by_participant(kwgs['id'],
+                                               origin="lamp.device_state",
+                                               _from=int(kwgs['start']),
+                                               to=int(kwgs['end']),
+                                               _limit=int(kwgs['_limit']))['data']
+                while (kwgs['recursive'] and
+                       (len(data_device_state) == MAX_RETURN_SIZE) or len(data_next) == MAX_RETURN_SIZE):
+                    to = data_device_state[-1]['timestamp']
+                    data_next = LAMP.SensorEvent.all_by_participant(kwgs['id'],
+                                                            origin="lamp.device_state",
+                                                            _from=int(kwgs['start']),
+                                                            to=int(to),
+                                                            _limit=int(kwgs['_limit']))['data']
+                    data_device_state += data_next
+                data += data_device_state
             ret = [{'timestamp': x['timestamp'], **x['data']} for x in data]
+            # Sort because of device_state / screen_state
+            ret = (sorted(ret, key = lambda i: i['timestamp'], reverse=True))
             # some Androids have a motion field in accelerometer, unravel that
             if name == "lamp.accelerometer":
                 ret = [{'timestamp': x['timestamp'], **x["motion"]} if "motion" in x else x for x in ret]
             return ret
-            
+
         def _get_raw_feature(func, name, **kwgs):
             """ Function to call the LAMP API and get the raw data.
 
@@ -356,10 +376,6 @@ def raw_feature(name, dependencies):
                 Returns:
                     A dict of the timestamps and raw data events
             """
-            ## TODO: select event getter based on kwgs['event_type']
-            ## need API functionality for activity event 'origin' query
-#             if kwgs['event_type'] == 'activity':
-#                 event_func = LAMP.SensorEvent.all_by_participant
             if name in ACTIVITIES:
                 return func(**kwgs)
             else:
