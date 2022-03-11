@@ -1,4 +1,4 @@
-from ..feature_types import secondary_feature, log
+from ..feature_types import secondary_feature
 from ..primary.survey_scores import survey_scores
 import numpy as np
 import pandas as pd
