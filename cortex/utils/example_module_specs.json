@@ -1,0 +1,44 @@
+{
+    "trial_period": {
+                      "module": "trial_period",
+                      "phase": "trial",
+                      "start_end": [0, 345600000],
+                      "shift": 18
+                 },
+    "daily_and_weekly": {
+                      "module": "daily_and_weekly",
+                      "phase": "enrolled",
+                      "start_end": [0, 2764800000],
+                      "shift": 18
+                 },
+    "gratitude_journal": {
+                     "module": "gratitude_journal",
+                     "phase": "enrolled",
+                     "start_end": [0, 518400000],
+                     "shift": 18
+                 },
+    "thought_patterns_a": {
+                     "module": "thought_patterns_a",
+                     "phase": "enrolled",
+                     "start_end": [518400000, 1123200000],
+                     "shift": 18
+                 },
+    "thought_patterns_b": {
+                      "module": "thought_patterns_b",
+                      "phase": "enrolled",
+                      "start_end": [1728000000, 2332800000],
+                      "shift": 18
+                 },
+    "mindfulness": {
+                     "module": "mindfulness",
+                     "phase": "enrolled",
+                     "start_end": [1123200000, 1728000000],
+                     "shift": 18
+                 },
+    "games": {
+                     "module": "games",
+                     "phase": "enrolled",
+                     "start_end": [1123200000, 1728000000],
+                     "shift": 18
+                 }
+}
