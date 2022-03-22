@@ -28,5 +28,5 @@ def survey_results(category, **kwargs):
     all_scores = pd.DataFrame(survey_scores(**kwargs)['data'])
     survey_avg = None
     if len(all_scores) > 0:
-        survey_avg = all_scores[all_scores["category"] == category]["score"].mean()
+        survey_avg = all_scores[all_scores["question"] == category]["score"].mean()
     return {'timestamp': kwargs['start'], 'value': survey_avg}

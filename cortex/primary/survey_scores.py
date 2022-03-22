@@ -10,6 +10,7 @@ from ..raw.survey import survey
     dependencies=[survey]
 )
 def survey_scores(scoring_dict,
+                  return_ind_ques=False,
                   attach=False,
                   **kwargs):
     """
@@ -32,6 +33,8 @@ def survey_scores(scoring_dict,
                 map to a dictionary: give the name of the dictionary (ex: "map0",
                     and create a corresponding dictionary in the scoring_dict)
                 Non-numeric scores are not supported at this time.
+        return_ind_ques (boolean): Whether or not to return individual question scores (or just
+                    the total category score)
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         **kwargs:
             id (string): The participant's LAMP id. Required.
@@ -77,16 +80,21 @@ def survey_scores(scoring_dict,
                 val = score_question(temp["value"], temp["item"], scoring_dict)
                 if val is not None:
                     if ques_info["category"] not in ret0:
-                        ret0[ques_info["category"]] = {"timestamp": s["timestamp"], "value": 0}
-                    ret0[ques_info["category"]]["value"] += val
+                        ret0[ques_info["category"]] = {"timestamp": s["timestamp"], ques_info["category"]: 0}
+                    ret0[ques_info["category"]][ques_info["category"]] += val
+                    if return_ind_ques:
+                        ret0[ques_info["category"]][temp["item"]] = val
         for k in ret0.keys():
             if len(ret0[k]) > 0:
-                ret.append({
-                    "start": ret0[k]["timestamp"],
-                    "end": survey_end_time,
-                    "category": k,
-                    "score": ret0[k]["value"],
-                })
+                for j in ret0[k]:
+                    if j != "timestamp":
+                        ret.append({
+                            "start": ret0[k]["timestamp"],
+                            "end": survey_end_time,
+                            "category": k,
+                            "question": j,
+                            "score": ret0[k][j],
+                        })
     return {'data': ret,
             'has_raw_data': has_raw_data}
 
