@@ -7,7 +7,7 @@ import pandas as pd
     name="cortex.survey_results",
     dependencies=[survey_scores]
 )
-def survey_results(category, **kwargs):
+def survey_results(question_or_category, **kwargs):
     """ Returns the survey scores binned by resolution for a
         certain survey category.
 
@@ -18,7 +18,8 @@ def survey_results(category, **kwargs):
                 which the feature is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window for
                 which the feature is being generated. Required.
-        category (str): The category to bin scores. SHould be in scoring_dict.
+        question_or_category (str): The category / question to bin scores.
+                Should be in scoring_dict.
 
     Returns:
         A dict consisting:
@@ -28,5 +29,5 @@ def survey_results(category, **kwargs):
     all_scores = pd.DataFrame(survey_scores(**kwargs)['data'])
     survey_avg = None
     if len(all_scores) > 0:
-        survey_avg = all_scores[all_scores["question"] == category]["score"].mean()
+        survey_avg = all_scores[all_scores["question"] == question_or_category]["score"].mean()
     return {'timestamp': kwargs['start'], 'value': survey_avg}
