@@ -25,7 +25,8 @@ def save_surveys_to_file(part_id, survey_path, scoring_dict):
             survey_path - path to the survey directory
             survey_dict - the survey scoring dict
     """
-    surveys = survey_scores.survey_scores(part_id, start=0, end=int(time.time() * 1000), scoring_dict, return_ind_ques=True)["data"]
+    surveys = survey_scores.survey_scores(part_id, start=0, end=int(time.time() * 1000),
+                                          scoring_dict=scoring_dict, return_ind_ques=True)["data"]
     for cat in scoring_dict["category_list"]:
         times = np.unique([x["start"] for x in surveys if x["category"] == cat])
         values = [x for x in surveys if x["category"] == cat]
@@ -45,9 +46,26 @@ def save_surveys_to_file(part_id, survey_path, scoring_dict):
 
 def get_avg_var_data(parts, scoring_guide, OTHER_GLOBAL_FEATS, OTHER_LOCAL_FEATS, OTHER_LOCAL_SUBFEATS,
                      PASSIVE_FEATS, SURVEY_DIR, PASSIVE_DIR, avg = 1, time_to_include=[-1, -1]):
+    """ Get variance and averages for each feature.
+
+        Args:
+            parts: the list of participant ids
+            scoring_guide: the scoring dicctionary
+            OTHER_GLOBAL_FEATS: the list of other global features
+            OTHER_LOCAL_FEATS: the list of other local features
+            OTHER_LOCAL_SUBFEATS: the list of subfeatures
+            PASSIVE_FEATS: the list of passive features
+            SURVEY_DIR: The survey directory (also holds other local / global features)
+            PASSIVE_DIR: The passive data directory
+            avg: whether to do average (1) or variance (0)
+            time_to_inlude (units: ms): Whether to include the entire time or restrict to certain days
+                from the start of the study (ie first SensorEvent)
+                (ex: time_to_include=[86400000,691200000] would be from day 2 to day 8)
+        Notes: See example in correlation_plots.ipynb
+    """
     # Make sure that the feature order stays consistent
     all_survey_keys = []
-    for x in scoring_guide["survey_group_list"]:
+    for x in scoring_guide["category_list"]:
         all_survey_keys += [x]
         all_survey_keys += [k for k in scoring_guide["questions"].keys()
             if ("map_to" not in scoring_guide["questions"][k]) and
@@ -77,7 +95,7 @@ def get_avg_var_data(parts, scoring_guide, OTHER_GLOBAL_FEATS, OTHER_LOCAL_FEATS
         for f in feat_order:
             dict0[f] = None
         # surveys
-        for s in scoring_guide["survey_group_list"]:
+        for s in scoring_guide["category_list"]:
             survey_path = SURVEY_DIR + p + "_" + s + ".csv"
             if os.path.exists(survey_path):
                 df = pd.read_csv(survey_path)

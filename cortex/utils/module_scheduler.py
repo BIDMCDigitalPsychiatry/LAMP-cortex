@@ -1,6 +1,5 @@
 """ Module for scheduling activities """
 import os
-import sys
 import LAMP
 import pandas as pd
 import datetime
@@ -13,8 +12,6 @@ from useful_functions import shift_time
 
 
 # Need to change these for your own study
-PHASE_TAG = ""
-MODULE_TAG = ""
 MODULE_JSON_FILE = "example_modules.json"
 MODULE_SPEC_FILE = "example_module_specs.json"
 
@@ -131,7 +128,7 @@ def unschedule_specific_survey(part_id, survey_name):
             act_dict[i]["schedule"] = []
             LAMP.Activity.update(activity_id=act_dict[i]['id'], activity_activity=act_dict[i])
 
-def correct_modules(part_id, module_json=MODULE_JSON):
+def correct_modules(part_id, PHASE_TAG, MODULE_TAG, module_json=MODULE_JSON):
     """ Check what module someone is scheduled for, verify that the schedule
         is correct.
 
@@ -151,7 +148,11 @@ def correct_modules(part_id, module_json=MODULE_JSON):
 
         Args:
             part_id: the participant id
+            phase_tag: the tag for participant, should have status and phases fields
+            module_tag: the tag for participant, should be in the form shown above
             module_json: json with module specs
+        Note: The phase and module tags could be hard coded as environment variables
+            or as global variables here as instead.
         Returns:
             A dictionary in the form:
             {

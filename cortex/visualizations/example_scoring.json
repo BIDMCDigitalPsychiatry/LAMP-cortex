@@ -1,0 +1,61 @@
+{
+    "category_list": ["GAD-7", "PSS", "DWAI", "Daily_sleep_qual"],
+    "questions": {
+            "Over the past week, I have felt nervous, anxious, or on edge.": {"category": "GAD-7", "scoring": "value_map"},
+            "Over the past week, I have not been able to stop or control worrying.": {"category": "GAD-7", "scoring": "value_map"},
+            "Over the past week, I have been worrying too much about different things.": {"category": "GAD-7", "scoring": "value_map"},
+            "Over the past week, I have had trouble relaxing.": {"category": "GAD-7", "scoring": "value_map"},
+            "Over the past week, I have felt so restless that it's hard to sit still.": {"category": "GAD-7", "scoring": "value_map"},
+            "Over the past week, I have felt myself becoming easily annoyed or irritable.": {"category": "GAD-7", "scoring": "value_map"},
+            "Over the past week, I have felt afraid as if something awful might happen.": {"category": "GAD-7", "scoring": "value_map"},
+
+            "Overall, how would you rate your sleep last night?": {"category": "Daily_sleep_qual", "scoring": "value"},
+
+            "In the last week, how often have you been upset because of something that happened unexpectedly?": {"category": "PSS", "scoring": "pss_value_map"},
+            "In the last week, how often have you felt that you were unable to control the important things in your life?": {"category": "PSS", "scoring": "pss_value_map"},
+            "In the last week, how often have you felt nervous and stressed?": {"category": "PSS", "scoring": "pss_value_map"},
+            "In the last week, how often have you felt confident about your ability to handle your personal problems?": {"category": "PSS", "scoring": "reverse_pss_value_map"},
+            "In the last week, how often have you felt that things were going your way?": {"category": "PSS", "scoring": "reverse_pss_value_map"},
+            "In the last week, how often have you found that you could not cope with all the things that you had to do?": {"category": "PSS", "scoring": "pss_value_map"},
+            "In the last week, how often have you been able to control irritations in your life?": {"category": "PSS", "scoring": "reverse_pss_value_map"},
+            "In the last week, how often have you felt that you were on top of things?": {"category": "PSS", "scoring": "reverse_pss_value_map"},
+            "In the last week, how often have you been angered because of things that happened that were outside of your control?": {"category": "PSS", "scoring": "pss_value_map"},
+            "In the last week, how often have you felt difficulties were piling up so high that you could not overcome them?": {"category": "PSS", "scoring": "pss_value_map"},
+
+
+            "I trust the app to guide me towards my personal goals.": {"category": "DWAI", "scoring": "dwai_value_map"},
+            "I believe the app tasks will help me to address my problems.": {"category": "DWAI", "scoring": "dwai_value_map"},
+            "The app encourages me to accomplish tasks and make progress.": {"category": "DWAI", "scoring": "dwai_value_map"},
+            "I agree that the tasks within the app are important for my goals.": {"category": "DWAI", "scoring": "dwai_value_map"},
+            "The app is easy to use and operate.": {"category": "DWAI", "scoring": "dwai_value_map"},
+            "The app supports me to overcome challenges.": {"category": "DWAI", "scoring": "dwai_value_map"}
+        },
+    "value_map": {
+        "Not at all": 0,
+        "Several days": 1,
+        "More than half the days": 2,
+        "Over half the days": 2,
+        "Nearly every day": 3
+    },
+    "pss_value_map": {
+        "Never": 0,
+        "Almost never": 1,
+        "Sometimes": 2,
+        "Fairly often": 3,
+        "Very often": 4
+    },
+    "reverse_pss_value_map": {
+        "Never": 4,
+        "Almost never": 3,
+        "Sometimes": 2,
+        "Fairly often": 1,
+        "Very often": 0
+    },
+    "dwai_value_map": {
+        "Strongly disagree": 0,
+        "Disagree": 1,
+        "Neither agree nor disagree": 2,
+        "Agree": 3,
+        "Strongly agree": 4
+    }
+}
