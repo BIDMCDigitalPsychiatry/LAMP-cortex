@@ -55,10 +55,13 @@ echo "${green} sleep_periods.py ${reset}"
 pylint cortex/primary/sleep_periods.py
 echo "${green} acc_jerk.py ${reset}"
 pylint cortex/primary/acc_jerk.py
+echo "${green} survey_scores.py ${reset}"
+pylint cortex/primary/survey_scores.py
+echo "${green} game_level_scores.py ${reset}"
+pylint cortex/primary/game_level_scores.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
-# TODO: add these
 echo "${green} bluetooth_device_count.py ${reset}"
 pylint cortex/secondary/bluetooth_device_count.py
 echo "${green} call_degree.py ${reset}"
@@ -85,5 +88,9 @@ echo "${green} trip_duration.py ${reset}"
 pylint cortex/secondary/trip_duration.py
 echo "${green} trip_distance.py ${reset}"
 pylint cortex/secondary/trip_distance.py
+echo "${green} survey_results.py ${reset}"
+pylint cortex/secondary/survey_results.py
+echo "${green} game_results.py ${reset}"
+pylint cortex/secondary/game_results.py
 
 echo "${reset}"

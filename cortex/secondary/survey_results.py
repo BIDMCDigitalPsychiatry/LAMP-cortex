@@ -1,7 +1,7 @@
+""" Module for computing average survey scores """
+import pandas as pd
 from ..feature_types import secondary_feature
 from ..primary.survey_scores import survey_scores
-import numpy as np
-import pandas as pd
 
 @secondary_feature(
     name="cortex.survey_results",

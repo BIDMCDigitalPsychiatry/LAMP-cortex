@@ -19,10 +19,9 @@ def jewels_b(_limit=10000,
                 returned; else just one request
 
     Returns:
-        timestamp (int): The UTC timestamp for the jewels_a event.
+        timestamp (int): The UTC timestamp for the jewels event.
         duration (int): the duration in ms
         activity (str): the activity id
-        activity_name (str): 'lamp.jewels_b'
         static_data (dict): a dict which includes 'point', 'score', 'total_attempts',
                 'total_bonus_collected', 'total_jewels_collected'
         temporal_slices (list): list of dicts which include the 'duration',
@@ -32,7 +31,6 @@ def jewels_b(_limit=10000,
         [{'timestamp': 1621490047833,
           'duration': 90184,
           'activity': 'p05jxcyxhb3wtcw4aazx',
-          'activity_name': 'lamp.jewels_b',
           'static_data': {'point': 1,
                           'score': 100,
                           'total_attempts': 4,
@@ -45,38 +43,4 @@ def jewels_b(_limit=10000,
               {'duration': 613, 'item': 4, 'level': 1, 'status': True, 'value': None}]
         }],
     """
-    jewels_b_ids = [activity['id'] for activity in
-                    LAMP.Activity.all_by_participant(kwargs['id'])['data']
-                    if activity['spec'] == 'lamp.jewels_b']
-
-    _jewels_b = [{'timestamp': res['timestamp'],
-                  'duration': res['duration'],
-                  'activity': res['activity'],
-                  'activity_name': 'lamp.jewels_b',
-                  'static_data': res['static_data'],
-                  'temporal_slices': res['temporal_slices']}
-                 for res in LAMP.ActivityEvent.all_by_participant(kwargs['id'],
-                                                                  _from=kwargs['start'],
-                                                                  to=kwargs['end'],
-                                                                  _limit=_limit)['data']
-                 if res['activity'] in jewels_b_ids]
-
-    while _jewels_b and recursive:
-        _to = _jewels_b[-1]['timestamp']
-        _jewels_b_next = [{'timestamp': res['timestamp'],
-                           'duration': res['duration'],
-                           'activity':res['activity'],
-                           'activity_name':'lamp.jewels_b',
-                           'static_data':res['static_data'],
-                           'temporal_slices':res['temporal_slices']}
-                          for res in LAMP.ActivityEvent.all_by_participant(kwargs['id'],
-                                                                           _from=kwargs['start'],
-                                                                           to=_to,
-                                                                           _limit=_limit)['data']
-                          if res['activity'] in jewels_b_ids]
-
-        if not _jewels_b_next: break
-        if _jewels_b_next[-1]['timestamp'] == _to: break
-        _jewels_b += _jewels_b_next
-
-    return _jewels_b
+    return

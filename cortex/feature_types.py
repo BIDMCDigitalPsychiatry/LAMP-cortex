@@ -27,7 +27,8 @@ __features__ = []
 def all_features():
     return __features__
 
-ACTIVITIES = ['lamp.survey', 'lamp.jewels_a', 'lamp.jewels_b']
+ACTIVITIES = ['lamp.survey', 'lamp.jewels_a', 'lamp.jewels_b', 'lamp.balloon_risk',
+              'lamp.cats_and_dogs', 'lamp.pop_the_bubbles', 'lamp.spatial_span']
 MAX_RETURN_SIZE = 10000 #maximum number of events that the API will return
 
 # Raw features.
@@ -358,6 +359,45 @@ def raw_feature(name, dependencies):
                 ret = [{'timestamp': x['timestamp'], **x["motion"]} if "motion" in x else x for x in ret]
             return ret
 
+        def _get_game_feature(name, **kwgs):
+            """ Function to call the LAMP.ActivityEvent API and return data.
+
+                Args:
+                    name (str): the name of the raw feature (ex: "lamp.cats_and_dogs")
+                    **kwgs:
+                        id (str): the participant id
+                        start (int): The UNIX timestamp (in ms) to begin querying (i.e. "_from")
+                        end (int): The UNIX timestamp to end querying (i.e. "to")
+                        _limit (int): The maximum number of sensor events to query for in a
+                            single request
+                        recursive (bool): if True, continue requesting data until all data is
+                                returned; else just one request
+                Returns:
+                    A dict of the timestamps and raw data events
+            """
+            data_next = []
+            activity_ids = [activity['id'] for activity in
+                    LAMP.Activity.all_by_participant(kwgs['id'])['data']
+                    if activity['spec'] == name]
+
+            data = LAMP.ActivityEvent.all_by_participant(kwgs['id'],
+                                               _from=int(kwgs['start']),
+                                               to=int(kwgs['end']),
+                                               _limit=int(kwgs['_limit']))['data']
+            while (kwgs['recursive'] and
+                   (len(data) == int(kwgs['_limit'])) or len(data_next) == int(kwgs['_limit'])):
+                to = data[-1]['timestamp']
+                data_next = LAMP.ActivityEvent.all_by_participant(kwgs['id'],
+                                                        _from=int(kwgs['start']),
+                                                        to=int(to),
+                                                        _limit=int(kwgs['_limit']))['data']
+                data += data_next
+            
+            # Get only activity events with the required spec
+            data = [x for x in data if x["activity"] in activity_ids]
+            ret = (sorted(data, key = lambda i: i['timestamp'], reverse=True))
+            return ret
+
         def _get_raw_feature(func, name, **kwgs):
             """ Function to call the LAMP API and get the raw data.
 
@@ -377,7 +417,10 @@ def raw_feature(name, dependencies):
                     A dict of the timestamps and raw data events
             """
             if name in ACTIVITIES:
-                return func(**kwgs)
+                if name == 'lamp.survey':
+                    return func(**kwgs)
+                else:
+                    return _get_game_feature(name, **kwgs)
             else:
                 return _get_sensor_feature(name, **kwgs)
 

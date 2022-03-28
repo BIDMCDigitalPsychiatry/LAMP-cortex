@@ -1,0 +1,124 @@
+""" Module for computing game level scores """
+import numpy as np
+import pandas as pd
+from ..feature_types import primary_feature, log
+from ..raw.balloon_risk import balloon_risk
+from ..raw.cats_and_dogs import cats_and_dogs
+from ..raw.jewels_a import jewels_a
+from ..raw.jewels_b import jewels_b
+from ..raw.pop_the_bubbles import pop_the_bubbles
+from ..raw.spatial_span import spatial_span
+from .. import raw
+
+@primary_feature(
+    name="cortex.game_level_scores",
+    dependencies=[balloon_risk, cats_and_dogs, jewels_a,
+                  jewels_b, pop_the_bubbles, spatial_span]
+)
+def game_level_scores(name_of_game,
+                  attach=False,
+                  **kwargs):
+    """ Get cognitive game scores.
+
+    Args:
+        name_of_game (str): The name of the game to score.
+        attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
+        **kwargs:
+            id (string): The participant's LAMP id. Required.
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
+                is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
+                is being generated. Required.
+
+    Returns:
+        A dictionary with fields:
+            data (dict): Survey categories mapped to individual scores.
+            has_raw_data (int): Indicates whether there is raw data.
+    """
+    GAMES = ['jewels_a', 'jewels_b', 'balloon_risk',
+              'cats_and_dogs', 'pop_the_bubbles', 'spatial_span']
+    if name_of_game == 'pop_the_bubbles':
+        return score_pop_the_bubbles(**kwargs)
+    if name_of_game == 'balloon_risk':
+        return score_balloon_risk(**kwargs)
+    elif name_of_game not in GAMES:
+        log.warning('The name of the game is not valid.')
+        return {'data': [], 'has_raw_data': 0}
+    raw_feature = getattr(getattr(raw, name_of_game), name_of_game)
+    df = pd.DataFrame(raw_feature(**kwargs)['data'])
+    has_raw_data = 1
+    if len(df) == 0:
+        has_raw_data = 0
+    df = pd.DataFrame(df)
+
+    ret = []
+    for i in range(len(df)):
+        game_df = pd.DataFrame(df.loc[i, "temporal_slices"])
+        if "status" not in game_df and "type" in game_df:
+            game_df = game_df.rename(columns={"type": "status"})
+        if len(game_df) == 0:
+            continue
+        for level in np.unique(game_df["level"]):
+            level_df = game_df[game_df["level"] == level]
+            level_avg = level_df.mean()
+            ret.append({
+                "start": df.loc[i, "timestamp"],
+                "end": df.loc[i, "timestamp"] + level_df["duration"].sum(),
+                "level": level,
+                "avg_tap_time": level_avg["duration"],
+                "perc_correct": level_avg["status"],
+            })
+    return {'data': ret,
+            'has_raw_data': has_raw_data}
+
+def score_pop_the_bubbles(**kwargs):
+    """ Helper function to score pop_the_bubbles.
+    """
+    df = pd.DataFrame(pop_the_bubbles(**kwargs)['data'])
+    has_raw_data = 1
+    if len(df) == 0:
+        has_raw_data = 0
+    ret = []
+    for i in range(len(df)):
+        game_df = pd.DataFrame(df.loc[i, "temporal_slices"]).dropna()
+        if len(game_df) == 0:
+            continue
+        for level in np.unique(game_df["level"]):
+            level_df = game_df[game_df["level"] == level]
+            ret.append({
+                "start": df.loc[i, "timestamp"],
+                "end": df.loc[i, "timestamp"] + df.loc[i, "duration"],
+                "level": level,
+                "avg_go_perc_correct": level_df[~level_df['value'].str.contains('no-go')]["type"].mean(),
+                "avg_NO_go_perc_correct": level_df[level_df['value'].str.contains('no-go')]["type"].mean()
+            })
+    return {'data': ret,
+            'has_raw_data': has_raw_data}
+
+
+def score_balloon_risk(**kwargs):
+    """ Helper function to score balloon_risk.
+    """
+    df = pd.DataFrame(balloon_risk(**kwargs)['data'])
+    has_raw_data = 1
+    if len(df) == 0:
+        has_raw_data = 0
+    ret = []
+    for i in range(len(df)):
+        game_df = pd.DataFrame(df.loc[i, "temporal_slices"]).dropna()
+        for level in np.unique(game_df["level"]):
+            level_df = game_df[game_df["level"] == level]
+            if "type" in level_df and len(level_df[level_df["type"] == False]) > 0:
+                avg_pumps = 0
+            elif "status" in level_df and len(level_df[level_df["status"] == False]) > 0:
+                avg_pumps = 0
+            else:
+                avg_pumps = len(level_df)
+            ret.append({
+                "start": df.loc[i, "timestamp"],
+                "end": df.loc[i, "timestamp"] + level_df["duration"].sum(),
+                "level": level,
+                "avg_pumps": avg_pumps,
+            })
+    return {'data': ret,
+            'has_raw_data': has_raw_data}

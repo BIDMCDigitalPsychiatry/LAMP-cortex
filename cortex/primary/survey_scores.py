@@ -1,7 +1,5 @@
 """ Module for computing survey scores """
 from itertools import groupby
-import numpy as np
-import LAMP
 from ..feature_types import primary_feature, log
 from ..raw.survey import survey
 
@@ -18,15 +16,16 @@ def survey_scores(scoring_dict,
 
     Args:
         scoring_dict (dict): Maps survey questions to categories, for scoring.
-            Must have keys: "category_list": [list of category strings]
-                            "questions": {
-                                "question text": {"category": something from list, "scoring": type of scoring},
-                            }
-                            "map0": {
-                                "none": 0,
-                                "some": 1,
-                                "all": 2
-                            }
+            Must have keys: 
+            "category_list": [list of category strings]
+            "questions": {
+                "question text": {"category": something from list, "scoring": type of scoring},
+            }
+            "map0": {
+                "none": 0,
+                "some": 1,
+                "all": 2
+            }
             Types of scoring:
                 "value": will cast the result to an int
                 "boolean": "Yes" --> 1, "No" --> 0
@@ -38,9 +37,9 @@ def survey_scores(scoring_dict,
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
         **kwargs:
             id (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
 
     Returns:
@@ -73,17 +72,18 @@ def survey_scores(scoring_dict,
                 continue
             if (temp["item"] not in scoring_dict["questions"] or
                 (temp["item"] in scoring_dict["questions"]
-                 and scoring_dict["questions"][temp["item"]]["category"] not in scoring_dict["category_list"])):
+                 and scoring_dict["questions"][temp["item"]]["category"]
+                 not in scoring_dict["category_list"])):
                 continue
-            else:
-                ques_info = scoring_dict["questions"][temp["item"]]
-                val = score_question(temp["value"], temp["item"], scoring_dict)
-                if val is not None:
-                    if ques_info["category"] not in ret0:
-                        ret0[ques_info["category"]] = {"timestamp": s["timestamp"], ques_info["category"]: 0}
-                    ret0[ques_info["category"]][ques_info["category"]] += val
-                    if return_ind_ques:
-                        ret0[ques_info["category"]][temp["item"]] = val
+            ques_info = scoring_dict["questions"][temp["item"]]
+            val = score_question(temp["value"], temp["item"], scoring_dict)
+            if val is not None:
+                if ques_info["category"] not in ret0:
+                    ret0[ques_info["category"]] = {"timestamp": s["timestamp"],
+                                                   ques_info["category"]: 0}
+                ret0[ques_info["category"]][ques_info["category"]] += val
+                if return_ind_ques:
+                    ret0[ques_info["category"]][temp["item"]] = val
         for k in ret0.keys():
             if len(ret0[k]) > 0:
                 for j in ret0[k]:
@@ -125,7 +125,9 @@ def score_question(val, ques, scoring_dict):
         if val in scoring_dict[ques_info["scoring"]]:
             mapped_val = scoring_dict[ques_info["scoring"]][val]
         else:
-            log.info("*" + val + "* is not in the scoring key " + ques_info["scoring"] + " for question *" + ques + "* please try again.")
+            log.info("*" + val + "* is not in the scoring key "
+                     + ques_info["scoring"] + " for question *"
+                     + ques + "* please try again.")
             return None
         return mapped_val
     log.info("Scoring type is not valid. Please try again.")
