@@ -25,7 +25,7 @@ def save_surveys_to_file(part_id, survey_path, scoring_dict):
             survey_path - path to the survey directory
             survey_dict - the survey scoring dict
     """
-    surveys = survey_scores.survey_scores(part_id, start=0, end=int(time.time() * 1000),
+    surveys = survey_scores(id=part_id, start=0, end=int(time.time() * 1000),
                                           scoring_dict=scoring_dict, return_ind_ques=True)["data"]
     for cat in scoring_dict["category_list"]:
         times = np.unique([x["start"] for x in surveys if x["category"] == cat])
@@ -69,7 +69,7 @@ def get_avg_var_data(parts, scoring_guide, OTHER_GLOBAL_FEATS, OTHER_LOCAL_FEATS
         all_survey_keys += [x]
         all_survey_keys += [k for k in scoring_guide["questions"].keys()
             if ("map_to" not in scoring_guide["questions"][k]) and
-               (scoring_guide["questions"][k]["group"] == x)]
+               (scoring_guide["questions"][k]["category"] == x)]
     all_other_local_keys = []
     for x in OTHER_LOCAL_FEATS:
         all_other_local_keys += [y for y in OTHER_LOCAL_SUBFEATS[x]]
