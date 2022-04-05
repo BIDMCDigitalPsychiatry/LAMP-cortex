@@ -65,7 +65,7 @@ def game_level_scores(name_of_game,
                 "start": df.loc[i, "timestamp"],
                 "end": df.loc[i, "timestamp"] + level_df["duration"].sum(),
                 "level": level,
-                "avg_tap_time": level_df[level_df["duration"] > 0].mean()["duration"],
+                "avg_tap_time": level_df[level_df["duration"] > 0]["duration"].mean(),
                 "perc_correct": level_avg["status"],
             })
             if name_of_game in ['jewels_a', 'jewels_b']:
