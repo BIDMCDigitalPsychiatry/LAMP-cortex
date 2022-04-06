@@ -56,5 +56,7 @@ def step_count(**kwargs):
 
     # Remove duplicates
     _steps = _steps[_steps['timestamp'] != _steps['timestamp'].shift()]
+    if "steps" not in _steps:
+        return {'timestamp': kwargs['start'], 'value': None}
 
     return {'timestamp': kwargs['start'], 'value': _steps["steps"].sum()}
