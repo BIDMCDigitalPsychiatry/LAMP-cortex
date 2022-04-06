@@ -8,7 +8,7 @@ import LAMP
 )
 def survey(replace_ids=True, 
            _limit=2147483647, 
-           cache=True,
+           cache=False,
            recursive=False,
            **kwargs):
     """
