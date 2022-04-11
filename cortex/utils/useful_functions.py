@@ -74,7 +74,7 @@ def add_sensor(study_id, spec, name):
     """
     LAMP.Sensor.create(study_id, {'spec': spec, 'name': name, 'settings':{}})
 
-def propogate_activity(base_user, activity_name, parts):
+def propagate_activity(base_user, activity_name, parts, excluded_tags=[]):
     """ Copy the activity from one user into all other.
         Only copy the content of the activity, do not create new activities.
 
@@ -82,6 +82,7 @@ def propogate_activity(base_user, activity_name, parts):
             base_user: the user to copy the activity from
             activity_name: the name of the activity to copy
             parts: list of participants to propogate the change to
+            excluded_tags: list of tags not to copy to all participants
     """
     # get the activity from base user
     activity = [x for x in LAMP.Activity.all_by_participant(base_user)["data"]
@@ -97,6 +98,7 @@ def propogate_activity(base_user, activity_name, parts):
         for x in all_acts:
             if x["name"] == activity_name:
                 LAMP.Activity.update(activity_id=x['id'], activity_activity=copy_act)
+        
 
 def get_part_id_from_name(name, parts):
     """ Find the id which has the lamp.name == name

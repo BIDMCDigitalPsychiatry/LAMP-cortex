@@ -80,6 +80,9 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
+    if not isinstance(features, list):
+        raise Exception("You must pass in features as a list.")
+        return
     # Check id to generate list of participants
     participants = generate_ids(id_or_set)
 
@@ -96,7 +99,6 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     _results = {}
     for i, participant in enumerate(participants):
         for f in features_by_participant[i]:
-            print(f)
             # Make sure we aren't calling non-existant feature functions.
             if f not in func_list.keys():
                 continue
