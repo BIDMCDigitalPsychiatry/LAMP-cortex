@@ -31,7 +31,7 @@ MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
 
 
 
-def run(id_or_set, features=[], feature_params={}, start=None, end=None,
+def run(id_or_set, features, feature_params={}, start=None, end=None,
         resolution=MS_PER_DAY, path_to_save="", run_part_and_feats="", cache=False):
     """ Function to get features from cortex.
 
@@ -50,6 +50,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 and certain matching features, create a csv file with
                 columns containing ids and features and column headings
                 "participant" (participant id) and "feature"
+            cache (boolean, default: False): whether or not to cache raw data
         Returns:
             A dictionary with the features.
 
