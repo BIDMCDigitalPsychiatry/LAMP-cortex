@@ -21,7 +21,6 @@ logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
                     format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
 log = logging.getLogger('cortex')
 
-
 def now():
     """ So we can do cortex.now() to get the time.
     """
@@ -33,7 +32,8 @@ MS_PER_DAY = 86400000 # (1000 ms * 60 sec * 60 min * 24 hr * 1 day)
 
 
 def run(id_or_set, features=[], feature_params={}, start=None, end=None,
-        resolution=MS_PER_DAY, path_to_save="", run_part_and_feats="", cache=False):
+        resolution=MS_PER_DAY, path_to_save="", run_part_and_feats="",
+        cache=False, print_logs=False):
     """ Function to get features from cortex.
 
         Args:
@@ -52,6 +52,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 columns containing ids and features and column headings
                 "participant" (participant id) and "feature"
             cache (boolean, default: False): whether or not to cache raw data
+            print_logs (boolean, default: False): whether to set the logging to a higher level
         Returns:
             A dictionary with the features.
 
@@ -79,6 +80,9 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                         + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
     LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
                  os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+
+    if not print_logs:
+        log.setLevel(logging.WARNING)
 
     if not isinstance(features, list):
         raise Exception("You must pass in features as a list.")
@@ -132,6 +136,11 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     if not os.path.exists(os.path.join(path_to_save, f)):
                         os.makedirs(os.path.join(path_to_save, f))
                     _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
+            if not print_logs:
+                sys.stdout.write('\r')
+                j = (i + 1) / len(participants)
+                sys.stdout.write("[%-20s] %d%%" % ('='*int(20*j), 100*j))
+                sys.stdout.flush()
 
     return _results
 
