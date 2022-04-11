@@ -19,18 +19,19 @@ def acc_jerk(threshold=500,
             threshold (int): The max difference between points to be computed in the sum, in ms.
                 (I.e. if there is too large of a gap in time between accelerometer
                 points, jerk has little meaning)
-            attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
+            attach (boolean): Indicates whether to use LAMP.Type.attachments in
+                calculating the feature.
             **kwargs:
                 id (string): The participant's LAMP id. Required.
-                start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+                start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                     is being generated. Required.
-                end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+                end (int): The last UNIX timestamp (in ms) of the window for which the feature
                     is being generated. Required.
         Returns:
             A dict with fields:
-                data (list): A list of dicts, with each dict having 3 keys: 'start', 'end', and 'acc_jerk'.
-                    'acc_jerk' is the accelerometer jerk in m / s^3
-                has_raw_data (int): Indicates whether raw data is present. 
+                data (list): A list of dicts, with each dict having 3 keys: 'start',
+                    'end', and 'acc_jerk'. 'acc_jerk' is the accelerometer jerk in m / s^3
+                has_raw_data (int): Indicates whether raw data is present.
 
         Example:
             [{'start': 1625171685730.0,
