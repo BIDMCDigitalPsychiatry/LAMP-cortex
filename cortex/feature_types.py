@@ -324,7 +324,7 @@ def raw_feature(name, dependencies):
                                                to=int(kwgs['end']),
                                                _limit=int(kwgs['_limit']))['data']
             while (kwgs['recursive'] and
-                   (len(data) == MAX_RETURN_SIZE) or len(data_next) == MAX_RETURN_SIZE):
+                   (len(data) == MAX_RETURN_SIZE or len(data_next) == MAX_RETURN_SIZE)):
                 to = data[-1]['timestamp']
                 data_next = LAMP.SensorEvent.all_by_participant(kwgs['id'],
                                                         origin=name,
@@ -341,7 +341,8 @@ def raw_feature(name, dependencies):
                                                to=int(kwgs['end']),
                                                _limit=int(kwgs['_limit']))['data']
                 while (kwgs['recursive'] and
-                       (len(data_device_state) == MAX_RETURN_SIZE) or len(data_next) == MAX_RETURN_SIZE):
+                       (len(data_device_state) == MAX_RETURN_SIZE or
+                        len(data_next) == MAX_RETURN_SIZE)):
                     to = data_device_state[-1]['timestamp']
                     data_next = LAMP.SensorEvent.all_by_participant(kwgs['id'],
                                                             origin="lamp.device_state",
@@ -539,25 +540,25 @@ def primary_feature(name, dependencies):
                 return _event
 
             def _primary_attach(func, name, *args, **kwargs):
-                """Utilize and update LAMP attachments to speed up processing of primary feature.
-                
-                Based on both (kwargs['start'], kwargs['end']) timestamps and previously 
-                saved attachments, primary featurization occurs and attachments are updated 
-                to include these newly generated events.
-                
-                Args:
-                    func (method): The raw data-getting method, called if attached data needs to
-                        be updated.
-                    **kwargs:
-                        start (int): The start UNIX timestamp (in ms).
-                        end (int): The end UNIX timestamp (in ms).
+                """ Utilize and update LAMP attachments to speed up processing of primary feature.
 
-                Returns:
-                    A list of both previously saved (in the the form of LAMP attachments) and newly generated 
-                    primary feature events.
-                    
-                Raises:
-                    LAMP.ApiException:
+                    Based on both (kwargs['start'], kwargs['end']) timestamps and previously 
+                    saved attachments, primary featurization occurs and attachments are updated 
+                    to include these newly generated events.
+
+                    Args:
+                        func (method): The raw data-getting method, called if attached data needs to
+                            be updated.
+                        **kwargs:
+                            start (int): The start UNIX timestamp (in ms).
+                            end (int): The end UNIX timestamp (in ms).
+
+                    Returns:
+                        A list of both previously saved (in the the form of LAMP attachments) and newly generated 
+                        primary feature events.
+
+                    Raises:
+                        LAMP.ApiException:
                 """
                 try:
                     attachments = LAMP.Type.get_attachment(kwargs['id'], name)['data']

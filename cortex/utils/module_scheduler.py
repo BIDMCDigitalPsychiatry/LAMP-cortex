@@ -170,15 +170,17 @@ def correct_modules(part_id, PHASE_TAG, MODULE_TAG, module_json=MODULE_JSON):
            "wrong times": [],
         }
 
-    # Figure out what module they are supposed to be on
-    phase = LAMP.Type.get_attachment(part_id, PHASE_TAG)["data"]
+    try:
+        phase = LAMP.Type.get_attachment(part_id, PHASE_TAG)["data"]
+    except:
+        print(f"Participant {part_id} has no phase attachment. Please correct this!")
+        return
     if phase["status"] != 'enrolled' and phase["status"] != 'trial':
-        ret["correct module"] = "Done"
-        return ret
+        return
     try:
         part_mods = LAMP.Type.get_attachment(part_id, MODULE_TAG)["data"]
     except:
-        print(f"Participant {part_id} has no module attachment. Please correct asap!")
+        print(f"Participant {part_id} has no module attachment. Please correct this!")
         return
     phase_timestamp = phase['phases'][phase["status"]]
     curr_df = int(time.time() * 1000) - phase_timestamp
