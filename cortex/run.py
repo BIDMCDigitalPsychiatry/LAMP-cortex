@@ -104,6 +104,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     func_list = {f['callable'].__name__: f for f in all_features()}
 
     _results = {}
+    curr_val = 0
     for i, participant in enumerate(participants):
         for f in features_by_participant[i]:
             # Make sure we aren't calling non-existant feature functions.
@@ -138,9 +139,10 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                     _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
             if not print_logs:
                 sys.stdout.write('\r')
-                j = (i + 1) / len(participants)
+                j = (curr_val + 1) / (len(participants) * len(features))
                 sys.stdout.write("[%-20s] %d%%" % ('='*int(20*j), 100*j))
                 sys.stdout.flush()
+                curr_val += 1
 
     return _results
 
