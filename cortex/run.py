@@ -83,6 +83,9 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     if not isinstance(features, list):
         raise Exception("You must pass in features as a list.")
         return
+    if start is None or end is None:
+        log.warning("If start and / or end are set to None then the start / "
+                    + "end time will be set to the earliest or latest raw data point.")
     # Check id to generate list of participants
     participants = generate_ids(id_or_set)
 
@@ -109,29 +112,26 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             if f in feature_params:
                 params_f = feature_params[f]
 
-            try:
-                _res = get_feature_for_participant(participant, f, params_f, start,
-                                                   end, resolution, cache)
+            _res = get_feature_for_participant(participant, f, params_f, start,
+                                               end, resolution, cache)
 
-                _res2 = pd.DataFrame.from_dict(_res['data'])
-                if _res2.shape[0] > 0:
-                    # If no data exists, don't bother appending the df.
-                    _res2.insert(0, 'id', participant) # prepend 'id' column
-                    if hasattr(primary, f):
-                        _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
-                    else:
-                        _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
-                    _results[f] = pd.concat([_results[f], _res2])
+            _res2 = pd.DataFrame.from_dict(_res['data'])
+            if _res2.shape[0] > 0:
+                # If no data exists, don't bother appending the df.
+                _res2.insert(0, 'id', participant) # prepend 'id' column
+                if hasattr(primary, f):
+                    _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
+                else:
+                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
+                _results[f] = pd.concat([_results[f], _res2])
 
-                    # Save if there is a file path specified
-                    if path_to_save != "":
-                        log.info("Saving output locally..")
-                        # create subdir if doesn't exist
-                        if not os.path.exists(os.path.join(path_to_save, f)):
-                            os.makedirs(os.path.join(path_to_save, f))
-                        _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
-            except:
-                log.info("Participant: %s, Feature: %s crashed.", participant, f)
+                # Save if there is a file path specified
+                if path_to_save != "":
+                    log.info("Saving output locally..")
+                    # create subdir if doesn't exist
+                    if not os.path.exists(os.path.join(path_to_save, f)):
+                        os.makedirs(os.path.join(path_to_save, f))
+                    _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
 
     return _results
 

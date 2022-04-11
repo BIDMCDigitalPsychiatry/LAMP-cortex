@@ -98,7 +98,9 @@ def propagate_activity(base_user, activity_name, parts, excluded_tags=[]):
         for x in all_acts:
             if x["name"] == activity_name:
                 LAMP.Activity.update(activity_id=x['id'], activity_activity=copy_act)
-        
+                for attach_name in LAMP.Type.list_attachments(activity["id"])["data"]:
+                    LAMP.Type.set_attachment(x["id"], "me", attach_name,
+                        body=LAMP.Type.get_attachment(activity["id"], attach_name)["data"])
 
 def get_part_id_from_name(name, parts):
     """ Find the id which has the lamp.name == name
