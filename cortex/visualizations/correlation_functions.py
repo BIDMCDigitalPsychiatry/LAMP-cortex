@@ -245,3 +245,52 @@ def make_corr_plot(mat, pvals, survey_list, feat_list, title="",):
     plt.yticks(rotation=45)
     plt.title(title)
     return fig
+
+# Model specific functions
+def produce_improvement_df(feature_name,
+                           amount_change,
+                           feat_dir_0,
+                           fn_0,
+                           min_num_records=2,
+                           min_starting_score=0,
+                           min_time_diff=0):
+    """ Function to produce improvement dataframes.
+
+        Args:
+            feature_name: name of the feature to use for comparison. Cannot be a global feature.
+            amount_change: min amount that the feature must change by (start - end)
+            min_num_records: minimum number of records to include. Must have at least 2 to compare
+            min_starting_score: only consider people with at least this starting score
+            min_time_diff: only consider if the start / end features are this far apart
+            
+            feat_dir_0: the path to the features
+            fn_0: the name of the feature file (feature_name.csv or feature_name.pkl)
+                the full feature file is participantID_featurename.csv, and "participantID_"
+                will be appended to the fn_0
+        Returns:
+            Dataframe with part_id, improved, change columns. Participants that do not meet criteria will have
+                improved = None
+    """
+    # Get the improvement for each person
+    improvement_df_0 = {"part_id": [], "improved": [], "change": []}
+    for p in parts_0:
+        feat_path = feat_dir_0 + p + "_" + fn_0
+        improvement_df_0["part_id"].append(p)
+        improved = None
+        change = None
+        if os.path.exists(feat_path):
+            if feat_path[-1] == "l":
+                df = pd.read_pickle(feat_path)
+            else:
+                df = pd.read_csv(feat_path)
+            if len(df) >= min_num_records and df.loc[len(df) - 1, feature_name] >= min_starting_score:
+                if df.loc[0, "timestamp"] - df.loc[len(df) - 1, "timestamp"] >= min_time_diff:
+                    diff = df.loc[len(df) - 1, feature_name] - df.loc[0, feature_name]
+                    improved = df.loc[len(df) - 1, feature_name] - df.loc[0, feature_name] > amount_change
+                    if 0 < amount_change < 1 and improved == 1:
+                        improved = diff / df.loc[len(df) - 1, feature_name] > amount_change
+                    change = df.loc[len(df) - 1, feature_name] - df.loc[0, feature_name]
+        improvement_df_0["improved"].append(improved)
+        improvement_df_0["change"].append(change)
+
+    return pd.DataFrame(improvement_df_0)
