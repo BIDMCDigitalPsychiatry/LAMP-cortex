@@ -133,10 +133,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 # Save if there is a file path specified
                 if path_to_save != "":
                     log.info("Saving output locally..")
-                    # create subdir if doesn't exist
-                    if not os.path.exists(os.path.join(path_to_save, f)):
-                        os.makedirs(os.path.join(path_to_save, f))
-                    _results[f].to_pickle(os.path.join(path_to_save, f, participant + ".pkl"))
+                    _results[f].to_pickle(os.path.join(path_to_save, participant + "_" + f + ".pkl"))
             if not print_logs:
                 sys.stdout.write('\r')
                 j = (curr_val + 1) / (len(participants) * len(features))
