@@ -124,15 +124,16 @@ def restore_activities_manually(study_id, db="LAMP", client_url=None, client=Non
     for idx,val in enumerate(deleted_guide):
         print(f'{idx}:{val[0]}:{val[1]}')
         
-def list_deleted_participants(study_id, db="LAMP", client_url=None, client=None):
-    """ List all deleted participants in a study
+        
+def list_deleted_activities(study_id, db="LAMP", client_url=None, client=None):
+    """ List all deleted activities in a study
         Args:
             study_id: the study to examine
             db: the database this will happen in (usually 'LAMP')
             client_url: a valid mongodb URL w/ login info
             client: a valid pymongo client
         Returns:
-            None
+            A list of objects with id and name keys
     """
     #handle client
     if client_url is not None and not isinstance(client_url,str) and client is None:
@@ -151,7 +152,84 @@ def list_deleted_participants(study_id, db="LAMP", client_url=None, client=None)
     if client[db].study.find_one({'_id':study_id}) is None:
         raise KeyError(f"Could not find study {study_id}. Please double check the provided id.")
         
-    return [x['_id'] for x in client[db].participant.find({'_parent':study_id,'_deleted':True})]
+    return [{'id':x['_id'],'name':x['name']} for x in client[db].activity.find({'_parent':study_id,'_deleted':True})]
+
+def restore_activities(activity_id, db="LAMP", client_url=None, client=None,restore_tags=True):
+    """ Restore a deleted activity, optionally restoring all tags
+        Args:
+            activity_id: string or list of the LAMP IDs of the activity(s) to restore
+            db: the database this will happen in (usually 'LAMP')
+            client_url: a valid mongodb URL w/ login info
+            client: a valid pymongo client
+            restore_tags: Whether to restore any tags created on a activity
+        Returns:
+            None
+    """
+    #handle client
+    if client_url is not None and not isinstance(client_url,str) and client is None:
+        raise TypeError("client_url must be a string")
+    elif isinstance(client_url,str) and client is None:
+        client = MongoClient(client_url)
+    elif client is not None:
+        try:
+            client.server_info()
+        except:
+            raise TypeError("Passed client was not valid or could not connect.")
+    elif client is None and client_url is None:
+        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
+    
+    
+    if db not in client.list_database_names():
+        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        return
+    
+    def restore(_id, restore_tags=restore_tags):
+        update = { "$set": { "_deleted": False} }
+        res = client[db].activity.find_one_and_update({'_id':_id},update)
+        res = client[db].tag.update_many({'_parent':_id},update)
+        
+    if not isinstance(activity_id,list):
+        activity_id = [activity_id]
+    
+    for activity in activity_id:
+        db_data = client[db].activity.find_one({'_id':activity})
+        if db_data is None:
+            print(f"Could not find activity {activity}. Please double check the provided id.")
+            continue
+        elif not db_data['_deleted']:
+            print(f"{activity} is already restored.")
+            continue
+        print(f'Restoring {activity}...')
+        restore(str(activity))
+        
+def list_deleted_participants(study_id, db="LAMP", client_url=None, client=None):
+    """ List all deleted participants in a study
+        Args:
+            study_id: the study to examine
+            db: the database this will happen in (usually 'LAMP')
+            client_url: a valid mongodb URL w/ login info
+            client: a valid pymongo client
+        Returns:
+            a list
+    """
+    #handle client
+    if client_url is not None and not isinstance(client_url,str) and client is None:
+        raise TypeError("client_url must be a string")
+    elif isinstance(client_url,str) and client is None:
+        client = MongoClient(client_url)
+    elif client is not None:
+        try:
+            client.server_info()
+        except:
+            raise TypeError("Passed client was not valid or could not connect.")
+    elif client is None and client_url is None:
+        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
+    if db not in client.list_database_names():
+        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+    if client[db].study.find_one({'_id':study_id}) is None:
+        raise KeyError(f"Could not find study {study_id}. Please double check the provided id.")
+        
+    return [{'id':x['_id']} for x in client[db].participant.find({'_parent':study_id,'_deleted':True})]
       
 def restore_participant(participant_id, db="LAMP", client_url=None, client=None,restore_tags=True):
     """ Restore a deleted participant, optionally restoring all tags
@@ -164,10 +242,10 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
         Returns:
             None
     """
-    # handle client
+    #handle client
     if client_url is not None and not isinstance(client_url,str) and client is None:
         raise TypeError("client_url must be a string")
-    elif isinstance(client_url, str) and client is None:
+    elif isinstance(client_url,str) and client is None:
         client = MongoClient(client_url)
     elif client is not None:
         try:
@@ -200,6 +278,7 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
             continue
         print(f'Restoring {participant}...')
         restore(str(participant))
+    
 
 def get_survey_names(study_id, db="LAMP", client_url=None, client=None):
     """ Get the survey names. Use the db to get deleted surveys as well.
