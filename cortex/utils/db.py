@@ -164,10 +164,10 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
         Returns:
             None
     """
-    #handle client
+    # handle client
     if client_url is not None and not isinstance(client_url,str) and client is None:
         raise TypeError("client_url must be a string")
-    elif isinstance(client_url,str) and client is None:
+    elif isinstance(client_url, str) and client is None:
         client = MongoClient(client_url)
     elif client is not None:
         try:
@@ -200,4 +200,49 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
             continue
         print(f'Restoring {participant}...')
         restore(str(participant))
+
+def get_survey_names(study_id, db="LAMP", client_url=None, client=None):
+    """ Get the survey names. Use the db to get deleted surveys as well.
+
+        Args:
+            study_id: the study id
+            db: the database this will happen in (usually 'LAMP')
+            client_url: a valid mongodb URL w/ login info
+            client: a valid pymongo client
+            restore_tags: Whether to restore any tags created on a participant
+        Returns:
+            A dataframe containing activity events and their corresponding names
+    """
+    # handle client
+    if client_url is not None and not isinstance(client_url,str) and client is None:
+        raise TypeError("client_url must be a string")
+    elif isinstance(client_url, str) and client is None:
+        client = MongoClient(client_url)
+    elif client is not None:
+        try:
+            client.server_info()
+        except:
+            raise TypeError("Passed client was not valid or could not connect.")
+    elif client is None and client_url is None:
+        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
     
+    
+    if db not in client.list_database_names():
+        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        return
+    
+    df = LAMP.ActivityEvent.all_by_study(study_id, _limit=10000)["data"]
+    df = pd.DataFrame(df)
+    survey_ids = {x["_id"]: {"name": x["name"], "spec": x["spec"]} for x in client.LAMP.activity.find({"_parent": study_id})}
+    df_names = []
+    df_type = []
+    for i in range(len(df)):
+        if df.loc[i, "activity"] != "undefined":
+            df_names.append(survey_ids[df.loc[i, "activity"]]["name"])
+            df_type.append(survey_ids[df.loc[i, "activity"]]["spec"])
+        else:
+            df_names.append(None)
+            df_type.append(None)
+    df["name"] = df_names
+    df["spec"] = df_type
+    return df 
