@@ -3,7 +3,7 @@ from pymongo import MongoClient
 from pprint import pprint
 import time
 
-def change_parent(target, original_parent, target_parent, db="LAMP", client_url=None, client=None):
+def create_client(client_url,client):
     """ Move a target from one parent to another - e.g. a participant from one study to another, or a study from one researcher to another.
         Args:
             target: the target's LAMP id
@@ -27,7 +27,23 @@ def change_parent(target, original_parent, target_parent, db="LAMP", client_url=
             raise TypeError("Passed client was not valid or could not connect.")
     elif client is None and client_url is None:
         raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
-    
+        
+    return client
+
+def change_parent(target, original_parent, target_parent, db="LAMP", client_url=None, client=None):
+    """ Move a target from one parent to another - e.g. a participant from one study to another, or a study from one researcher to another.
+        Args:
+            target: the target's LAMP id
+            original_parent: the LAMP id of the original parent of the target
+            target_parent: the LAMP id of the parent the target should be moved to
+            db: the database this will happen in (usually 'LAMP')
+            client_url: a valid mongodb URL w/ login info
+            client: a valid pymongo client
+        Returns:
+            None
+    """
+    #handle client
+    client = create_client(client_url,client)
     def target_category(target, db):
         for coll in client[db].list_collection_names():
             if client[db][coll].find_one({"_id":target}) is not None:
@@ -74,18 +90,7 @@ def restore_activities_manually(study_id, db="LAMP", client_url=None, client=Non
             None
     """
     #handle client
-    if client_url is not None and not isinstance(client_url,str) and client is None:
-        raise TypeError("client_url must be a string")
-    elif isinstance(client_url,str) and client is None:
-        client = MongoClient(client_url)
-    elif client is not None:
-        try:
-            client.server_info()
-        except:
-            raise TypeError("Passed client was not valid or could not connect.")
-    elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
-    
+    client = create_client(client_url,client)
     
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
@@ -136,17 +141,9 @@ def list_deleted_activities(study_id, db="LAMP", client_url=None, client=None):
             A list of objects with id and name keys
     """
     #handle client
-    if client_url is not None and not isinstance(client_url,str) and client is None:
-        raise TypeError("client_url must be a string")
-    elif isinstance(client_url,str) and client is None:
-        client = MongoClient(client_url)
-    elif client is not None:
-        try:
-            client.server_info()
-        except:
-            raise TypeError("Passed client was not valid or could not connect.")
-    elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
+    #handle client
+    client = create_client(client_url,client)
+    
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
     if client[db].study.find_one({'_id':study_id}) is None:
@@ -166,18 +163,7 @@ def restore_activities(activity_id, db="LAMP", client_url=None, client=None,rest
             None
     """
     #handle client
-    if client_url is not None and not isinstance(client_url,str) and client is None:
-        raise TypeError("client_url must be a string")
-    elif isinstance(client_url,str) and client is None:
-        client = MongoClient(client_url)
-    elif client is not None:
-        try:
-            client.server_info()
-        except:
-            raise TypeError("Passed client was not valid or could not connect.")
-    elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
-    
+    client = create_client(client_url,client)
     
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
@@ -213,17 +199,8 @@ def list_deleted_participants(study_id, db="LAMP", client_url=None, client=None)
             a list
     """
     #handle client
-    if client_url is not None and not isinstance(client_url,str) and client is None:
-        raise TypeError("client_url must be a string")
-    elif isinstance(client_url,str) and client is None:
-        client = MongoClient(client_url)
-    elif client is not None:
-        try:
-            client.server_info()
-        except:
-            raise TypeError("Passed client was not valid or could not connect.")
-    elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
+    client = create_client(client_url,client)
+    
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
     if client[db].study.find_one({'_id':study_id}) is None:
@@ -243,18 +220,7 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
             None
     """
     #handle client
-    if client_url is not None and not isinstance(client_url,str) and client is None:
-        raise TypeError("client_url must be a string")
-    elif isinstance(client_url,str) and client is None:
-        client = MongoClient(client_url)
-    elif client is not None:
-        try:
-            client.server_info()
-        except:
-            raise TypeError("Passed client was not valid or could not connect.")
-    elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
-    
+    client = create_client(client_url,client)
     
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
@@ -292,19 +258,8 @@ def get_survey_names(study_id, db="LAMP", client_url=None, client=None):
         Returns:
             A dataframe containing activity events and their corresponding names
     """
-    # handle client
-    if client_url is not None and not isinstance(client_url,str) and client is None:
-        raise TypeError("client_url must be a string")
-    elif isinstance(client_url, str) and client is None:
-        client = MongoClient(client_url)
-    elif client is not None:
-        try:
-            client.server_info()
-        except:
-            raise TypeError("Passed client was not valid or could not connect.")
-    elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
-    
+    #handle client
+    client = create_client(client_url,client)
     
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
