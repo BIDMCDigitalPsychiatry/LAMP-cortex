@@ -4,16 +4,12 @@ from pprint import pprint
 import time
 
 def create_client(client_url,client):
-    """ Move a target from one parent to another - e.g. a participant from one study to another, or a study from one researcher to another.
+    """ Create a MongoDB client from one of two sources, either an existing client or a valid mongo URL
         Args:
-            target: the target's LAMP id
-            original_parent: the LAMP id of the original parent of the target
-            target_parent: the LAMP id of the parent the target should be moved to
-            db: the database this will happen in (usually 'LAMP')
             client_url: a valid mongodb URL w/ login info
             client: a valid pymongo client
         Returns:
-            None
+            A pymongo client.
     """
     #handle client
     if client_url is not None and not isinstance(client_url,str) and client is None:
