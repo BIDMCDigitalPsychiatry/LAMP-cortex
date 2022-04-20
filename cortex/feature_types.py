@@ -393,7 +393,7 @@ def raw_feature(name, dependencies):
                                                         to=int(to),
                                                         _limit=int(kwgs['_limit']))['data']
                 data += data_next
-            
+
             # Get only activity events with the required spec
             data = [x for x in data if x["activity"] in activity_ids]
             ret = (sorted(data, key = lambda i: i['timestamp'], reverse=True))
@@ -585,8 +585,8 @@ def primary_feature(name, dependencies):
             def _primary_attach(func, name, *args, **kwargs):
                 """ Utilize and update LAMP attachments to speed up processing of primary feature.
 
-                    Based on both (kwargs['start'], kwargs['end']) timestamps and previously 
-                    saved attachments, primary featurization occurs and attachments are updated 
+                    Based on both (kwargs['start'], kwargs['end']) timestamps and previously
+                    saved attachments, primary featurization occurs and attachments are updated
                     to include these newly generated events.
 
                     Args:
@@ -597,7 +597,7 @@ def primary_feature(name, dependencies):
                             end (int): The end UNIX timestamp (in ms).
 
                     Returns:
-                        A list of both previously saved (in the the form of LAMP attachments) and newly generated 
+                        A list of both previously saved (in the the form of LAMP attachments) and newly generated
                         primary feature events.
 
                     Raises:

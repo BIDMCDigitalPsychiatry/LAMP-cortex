@@ -8,12 +8,12 @@ import time
 import json
 LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-from useful_functions import shift_time
+from ..utils.useful_functions import shift_time
 
-
-# Need to change these for your own study
-MODULE_JSON_FILE = "example_modules.json"
-MODULE_SPEC_FILE = "example_module_specs.json"
+import os
+path_prefix = os.path.split(os.path.realpath(__file__))[0]
+MODULE_JSON_FILE = path_prefix+"/example_modules.json"
+MODULE_SPEC_FILE = path_prefix+"/example_module_specs.json"
 
 MS_IN_A_DAY = 86400000
 

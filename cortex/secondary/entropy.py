@@ -9,7 +9,8 @@ MS_IN_A_DAY = 86400000
     dependencies=[significant_locations]
 )
 def entropy(**kwargs):
-    """Calculate entropy sum (p log p) where p is the proportion of time spent at each signficant location
+    """ Calculate entropy sum (p log p) where p is the proportion of time spent
+        at each signficant location
 
 
     The (kwargs['start'], kwargs['end']) timestamps used within the function are
