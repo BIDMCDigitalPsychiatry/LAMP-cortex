@@ -86,7 +86,6 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
 
     if not isinstance(features, list):
         raise Exception("You must pass in features as a list.")
-        return
     if start is None or end is None:
         log.warning("If start and / or end are set to None then the start / "
                     + "end time will be set to the earliest or latest raw data point.")
