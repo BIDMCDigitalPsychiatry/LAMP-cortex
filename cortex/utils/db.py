@@ -245,7 +245,6 @@ def get_survey_names(participant_id, db="LAMP", client_url=None, client=None):
             db: the database this will happen in (usually 'LAMP')
             client_url: a valid mongodb URL w/ login info
             client: a valid pymongo client
-            restore_tags: Whether to restore any tags created on a participant
         Returns:
             A dataframe containing activity events and their corresponding names
     """
