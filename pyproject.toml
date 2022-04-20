@@ -35,6 +35,10 @@ pytz = "^2021.1"
 compress-pickle = "^2.0.1"
 pyyaml = "^5.4.1"
 pymongo = "^4.1.1"
+seaborn = "^0.11.1"
+matplotlib = "^3.4.1"
+statsmodels = "^0.12.2"
+scipy = "^1.6.2"
 
 [tool.poetry.dev-dependencies]
 
