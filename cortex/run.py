@@ -9,7 +9,6 @@ import datetime
 
 import pandas as pd
 
-import LAMP
 import cortex.raw as raw
 import cortex.primary as primary
 import cortex.secondary as secondary
