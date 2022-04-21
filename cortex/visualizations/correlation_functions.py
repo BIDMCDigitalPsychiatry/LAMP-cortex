@@ -9,6 +9,9 @@ import pandas as pd
 from ..utils.useful_functions import generate_ids, shift_time
 from ..primary.survey_scores import survey_scores
 
+import logging
+logging.getLogger('seaborn').setLevel(level=logging.WARNING)
+logging.getLogger('matplotlib').setLevel(level=logging.WARNING)
 import seaborn as sns
 from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
