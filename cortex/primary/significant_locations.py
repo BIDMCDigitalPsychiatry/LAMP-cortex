@@ -141,7 +141,7 @@ def _location_duration(df, cluster):
         Args:
             df_cluster (pd.DataFrame): The original dataframe of GPS reads.
             cluster (int): The cluster index (i.e. rank).
-            
+
         Returns:
             A float, duration in that cluster (in ms).
     """
@@ -164,13 +164,13 @@ def _location_duration(df, cluster):
 def _significant_locations_kmeans(k_max=10, eps=1e-5, **kwargs):
     """Function to return significant locations using kmeans
         clustering.
-        
+
         Args:
             k_max (int): The maximum number of clusters ot use.
             eps (float): The maximum distance separating points in the
                 same cluster.
             **kwargs:
-            
+
         Returns:
     """
     # Get DB scan metadata fir

@@ -1,5 +1,4 @@
 """ Module for raw feature cats_and_dogs """
-import LAMP
 from ..feature_types import raw_feature
 
 @raw_feature(

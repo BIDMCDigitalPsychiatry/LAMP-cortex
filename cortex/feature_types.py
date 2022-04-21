@@ -17,6 +17,14 @@ import numpy as np
 import pandas as pd
 import yaml
 import LAMP
+# Connect to the LAMP API server.
+# Environment variables are required to run cortex.
+if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
+    raise Exception("You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
+                    + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
+LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
+            os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+
 # Get a universal logger to share with all feature functions.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,
                     format="[%(levelname)s:%(module)s:%(funcName)s] %(message)s")
@@ -91,13 +99,6 @@ def raw_feature(name, dependencies):
 
             if kwargs['start'] > kwargs['end']:
                 raise Exception("'start' argument must occur before 'end'.")
-
-            # Connect to the LAMP API server.
-            if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-                raise Exception("You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`" +
-                                " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
-            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                         os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
             # Find a valid local cache directory
             # Get defaults
@@ -496,13 +497,6 @@ def primary_feature(name, dependencies):
             if kwargs['start'] > kwargs['end']:
                 raise Exception("'start' argument must occur before 'end'.")
 
-            # Connect to the LAMP API server.
-            if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-                raise Exception("You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
-                                + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
-            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-
             log.info(f"Processing primary feature \"{name}\"...")
             # TODO: Require primary feature dependencies to be raw features!
             # -> Update: Not require but add a param to allow direct 2ndary to be calculated or not
@@ -750,13 +744,6 @@ def secondary_feature(name, dependencies):
             if kwargs['start'] > kwargs['end']:
                 raise Exception("'start' argument must occur before 'end'.")
 
-            # Connect to the LAMP API server.
-            if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-                raise Exception("You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
-                                + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
-            LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-
             log.info("Processing secondary feature " + name + "...")
             def _get_default_args(func):
                 """ Get the default arguments for the function.
@@ -810,8 +797,6 @@ def delete_attach(participant, features=None):
     :param participant (str): LAMP id to reset for
     :param features (list): features to reset, defaults to all features (optional)
     """
-    LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                 os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
     attachments= LAMP.Type.list_attachments(participant)['data']
     if features is None: features=attachments
     for feature in attachments:

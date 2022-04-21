@@ -1,5 +1,4 @@
 """ Module for raw feature balloon risk """
-import LAMP
 from ..feature_types import raw_feature
 
 

@@ -1,7 +1,6 @@
 """ Module for raw feature sleep """
 from ..feature_types import raw_feature
 
-
 @raw_feature(
     name="lamp.sleep",
     dependencies=["lamp.sleep"]

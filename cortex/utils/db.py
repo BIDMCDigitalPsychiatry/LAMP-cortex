@@ -253,13 +253,6 @@ def get_survey_names(participant_id, db="LAMP", client_url=None, client=None):
     if db not in client.list_database_names():
         raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
 
-    # Connect to the LAMP API server.
-    if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-        raise Exception("You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`" +
-                        " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
-    LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                 os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-
     df = LAMP.ActivityEvent.all_by_participant(participant_id, _limit=10000)["data"]
     df = pd.DataFrame(df)
     study_id = LAMP.Type.parent(participant_id)["data"]["Study"]

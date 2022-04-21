@@ -1,7 +1,6 @@
 from ..feature_types import raw_feature, log
 import LAMP
 
-
 @raw_feature(
     name='lamp.survey',
     dependencies=['lamp.survey']
@@ -31,7 +30,7 @@ def survey(replace_ids=True,
                                                 _from=kwargs['start'],
                                                 to=kwargs['end'],
                                                 _limit=_limit)['data']
-    
+
     def remove_duplicate_activity_events(raw_data):
         # Here, we remove any duplicates from raw data
         # by generating a new list, then replacing the old one.
@@ -49,7 +48,7 @@ def survey(replace_ids=True,
                 # if we didn't find a duplicate, we just add the new event to the growing list
                 raw_minus_duplicates.append(event)
         return raw_minus_duplicates
-    
+
     raw = remove_duplicate_activity_events(raw)
 
     # Unpack the temporal slices and flatten the dict, including the timestamp and survey.
