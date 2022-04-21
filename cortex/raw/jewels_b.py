@@ -1,5 +1,4 @@
 """ Module for raw feature jewels_b """
-import LAMP
 from ..feature_types import raw_feature
 
 @raw_feature(

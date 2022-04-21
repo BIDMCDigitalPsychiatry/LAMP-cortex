@@ -1,7 +1,6 @@
 """ Module for raw feature screen state """
 from ..feature_types import raw_feature
 
-
 @raw_feature(
     name="lamp.screen_state",
     dependencies=["lamp.screen_state"]

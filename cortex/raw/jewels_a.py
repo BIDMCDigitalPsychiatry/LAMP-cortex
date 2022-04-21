@@ -1,7 +1,5 @@
 """ Module for raw feature jewels_a """
-import LAMP
 from ..feature_types import raw_feature
-
 
 @raw_feature(
     name="lamp.jewels_a",

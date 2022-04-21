@@ -1,7 +1,6 @@
 """ Module for raw feature steps """
 from ..feature_types import raw_feature
 
-
 @raw_feature(
     name="lamp.steps",
     dependencies=["lamp.steps"]

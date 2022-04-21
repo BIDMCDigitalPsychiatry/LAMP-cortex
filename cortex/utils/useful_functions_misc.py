@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import numpy as np
 import LAMP
-LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'), os.getenv('LAMP_SERVER_ADDRESS'))
 
 def get_os_version(participant_id):
     """ Get OS / Device version from lamp.analytics data.

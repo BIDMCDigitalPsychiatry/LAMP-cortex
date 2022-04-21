@@ -6,8 +6,6 @@ import datetime
 import random
 import time
 import json
-LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-        os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 from ..utils.useful_functions import shift_time
 
 import os

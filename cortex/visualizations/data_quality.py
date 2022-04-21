@@ -423,13 +423,6 @@ def clear_chart(researcher_id, name):
 def data_quality(researcher_id):
     """ Function to create quality graphs for data monitoring.
     """
-    # Connect to LAMP
-    if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-        raise Exception("You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
-                        + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
-    LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                 os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-
     if len(researcher_id) == 0 or len(LAMP.Researcher.view(researcher_id)["data"]) == 0:
         log.warning('Invalid researcher id. Aborting.')
         return

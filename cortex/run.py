@@ -74,13 +74,6 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             run_part_and_features will take precendence and features will be
             set to [].
     """
-    # Connect to the LAMP API server.
-    if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
-        raise Exception("You configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
-                        + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
-    LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-                 os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
-
     if not print_logs:
         log.setLevel(logging.WARNING)
 

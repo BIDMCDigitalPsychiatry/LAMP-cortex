@@ -1,7 +1,5 @@
 """ Module for raw feature pop_the_bubbles """
-import LAMP
 from ..feature_types import raw_feature
-
 
 @raw_feature(
     name="lamp.pop_the_bubbles",

@@ -1,7 +1,5 @@
 """ Module for raw feature spatial_span """
-import LAMP
 from ..feature_types import raw_feature
-
 
 @raw_feature(
     name="lamp.spatial_span",

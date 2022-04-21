@@ -5,8 +5,6 @@ import datetime
 import LAMP
 import numpy as np
 import pandas as pd
-LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-            os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
 from ..utils.useful_functions import generate_ids, shift_time
 from ..primary.survey_scores import survey_scores
