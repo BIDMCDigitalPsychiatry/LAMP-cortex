@@ -8,7 +8,7 @@ import requests
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
-def get_push_keys(push_api_key, push_gateway):
+def _get_push_keys(push_api_key, push_gateway):
     """ Get the push api keys. If None, they should be retrieved from
         the corresponding environment variable.
     """
@@ -40,7 +40,7 @@ def push_email(email, content, push_api_key=None, push_gateway=None,
             debug_mode (boolean, default: False): if set, emails / notifications
                 will be logged and not sent.
     """
-    push_api_key, push_gateway = get_push_keys(push_api_key, push_gateway)
+    push_api_key, push_gateway = _get_push_keys(push_api_key, push_gateway)
     if support_email is None:
         if not 'SUPPORT_EMAIL' in os.environ:
             raise Exception("You must configure `SUPPORT_EMAIL` or pass "
@@ -84,7 +84,7 @@ def send_push_notification(device, content, push_api_key=None, push_gateway=None
             debug_mode (boolean, default: False): if set, emails / notifications
                 will be logged and not sent.
     """
-    push_api_key, push_gateway = get_push_keys(push_api_key, push_gateway)
+    push_api_key, push_gateway = _get_push_keys(push_api_key, push_gateway)
     push_body = {
         'api_key': push_api_key,
         'device_token': device,
@@ -96,8 +96,8 @@ def send_push_notification(device, content, push_api_key=None, push_gateway=None
                 "mutable-content": 1,
                 "content-available": 1
             },
-            "notificationId": content, # 'Hello World!'
-            "expiry": expiry, # 24*60*60*1000 (1day -> ms)
+            "notificationId": content,
+            "expiry": expiry,
             #"page": None, # 'https://dashboard.lamp.digital/'
             "actions": []
         }
