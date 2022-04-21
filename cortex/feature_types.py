@@ -23,7 +23,7 @@ if not 'LAMP_ACCESS_KEY' in os.environ or not 'LAMP_SECRET_KEY' in os.environ:
     raise Exception("You must configure `LAMP_ACCESS_KEY` and `LAMP_SECRET_KEY`"
                     + " (and optionally `LAMP_SERVER_ADDRESS`) to use Cortex.")
 LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
-            os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
+             os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
 
 # Get a universal logger to share with all feature functions.
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG,

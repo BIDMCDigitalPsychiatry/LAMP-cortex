@@ -22,6 +22,8 @@ echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for utils code ${reset}"
 echo "${green} db.py ${reset}"
 pylint cortex/utils/db.py
+echo "${green} notifications.py ${reset}"
+pylint cortex/utils/notifications.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
