@@ -1,5 +1,4 @@
 """ Module to create data graphs and attach them to the data portal """
-import os
 import time
 import datetime
 import json
@@ -32,9 +31,9 @@ def get_parts(researcher_id):
         curr = []
         curr+=(p['id'] for p in LAMP.Participant.all_by_study(study['id'])['data'])
         if len(curr) >= 1:
-            for p in curr:
+            for part in curr:
                 participants.append({
-                    "participant_id": p,
+                    "participant_id": part,
                     "study_name": study["name"]
                 })
     return participants

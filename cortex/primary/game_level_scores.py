@@ -10,6 +10,10 @@ from ..raw.pop_the_bubbles import pop_the_bubbles
 from ..raw.spatial_span import spatial_span
 from .. import raw
 
+# List of valid games
+GAMES = ['jewels_a', 'jewels_b', 'balloon_risk',
+         'cats_and_dogs', 'pop_the_bubbles', 'spatial_span']
+
 @primary_feature(
     name="cortex.game_level_scores",
     dependencies=[balloon_risk, cats_and_dogs, jewels_a,
@@ -35,13 +39,11 @@ def game_level_scores(name_of_game,
             data (dict): Survey categories mapped to individual scores.
             has_raw_data (int): Indicates whether there is raw data.
     """
-    GAMES = ['jewels_a', 'jewels_b', 'balloon_risk',
-              'cats_and_dogs', 'pop_the_bubbles', 'spatial_span']
     if name_of_game == 'pop_the_bubbles':
         return score_pop_the_bubbles(**kwargs)
     if name_of_game == 'balloon_risk':
         return score_balloon_risk(**kwargs)
-    elif name_of_game not in GAMES:
+    if name_of_game not in GAMES:
         log.warning('The name of the game is not valid.')
         return {'data': [], 'has_raw_data': 0}
     raw_feature = getattr(getattr(raw, name_of_game), name_of_game)
@@ -91,8 +93,10 @@ def score_pop_the_bubbles(**kwargs):
                 "start": df.loc[i, "timestamp"],
                 "end": df.loc[i, "timestamp"] + df.loc[i, "duration"],
                 "level": level,
-                "avg_go_perc_correct": level_df[~level_df['value'].str.contains('no-go')]["type"].mean(),
-                "avg_NO_go_perc_correct": level_df[level_df['value'].str.contains('no-go')]["type"].mean()
+                "avg_go_perc_correct":
+                    level_df[~level_df['value'].str.contains('no-go')]["type"].mean(),
+                "avg_NO_go_perc_correct":
+                    level_df[level_df['value'].str.contains('no-go')]["type"].mean()
             })
     return {'data': ret,
             'has_raw_data': has_raw_data}

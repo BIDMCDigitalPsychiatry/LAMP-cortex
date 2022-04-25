@@ -114,7 +114,7 @@ def remove_clusters(clusters, max_dist):
         Args:
             clusters (list): Each item a dict containing a significant location.
             max_dist (int): Maximum distance allowed between clusters (in meters).
-            
+
         Returns:
             A list, the same as clusters, with {'rank'} fields added.
     """

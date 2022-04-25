@@ -47,6 +47,10 @@ echo "${green} sms.py ${reset}"
 pylint cortex/raw/sms.py
 echo "${green} steps.py ${reset}"
 pylint cortex/raw/steps.py
+echo "${green} survey.py ${reset}"
+pylint cortex/raw/survey.py
+echo "${green} telephony.py ${reset}"
+pylint cortex/raw/telephony.py
 echo "${green} wifi.py ${reset}"
 pylint cortex/raw/wifi.py
 
@@ -87,8 +91,6 @@ echo "${green} inactive_duration.py ${reset}"
 pylint cortex/secondary/inactive_duration.py
 echo "${green} screen_duration.py ${reset}"
 pylint cortex/secondary/screen_duration.py
-echo "${green} sms_number.py ${reset}"
-pylint cortex/secondary/sms_number.py
 echo "${green} step_count.py ${reset}"
 pylint cortex/secondary/step_count.py
 echo "${green} trip_duration.py ${reset}"
