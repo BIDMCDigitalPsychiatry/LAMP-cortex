@@ -209,7 +209,7 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
             db: the database this will happen in (usually 'LAMP')
             client_url: a valid mongodb URL w/ login info
             client: a valid pymongo client
-            restore_tags: Whether to restore any tags created on a participant
+            restore_tags: If true, attempt to restore any tags created on a participant.
         Returns:
             None
     """
@@ -221,7 +221,8 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
     def restore(_id, restore_tags=restore_tags):
         update = { "$set": { "_deleted": False} }
         client[db].participant.find_one_and_update({'_id':_id},update)
-        client[db].tag.update_many({'_parent':_id},update)
+        if restore_tags:
+            client[db].tag.update_many({'_parent':_id},update)
 
     if not isinstance(participant_id,list):
         participant_id = [participant_id]
