@@ -20,9 +20,9 @@ def trips(attach=True,
         attach
         **kwargs:
             d (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature 
+            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature 
+            end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
 
     Returns:
@@ -73,7 +73,8 @@ def trips(attach=True,
         :return (list): list of dicts, where each dict is a trip, with the
             following keys: 'start', 'end', 'latitude', 'longitude','distance'
         """
-        gps_data.loc[:, 'dt'] = (gps_data['timestamp'] - gps_data['timestamp'].shift()) / (1000*3600)
+        gps_data.loc[:, 'dt'] = ((gps_data['timestamp'] - gps_data['timestamp'].shift())
+                                 / (1000 * 3600))
         gps_data.loc[:, 'dx'] = haversine_np(
             gps_data.latitude.shift(fill_value=0), gps_data.longitude.shift(fill_value=0),
             gps_data.loc[1:, 'latitude'], gps_data.loc[1:, 'longitude']

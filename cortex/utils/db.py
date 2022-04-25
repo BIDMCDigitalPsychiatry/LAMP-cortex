@@ -1,5 +1,4 @@
 """ Module for interacting with the database """
-import os
 import time
 from pymongo import MongoClient
 import pandas as pd
@@ -24,7 +23,8 @@ def create_client(client_url,client):
         except:
             raise TypeError("Passed client was not valid or could not connect.")
     elif client is None and client_url is None:
-        raise TypeError("Please pass either a valid mongodb URL as a string to the 'client_url' param or a mongodb client to 'client'.")
+        raise TypeError("Please pass either a valid mongodb URL as a string to"
+                        + " the 'client_url' param or a mongodb client to 'client'.")
     return client
 
 def change_parent(target, original_parent, target_parent, db="LAMP",
@@ -58,7 +58,9 @@ def change_parent(target, original_parent, target_parent, db="LAMP",
         raise KeyError("Couldn't find an id corresponding to the one entered. Please retry")
     # Check ID is associated with the proper parent.
     if orig_data['_parent']!=original_parent:
-        raise KeyError(f"{target} is not a child of {original_parent}, but of {orig_data['_parent']}. Please make sure you are targeting the right ID and retry.")
+        raise KeyError(f"{target} is not a child of {original_parent}, but of "
+                       + f"{orig_data['_parent']}. Please make sure you are "
+                       + "targeting the right ID and retry.")
 
     orig_category = target_category(original_parent, db)
     t_category = target_category(target_parent, db)
@@ -66,7 +68,8 @@ def change_parent(target, original_parent, target_parent, db="LAMP",
     # If we got here, we can be reasonably sure the user has the correct target
     # Next, let's make sure the target is being switched to the correct level
     if  orig_category != t_category:
-        raise TypeError(f"Original and target parents are not the same category: {orig_category} vs. {t_category}.")
+        raise TypeError("Original and target parents are not the same "
+                        + f"category: {orig_category} vs. {t_category}.")
 
     # Okay, now let's try to switch
     update = { "$set": { "_parent": target_parent } }
@@ -74,9 +77,12 @@ def change_parent(target, original_parent, target_parent, db="LAMP",
     try:
         orig_name = client[db][orig_category].find_one({"_id":original_parent})['name']
         t_name = client[db][t_category].find_one({"_id":target_parent})['name']
-        print (f'{target} updated. Moved {target_category(target, db)} from {orig_category} {orig_name} - ({original_parent}) to {t_category} {t_name} - ({target_parent}).')
+        print (f'{target} updated. Moved {target_category(target, db)} from '
+               + f'{orig_category} {orig_name}'
+               + f' - ({original_parent}) to {t_category} {t_name} - ({target_parent}).')
     except:
-        print (f'{target} updated. Moved {target_category(target, db)} from {orig_category} {original_parent} to {t_category} {target_parent}.')
+        print (f'{target} updated. Moved {target_category(target, db)} from'
+               + f' {orig_category} {original_parent} to {t_category} {target_parent}.')
 
 def restore_activities_manually(study_id, db="LAMP", client_url=None, client=None):
     """ Restore deleted activities to a study
@@ -91,7 +97,8 @@ def restore_activities_manually(study_id, db="LAMP", client_url=None, client=Non
     client = create_client(client_url, client)
 
     if db not in client.list_database_names():
-        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        raise KeyError(f'Could not find the {db} database. Did you mean'
+                       + f' one of {client.list_database_names()}')
     if client[db].study.find_one({'_id':study_id}) is None:
         raise KeyError(f"Could not find study {study_id}. Please double check the provided id.")
 
@@ -104,7 +111,8 @@ def restore_activities_manually(study_id, db="LAMP", client_url=None, client=Non
     for idx,val in enumerate(deleted_guide):
         print(f'{idx}:{val[0]}:{val[1]}')
 
-    print("Please input, comma-seperated, the numbers of the activity you would like to restore. (e.g. 1,4)")
+    print("Please input, comma-seperated, the numbers of the activity "
+          + "you would like to restore. (e.g. 1,4)")
     undelete = input().split(',')
     for x in undelete:
         try:
@@ -140,7 +148,8 @@ def list_deleted_activities(study_id, db="LAMP", client_url=None, client=None):
     client = create_client(client_url,client)
 
     if db not in client.list_database_names():
-        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        raise KeyError(f'Could not find the {db} database. '
+                       + f'Did you mean one of {client.list_database_names()}')
     if client[db].study.find_one({'_id':study_id}) is None:
         raise KeyError(f"Could not find study {study_id}. Please double check the provided id.")
 
@@ -161,7 +170,8 @@ def restore_activities(activity_id, db="LAMP", client_url=None, client=None,rest
     client = create_client(client_url, client)
 
     if db not in client.list_database_names():
-        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        raise KeyError(f'Could not find the {db} database. '
+                       + f'Did you mean one of {client.list_database_names()}')
 
     def restore(_id, restore_tags=restore_tags):
         update = { "$set": { "_deleted": False} }
@@ -195,7 +205,8 @@ def list_deleted_participants(study_id, db="LAMP", client_url=None, client=None)
     client = create_client(client_url, client)
 
     if db not in client.list_database_names():
-        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        raise KeyError(f'Could not find the {db} database. '
+                       + f'Did you mean one of {client.list_database_names()}')
     if client[db].study.find_one({'_id':study_id}) is None:
         raise KeyError(f"Could not find study {study_id}. Please double check the provided id.")
 
@@ -216,7 +227,8 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
     client = create_client(client_url, client)
 
     if db not in client.list_database_names():
-        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        raise KeyError(f'Could not find the {db} database. '
+                       + f'Did you mean one of {client.list_database_names()}')
 
     def restore(_id, restore_tags=restore_tags):
         update = { "$set": { "_deleted": False} }
@@ -231,7 +243,7 @@ def restore_participant(participant_id, db="LAMP", client_url=None, client=None,
         if db_data is None:
             print(f"Could not find participant {participant}. Please double check the provided id.")
             continue
-        elif not db_data['_deleted']:
+        if not db_data['_deleted']:
             print(f"{participant} is already restored.")
             continue
         print(f'Restoring {participant}...')
@@ -251,7 +263,8 @@ def get_survey_names(participant_id, db="LAMP", client_url=None, client=None):
     client = create_client(client_url, client)
 
     if db not in client.list_database_names():
-        raise KeyError(f'Could not find the {db} database. Did you mean one of {client.list_database_names()}')
+        raise KeyError(f'Could not find the {db} database. '
+                       + f'Did you mean one of {client.list_database_names()}')
 
     df = LAMP.ActivityEvent.all_by_participant(participant_id, _limit=10000)["data"]
     df = pd.DataFrame(df)

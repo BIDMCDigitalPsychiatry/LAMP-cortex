@@ -124,7 +124,8 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 # Save if there is a file path specified
                 if path_to_save != "":
                     log.info("Saving output locally..")
-                    _results[f].to_pickle(os.path.join(path_to_save, participant + "_" + f + ".pkl"))
+                    _results[f].to_pickle(os.path.join(path_to_save,
+                                            participant + "_" + f + ".pkl"))
             if not print_logs:
                 sys.stdout.write('\r')
                 j = (curr_val + 1) / (len(participants) * len(features))
