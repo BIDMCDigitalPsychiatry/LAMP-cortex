@@ -62,8 +62,6 @@ echo "${green} trips.py ${reset}"
 pylint cortex/primary/trips.py
 echo "${green} screen_active.py ${reset}"
 pylint cortex/primary/screen_active.py
-echo "${green} sleep_periods.py ${reset}"
-pylint cortex/primary/sleep_periods.py
 echo "${green} acc_jerk.py ${reset}"
 pylint cortex/primary/acc_jerk.py
 echo "${green} survey_scores.py ${reset}"
