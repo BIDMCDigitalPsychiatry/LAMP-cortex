@@ -13,15 +13,40 @@ def survey(replace_ids=True,
            **kwargs):
     """ Get all survey data bounded by time interval.
 
-    Args:
-        _limit (int): The maximum number of sensor events to query for in a single request
-        cache (bool): Indicates whether to save raw data locally in cache dir
-        recursive (bool): if True, continue requesting data until all data is
-                returned; else just one request
+        Args:
+            _limit (int): The maximum number of sensor events to query for in a single request
+            cache (bool): Indicates whether to save raw data locally in cache dir
+            recursive (bool): if True, continue requesting data until all data is
+                    returned; else just one request
 
-    Returns:
-        timestamp (int): The UTC timestamp for the steps event.
-        survey (str): The name of the survey.
+        Returns:
+            timestamp (int): The UTC timestamp for the steps event.
+            survey (str): The name of the survey.
+            item (str): the question string.
+            value (str): the participant response.
+            type (str): the type if applicable (currently None).
+            level (str): the level if applicable (currently None).
+            duration (int): the amount spent on the question.
+
+        Example:
+            {
+                'timestamp': 1650460127684,
+                'survey': 'Morning Daily Survey',
+                'item': 'What time did you fall asleep last night?',
+                'value': '11:30AM',
+                'type': None,
+                'level': None,
+                'duration': 34095
+            },
+            {
+                'timestamp': 1650460127684,
+                'survey': 'Morning Daily Survey',
+                'item': 'Today I have trouble relaxing.',
+                'value': 'Not at all',
+                'type': None,
+                'level': None,
+                'duration': 19401
+            },
     """
     # Grab the list of surveys and ALL ActivityEvents which are filtered locally.
     # Once the API Server supports filtering origin by an ActivitySpec, we won't need this.
