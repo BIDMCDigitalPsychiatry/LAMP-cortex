@@ -63,7 +63,7 @@ def push_email(email, content, push_api_key=None, push_gateway=None,
             'Content-Type': 'application/json'
         }, json=push_body).json()
         log.debug(pformat(response))
-    log.info(f"Sent email to {email} with content {content}.")
+    log.info("Sent email to %s with content %s.", email, content)
 
 def send_push_notification(device, content, push_api_key=None, push_gateway=None,
                            expiry=86400000, debug_mode=0):
@@ -108,7 +108,7 @@ def send_push_notification(device, content, push_api_key=None, push_gateway=None
         requests.post(f"https://{push_gateway}/push", headers={
             'Content-Type': 'application/json'
         }, json=push_body).json()
-    log.info(f"Sent push notification to {device} with content {content}.")
+    log.info("Sent push notification to %s with content %s.", device, content)
 
 def slack(message, slack_webhook=None):
     """ A function for sending slack messages.
