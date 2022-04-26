@@ -129,7 +129,6 @@ def get_bout_start(tup_list, start_idx, gap_threshold):
         Returns:
             the start of the bout
     """
-    n = len(tup_list)
     bout_start = tup_list[start_idx][0]
     while start_idx != 0:
         curr_start = tup_list[start_idx][0]
@@ -151,9 +150,8 @@ def get_bout_end(tup_list, start_idx, gap_threshold):
         Returns:
             the end of the bout
     """
-    n = len(tup_list)
     bout_end = tup_list[start_idx][1]
-    while start_idx != n - 1:
+    while start_idx != len(tup_list) - 1:
         curr_end = tup_list[start_idx][1]
         right_start = tup_list[start_idx + 1][0]
         if right_start - curr_end <= gap_threshold:
@@ -164,7 +162,7 @@ def get_bout_end(tup_list, start_idx, gap_threshold):
     return bout_end
 
 
-def get_screen_bouts(df):
+def get_screen_bouts(screen_df):
     """ Get the bouts of screen inactivity.
 
         Args:
@@ -172,14 +170,14 @@ def get_screen_bouts(df):
         Returns:
             List of tuples (start, end) of inactive periods based on Screen State
     """
-    if not df.empty:
-        tmp = df[df['value'] == 0].dropna()
+    if not screen_df.empty:
+        tmp = screen_df[screen_df['value'] == 0].dropna()
         if not tmp.empty:
             ss_tups = [tuple(x) for x in tmp[['start', 'timestamp']].values]
             return ss_tups
     return None
 
-def get_acc_bouts(df, jerk_threshold=0.5):
+def get_acc_bouts(acc_df, jerk_threshold=0.5):
     """ Get the bouts of non-zero jerk.
 
         Args:
@@ -187,16 +185,16 @@ def get_acc_bouts(df, jerk_threshold=0.5):
         Returns:
             List of tuples (start, end) of inactive periods based on acc_jerk
     """
-    df['above_threshold'] = df['acc_jerk'] > jerk_threshold
-    df['prev_above'] = df['above_threshold'].shift()
-    df = df[df['above_threshold'] == False]
-    df = df[df['prev_above'] == True]
-    if not df.empty:
-        df['end'] = df['start'].shift()
-        df = df.dropna()
-        tuples = [tuple(x) for x in df[['end', 'start']].values]
+    acc_df['above_threshold'] = acc_df['acc_jerk'] > jerk_threshold
+    acc_df['prev_above'] = acc_df['above_threshold'].shift()
+    acc_df = acc_df[~acc_df['above_threshold']]
+    acc_df = acc_df[acc_df['prev_above']]
+    if not acc_df.empty:
+        acc_df['end'] = acc_df['start'].shift()
+        acc_df = acc_df.dropna()
+        tuples = [tuple(x) for x in acc_df[['end', 'start']].values]
         return tuples
-    return None 
+    return None
 
 def get_max_index(tup_list):
     """ Helper function to get the max index of the tuple list.

@@ -28,7 +28,8 @@ def healthkit_sleep_duration(duration_type="in_bed", **kwargs):
     """
     _sleep = sleep(**kwargs)['data']
     if duration_type not in ["in_bed", "in_sleep", "in_awake"]:
-        log.info(f"{duration_type} is not valid. Please choose from in_bed, in_sleep, or in_awake. Returning None.")
+        log.info("%s is invalid. Valid options: in_bed, in_sleep, in_awake. Returning None.",
+                 duration_type)
         return {'timestamp': kwargs['start'], 'value': None}
 
     _sleep = [x for x in _sleep if x["representation"] == duration_type]

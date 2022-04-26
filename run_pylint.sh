@@ -8,10 +8,10 @@ echo "${red}-----------RUNNING PYLINT----------${reset}"
 echo "${red}-----------------------------------${reset}"
 
 echo "${red} Running pylint for all main files ${reset}"
-#echo "${green} run.py ${reset}"
-#pylint cortex/run.py
-#echo "${green} feature_types.py ${reset}"
-#pylint cortex/feature_types.py
+echo "${green} run.py ${reset}"
+pylint cortex/run.py
+echo "${green} feature_types.py ${reset}"
+pylint cortex/feature_types.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for visualization code ${reset}"
@@ -35,44 +35,44 @@ pylint cortex/utils/useful_functions.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
-#echo "${green} accelerometer.py ${reset}"
-#pylint cortex/raw/accelerometer.py
-#echo "${green} analytics.py ${reset}"
-#pylint cortex/raw/analytics.py
-#echo "${green} balloon_risk.py ${reset}"
-#pylint cortex/raw/balloon_risk.py
-#echo "${green} bluetooth.py ${reset}"
-#pylint cortex/raw/bluetooth.py
-#echo "${green} calls.py ${reset}"
-#pylint cortex/raw/calls.py
-#echo "${green} cats_and_dogs.py ${reset}"
-#pylint cortex/raw/cats_and_dogs.py
-#echo "${green} gps.py ${reset}"
-#pylint cortex/raw/gps.py
-#echo "${green} gyroscope.py ${reset}"
-#pylint cortex/raw/gyroscope.py
-#echo "${green} jewels_a.py ${reset}"
-#pylint cortex/raw/jewels_a.py
-#echo "${green} jewels_b.py ${reset}"
-#pylint cortex/raw/jewels_b.py
-#echo "${green} pop_the_bubbles.py ${reset}"
-#pylint cortex/raw/pop_the_bubbles.py
-#echo "${green} screen_state.py ${reset}"
-#pylint cortex/raw/screen_state.py
-#echo "${green} sleep.py ${reset}"
-#pylint cortex/raw/sleep.py
-#echo "${green} sms.py ${reset}"
-#pylint cortex/raw/sms.py
-#echo "${green} spatial_span.py ${reset}"
-#pylint cortex/raw/spatial_span.py
-#echo "${green} steps.py ${reset}"
-#pylint cortex/raw/steps.py
-#echo "${green} survey.py ${reset}"
-#pylint cortex/raw/survey.py
-#echo "${green} telephony.py ${reset}"
-#pylint cortex/raw/telephony.py
-#echo "${green} wifi.py ${reset}"
-#pylint cortex/raw/wifi.py
+echo "${green} accelerometer.py ${reset}"
+pylint cortex/raw/accelerometer.py
+echo "${green} analytics.py ${reset}"
+pylint cortex/raw/analytics.py
+echo "${green} balloon_risk.py ${reset}"
+pylint cortex/raw/balloon_risk.py
+echo "${green} bluetooth.py ${reset}"
+pylint cortex/raw/bluetooth.py
+echo "${green} calls.py ${reset}"
+pylint cortex/raw/calls.py
+echo "${green} cats_and_dogs.py ${reset}"
+pylint cortex/raw/cats_and_dogs.py
+echo "${green} gps.py ${reset}"
+pylint cortex/raw/gps.py
+echo "${green} gyroscope.py ${reset}"
+pylint cortex/raw/gyroscope.py
+echo "${green} jewels_a.py ${reset}"
+pylint cortex/raw/jewels_a.py
+echo "${green} jewels_b.py ${reset}"
+pylint cortex/raw/jewels_b.py
+echo "${green} pop_the_bubbles.py ${reset}"
+pylint cortex/raw/pop_the_bubbles.py
+echo "${green} screen_state.py ${reset}"
+pylint cortex/raw/screen_state.py
+echo "${green} sleep.py ${reset}"
+pylint cortex/raw/sleep.py
+echo "${green} sms.py ${reset}"
+pylint cortex/raw/sms.py
+echo "${green} spatial_span.py ${reset}"
+pylint cortex/raw/spatial_span.py
+echo "${green} steps.py ${reset}"
+pylint cortex/raw/steps.py
+echo "${green} survey.py ${reset}"
+pylint cortex/raw/survey.py
+echo "${green} telephony.py ${reset}"
+pylint cortex/raw/telephony.py
+echo "${green} wifi.py ${reset}"
+pylint cortex/raw/wifi.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
@@ -103,6 +103,10 @@ echo "${green} data_quality.py ${reset}"
 pylint cortex/secondary/data_quality.py
 echo "${green} entropy.py ${reset}"
 pylint cortex/secondary/entropy.py
+echo "${green} game_results.py ${reset}"
+pylint cortex/secondary/game_results.py
+echo "${green} healthkit_sleep_duration.py ${reset}"
+pylint cortex/secondary/healthkit_sleep_duration.py
 echo "${green} hometime.py ${reset}"
 pylint cortex/secondary/hometime.py
 echo "${green} inactive_duration.py ${reset}"
@@ -111,13 +115,11 @@ echo "${green} screen_duration.py ${reset}"
 pylint cortex/secondary/screen_duration.py
 echo "${green} step_count.py ${reset}"
 pylint cortex/secondary/step_count.py
+echo "${green} survey_results.py ${reset}"
+pylint cortex/secondary/survey_results.py
 echo "${green} trip_duration.py ${reset}"
 pylint cortex/secondary/trip_duration.py
 echo "${green} trip_distance.py ${reset}"
 pylint cortex/secondary/trip_distance.py
-echo "${green} survey_results.py ${reset}"
-pylint cortex/secondary/survey_results.py
-echo "${green} game_results.py ${reset}"
-pylint cortex/secondary/game_results.py
 
 echo "${reset}"

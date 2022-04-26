@@ -71,7 +71,7 @@ def game_level_scores(name_of_game,
                 "perc_correct": level_avg["status"],
             })
             if name_of_game in ['jewels_a', 'jewels_b']:
-                ret[len(ret) - 1]["jewels_collected"] = len(level_df[level_df["status"] == True])
+                ret[len(ret) - 1]["jewels_collected"] = len(level_df[level_df["status"]])
     return {'data': ret,
             'has_raw_data': has_raw_data}
 
@@ -114,9 +114,9 @@ def score_balloon_risk(**kwargs):
         game_df = pd.DataFrame(data_df.loc[i, "temporal_slices"]).dropna()
         for level in np.unique(game_df["level"]):
             level_df = game_df[game_df["level"] == level]
-            if "type" in level_df and len(level_df[level_df["type"] == False]) > 0:
+            if "type" in level_df and len(level_df[~level_df["type"]]) > 0:
                 avg_pumps = 0
-            elif "status" in level_df and len(level_df[level_df["status"] == False]) > 0:
+            elif "status" in level_df and len(level_df[~level_df["status"]]) > 0:
                 avg_pumps = 0
             else:
                 avg_pumps = len(level_df)

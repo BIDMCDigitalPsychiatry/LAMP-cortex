@@ -64,10 +64,11 @@ def survey_scores(scoring_dict,
 
     ret = []
 
-    for s in participant_results:
+    for survey_res in participant_results:
         ret0 = {}
-        survey_end_time = s['timestamp'] + sum([q['duration'] for q in s['temporal_slices']])
-        for temp in s["temporal_slices"]:
+        survey_end_time = (survey_res['timestamp']
+                           + sum([q['duration'] for q in survey_res['temporal_slices']]))
+        for temp in survey_res["temporal_slices"]:
             if "value" not in temp or "item" not in temp:
                 continue
             if (temp["item"] not in scoring_dict["questions"] or
@@ -79,12 +80,12 @@ def survey_scores(scoring_dict,
             val = score_question(temp["value"], temp["item"], scoring_dict)
             if val is not None:
                 if ques_info["category"] not in ret0:
-                    ret0[ques_info["category"]] = {"timestamp": s["timestamp"],
+                    ret0[ques_info["category"]] = {"timestamp": survey_res["timestamp"],
                                                    ques_info["category"]: 0}
                 ret0[ques_info["category"]][ques_info["category"]] += val
                 if return_ind_ques:
                     ret0[ques_info["category"]][temp["item"]] = val
-        for k in ret0.keys():
+        for k in ret0:
             if len(ret0[k]) > 0:
                 for j in ret0[k]:
                     if j != "timestamp":
@@ -117,17 +118,16 @@ def score_question(val, ques, scoring_dict):
         return None
     if ques_info["scoring"] == "value":
         return int(val)
-    elif ques_info["scoring"] == "raw":
+    if ques_info["scoring"] == "raw":
         return val
-    elif ques_info["scoring"] == "boolean":
+    if ques_info["scoring"] == "boolean":
         return int(val == "Yes")
-    elif ques_info["scoring"] in scoring_dict:
+    if ques_info["scoring"] in scoring_dict:
         if val in scoring_dict[ques_info["scoring"]]:
             mapped_val = scoring_dict[ques_info["scoring"]][val]
         else:
-            log.info("*" + val + "* is not in the scoring key "
-                     + ques_info["scoring"] + " for question *"
-                     + ques + "* please try again.")
+            log.info("*%s* is not in the scoring key %s for question *%s* please try again.",
+                     val, ques_info["scoring"], ques)
             return None
         return mapped_val
     log.info("Scoring type is not valid. Please try again.")
