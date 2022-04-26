@@ -29,7 +29,7 @@ def get_parts(researcher_id):
     participants = []
     for study in LAMP.Study.all_by_researcher(researcher_id)['data']:
         curr = []
-        curr+=(p['id'] for p in LAMP.Participant.all_by_study(study['id'])['data'])
+        curr += (p['id'] for p in LAMP.Participant.all_by_study(study['id'])['data'])
         if len(curr) >= 1:
             for part in curr:
                 participants.append({
@@ -50,23 +50,23 @@ def get_act_names(part_id, days_ago):
     """
     df_names = []
     df_type = []
-    df = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
-    df = pd.DataFrame([x for x in df if
+    df_act_event = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
+    df_act_event = pd.DataFrame([x for x in df_act_event if
                        (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)])
     act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
     df_names = []
-    for j in range(len(df)):
-        if len(list(act_names[act_names["id"] == df.loc[j, "activity"]]["name"])) > 0:
-            df_names.append(list(act_names[act_names["id"] == df.loc[j, "activity"]]
+    for j in range(len(df_act_event)):
+        if len(list(act_names[act_names["id"] == df_act_event.loc[j, "activity"]]["name"])) > 0:
+            df_names.append(list(act_names[act_names["id"] == df_act_event.loc[j, "activity"]]
                                  ["name"])[0])
-            df_type.append(list(act_names[act_names["id"] == df.loc[j, "activity"]]
+            df_type.append(list(act_names[act_names["id"] == df_act_event.loc[j, "activity"]]
                                 ["spec"])[0].split(".")[1])
         else:
             df_names.append(None)
             df_type.append(None)
-    df["name"] = df_names
-    df["type"] = df_type
-    return df
+    df_act_event["name"] = df_names
+    df_act_event["type"] = df_type
+    return df_act_event
 
 def get_data_tags_df(participants):
     """ Produce the data quality tags.
@@ -77,30 +77,30 @@ def get_data_tags_df(participants):
     start_time = int(time.time()) * 1000 - 7 * MS_IN_DAY
     end_time = int(time.time()) * 1000
     dict0 = []
-    for p in participants:
+    for part in participants:
         ## get screen state ##
         screen_state = 0
         for d in range(start_time, end_time, MS_IN_DAY):
-            ss = LAMP.SensorEvent.all_by_participant(participant_id=p["participant_id"],
+            ss = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
                                                      origin="lamp.screen_state",
                                                      _from=d,
                                                      to=d+MS_IN_DAY,
                                                      _limit=1)["data"]
             if len(ss) == 0:
-                ss = LAMP.SensorEvent.all_by_participant(participant_id=p["participant_id"],
+                ss = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
                                                      origin="lamp.device_state",
                                                      _from=d,
                                                      to=d+MS_IN_DAY,
                                                      _limit=1)["data"]
             if len(ss) > 0:
                 screen_state += 1
-        prev_screen_state = LAMP.SensorEvent.all_by_participant(participant_id=p["participant_id"],
+        prev_screen_state = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
                                                      origin="lamp.screen_state",
                                                      _limit=1)["data"]
 
         if len(prev_screen_state) == 0:
             prev_screen_state = LAMP.SensorEvent.all_by_participant(
-                                                     participant_id=p["participant_id"],
+                                                     participant_id=part["participant_id"],
                                                      origin="lamp.device_state",
                                                      _limit=1)["data"]
         if len(prev_screen_state) == 0:
@@ -110,7 +110,7 @@ def get_data_tags_df(participants):
 
         ## get gps ##
         df = pd.DataFrame.from_dict(
-            cortex.secondary.data_quality.data_quality(id=p["participant_id"],
+            cortex.secondary.data_quality.data_quality(id=part["participant_id"],
                                                    start=start_time,
                                                    end=end_time + 1,
                                                    resolution=MS_IN_DAY,
@@ -125,7 +125,7 @@ def get_data_tags_df(participants):
 
         ## get acc ##
         df = pd.DataFrame.from_dict(
-            cortex.secondary.data_quality.data_quality(id=p["participant_id"],
+            cortex.secondary.data_quality.data_quality(id=part["participant_id"],
                                                    start=start_time,
                                                    end=end_time + 1,
                                                    resolution=MS_IN_DAY,
@@ -164,7 +164,7 @@ def get_data_tags_df(participants):
             acc_quality = acc_quality + "_missing"
         elif acc_missing_days is not None:
             acc_quality = "missing"
-        d0 = {"part_id": p["participant_id"],
+        d0 = {"part_id": part["participant_id"],
               "screen_state": screen_state,
               "last_screen_date": prev_screen_state,
               "acc": acc,
