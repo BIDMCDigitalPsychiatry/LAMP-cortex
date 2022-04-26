@@ -1,9 +1,10 @@
-import os
-import LAMP
+""" Module for various useful functions for
+    working with the LAMP API
+"""
 from functools import reduce
-import pandas as pd
 import datetime
-
+import pandas as pd
+import LAMP
 
 def generate_ids(id_set):
     """ This function takes either a single id of type Researcher, Study, or
@@ -19,23 +20,23 @@ def generate_ids(id_set):
     """
     if isinstance(id_set, str):
         parents = LAMP.Type.parent(id_set)["data"]
-
         if "Study" in parents:
             return [id_set]
-        elif "Researcher" in parents:
-            final_list = [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']];
+        if "Researcher" in parents:
+            final_list = [val['id'] for val in LAMP.Participant.all_by_study(id_set)['data']]
             return final_list
-        elif not bool(parents):
+        if not bool(parents):
             study_ids = [val['id'] for val in LAMP.Study.all_by_researcher(id_set)["data"]]
             participant_ids = []
             for study_id in study_ids:
-                participant_ids += [val['id'] for val in LAMP.Participant.all_by_study(study_id)['data']]
+                participant_ids += [val['id'] for val in
+                                    LAMP.Participant.all_by_study(study_id)['data']]
             return participant_ids
-        else:
-            return []
-    elif isinstance(id_set, list):
+        return []
+    if isinstance(id_set, list):
         combined_ids = list(set(reduce(lambda acc, _id: acc + generate_ids(_id), id_set, [])))
         return combined_ids
+    return []
 
 def shift_time(curr_time, shift=18):
     """ Function to convert the start / end times to the same
@@ -60,8 +61,8 @@ def delete_sensors(part_id):
             part_id: the participant id
     """
     sensors = LAMP.Sensor.all_by_participant(part_id)["data"]
-    for s in sensors:
-        LAMP.Sensor.delete(s["id"])
+    for sensor in sensors:
+        LAMP.Sensor.delete(sensor["id"])
 
 def add_sensor(study_id, spec, name):
     """ Function to add a sensor.
@@ -73,7 +74,7 @@ def add_sensor(study_id, spec, name):
     """
     LAMP.Sensor.create(study_id, {'spec': spec, 'name': name, 'settings':{}})
 
-def propagate_activity(base_user, activity_name, parts, excluded_tags=[]):
+def propagate_activity(base_user, activity_name, parts, excluded_tags=None):
     """ Copy the activity from one user into all other.
         Only copy the content of the activity, do not create new activities.
 
@@ -83,32 +84,34 @@ def propagate_activity(base_user, activity_name, parts, excluded_tags=[]):
             parts: list of participants to propogate the change to
             excluded_tags: list of tags not to copy to all participants
     """
+    if excluded_tags is None:
+        excluded_tags = []
     # get the activity from base user
     activity = [x for x in LAMP.Activity.all_by_participant(base_user)["data"]
                  if x["name"] == activity_name][0]
     copy_act = {}
-    for x in activity:
-        if x != "id":
-            copy_act[x] = activity[x]
+    for val in activity:
+        if val != "id":
+            copy_act[val] = activity[val]
 
     # Copy activity into all users
-    for p in parts:
-        all_acts = LAMP.Activity.all_by_participant(participant_id=p)['data']
-        for x in all_acts:
-            if x["name"] == activity_name:
-                LAMP.Activity.update(activity_id=x['id'], activity_activity=copy_act)
-                for attach_name in LAMP.Type.list_attachments(activity["id"])["data"]:
-                    if attach_name not in excluded_tags:
-                        LAMP.Type.set_attachment(x["id"], "me", attach_name,
-                            body=LAMP.Type.get_attachment(activity["id"], attach_name)["data"])
+    for part in parts:
+        all_acts = LAMP.Activity.all_by_participant(participant_id=part)['data']
+        act_list = [x for x in all_acts if x["name"] == activity_name]
+        for act in act_list:
+            LAMP.Activity.update(activity_id=act['id'], activity_activity=copy_act)
+            for attach_name in LAMP.Type.list_attachments(activity["id"])["data"]:
+                if attach_name not in excluded_tags:
+                    LAMP.Type.set_attachment(act["id"], "me", attach_name,
+                        body=LAMP.Type.get_attachment(activity["id"], attach_name)["data"])
 
 def get_part_id_from_name(name, parts):
     """ Find the id which has the lamp.name == name
     """
     # Get the tecc participants
-    for p in parts:
-        if LAMP.Type.get_attachment(p, "lamp.name")["data"] == name:
-            return p
+    for part in parts:
+        if LAMP.Type.get_attachment(part, "lamp.name")["data"] == name:
+            return part
     return -1
 
 def get_activity_names(part_id):
@@ -120,20 +123,22 @@ def get_activity_names(part_id):
             The DataFrame of ActivityEvents with two additional columns:
             "name" and "spec" from the Activity data
         Note: this will not account for deleted activities.
+            Please refer to db.py for information on deleted activities.
     """
     df_names = []
     df_type = []
-    df = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
-    df = pd.DataFrame(df)
+    df_act_events = pd.DataFrame(LAMP.ActivityEvent.all_by_participant(part_id)["data"])
     act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
     df_names = []
-    for j in range(len(df)):
-        if len(list(act_names[act_names["id"] == df.loc[j, "activity"]]["name"])) > 0:
-            df_names.append(list(act_names[act_names["id"] == df.loc[j, "activity"]]["name"])[0])
-            df_type.append(list(act_names[act_names["id"] == df.loc[j, "activity"]]["spec"])[0].split(".")[1])
+    for j in range(len(df_act_events)):
+        if len(list(act_names[act_names["id"] == df_act_events.loc[j, "activity"]]["name"])) > 0:
+            df_names.append(list(act_names[act_names["id"] ==
+                                           df_act_events.loc[j, "activity"]]["name"])[0])
+            df_type.append(list(act_names[act_names["id"] ==
+                            df_act_events.loc[j, "activity"]]["spec"])[0].split(".")[1])
         else:
             df_names.append(None)
             df_type.append(None)
-    df["name"] = df_names
-    df["spec"] = df_type
-    return df
+    df_act_events["name"] = df_names
+    df_act_events["spec"] = df_type
+    return df_act_events

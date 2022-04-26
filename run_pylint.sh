@@ -15,15 +15,23 @@ echo "${red} Running pylint for all main files ${reset}"
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for visualization code ${reset}"
-#echo "${green} data_quality.py ${reset}"
-#pylint cortex/visualizations/data_quality.py
+echo "${green} data_quality.py ${reset}"
+pylint cortex/visualizations/data_quality.py
+echo "${green} correlation_functions.py ${reset}"
+pylint cortex/visualizations/correlation_functions.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for utils code ${reset}"
-#echo "${green} db.py ${reset}"
-#pylint cortex/utils/db.py
-#echo "${green} notifications.py ${reset}"
-#pylint cortex/utils/notifications.py
+echo "${green} db.py ${reset}"
+pylint cortex/utils/db.py
+echo "${green} notifications.py ${reset}"
+pylint cortex/utils/notifications.py
+echo "${green} module_scheduler.py ${reset}"
+pylint cortex/utils/module_scheduler.py
+echo "${green} useful_functions_misc.py ${reset}"
+pylint cortex/utils/useful_functions_misc.py
+echo "${green} useful_functions.py ${reset}"
+pylint cortex/utils/useful_functions.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
