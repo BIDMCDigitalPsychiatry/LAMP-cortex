@@ -15,8 +15,9 @@ def screen_active(attach=True,
                   **kwargs):
     """Builds bout of screen activity.
 
-    Relies on the 'screen_state' raw sensor. On events/off events are encoded differently for iOS and Android devices.
-    Accordingly, device type is found first using lamp.analytics.
+    Relies on the 'screen_state' raw sensor. On events/off events are
+    encoded differently for iOS and Android devices. Accordingly, device
+    type is found first using lamp.analytics.
 
     Args:
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
@@ -39,9 +40,10 @@ def screen_active(attach=True,
     start_time = 0
     end_time = int(datetime.datetime.now().timestamp()) * 1000
 
-    # get device type 
+    # get device type
     _analytics = analytics(**kwargs)
-    _device_types = [_event['device_type'] for _event in _analytics['data'] if 'device_type' in _event]
+    _device_types = [_event['device_type']
+                     for _event in _analytics['data'] if 'device_type' in _event]
     _device_type = 'iOS' #default to ios
 
     for d in _device_types:
@@ -67,8 +69,14 @@ def screen_active(attach=True,
                 _event['state'] = _event['data']['value']
 
     # Initialize
-    _screen_active = _get_screen_state_data(_screen_state, device_type=_device_type, duration_threshold=duration_threshold, flipped=0)
-    _screen_active_flipped = _get_screen_state_data(_screen_state, device_type=_device_type, duration_threshold=duration_threshold, flipped=1)
+    _screen_active = _get_screen_state_data(_screen_state,
+                                            device_type=_device_type,
+                                            duration_threshold=duration_threshold,
+                                            flipped=0)
+    _screen_active_flipped = _get_screen_state_data(_screen_state,
+                                                    device_type=_device_type,
+                                                    duration_threshold=duration_threshold,
+                                                    flipped=1)
 
     # figure out which one is correct
     # find activity, determine whether screen = 0 or 1 at this time

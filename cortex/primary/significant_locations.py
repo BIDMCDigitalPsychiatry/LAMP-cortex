@@ -20,7 +20,8 @@ def significant_locations(k_max=10,
                           method='mode',
                           attach=False,
                           **kwargs):
-    """Get the coordinates and proportional time of significant locations visited by the participant.
+    """ Get the coordinates and proportional time of significant locations
+        visited by the participant.
 
 
     This method uses the the KMeans clustering method.

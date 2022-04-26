@@ -47,12 +47,6 @@ def trips(attach=True,
         km_dist = 6367 * val2
         return km_dist
 
-    # def euclid_distance1(lat, lng, lat0, lng0): # degrees -> km
-    #    """ Using this for convenience over GeoPy because it doesn't support our
-    #        vectorized operations w/ Pandas
-    #    """
-    #    return 110.25 * ((((lat - lat0) ** 2) + (((lng - lng0) * np.cos(lat0)) ** 2)) ** 0.5)
-
     def total_distance(df_dist,col, idx1, idx2):
         """ Get the total distance traveled.
         """
@@ -86,7 +80,7 @@ def trips(attach=True,
         gps_data.loc[:, 'idx'] = gps_data.index
         new = gps_data[gps_data['stationary'] != gps_data['stationary_1']]
         new.loc[:, 'idx_shift'] = new['idx'].shift(-1, fill_value=0)
-        new = new[new['stationary'] == False]
+        new = new[~new['stationary']]
         new = new[new['idx_shift'] != 0]
         new.loc[:, 'distance'] = new.apply(lambda row:
                                 total_distance(gps_data, 'dx',

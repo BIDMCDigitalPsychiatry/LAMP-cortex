@@ -19,13 +19,14 @@ def analytics(_limit=10000,
 
     Returns:
         timestamp (int): The UTC timestamp for the accelerometer event.
-        user_agent (string): 
+        user_agent (string): the user agent string.
         device_type (string): The OS of the device.
         device_token (string): The unique hashed device identifier.
 
     Example:
         [{'timestamp': 1618016071621,
-         'device_token': 'dI_LZLy_Tjq7ppO2x7O4Pt:APA91bGfUdyaD8krE8bpi3jFcwa6UxFh6J7Z3dfQ78uGDWf5ZsYVK5nsXa-oGW4SOunlqp85U5OjO2sa',
+         'device_token': 'dI_LZLy_Tjq7ppO2O4Pt:APA91bGfUdnsXa-oGW4SOnlqp85U5OjO2sa',
+         # Noe: ^device token has been edited
          'device_type': 'Android',
          'user_agent': '1.1,6869500,Google,Pixel 3a'}}]
     """
