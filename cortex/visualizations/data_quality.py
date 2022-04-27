@@ -7,7 +7,7 @@ import altair as alt
 import LAMP
 import pandas as pd
 import cortex
-from ..utils.useful_functions import get_activity_names, generate_ids
+from ..utils.useful_functions import get_activity_names, generate_ids, set_graph
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ def make_activity_count_graph(participants, researcher_id):
 
     act_counts = {"Study ID (Participant ID)": [], "Count": [], "Activity Type": []}
     for part in participants:
-        act_df = get_activity_names(part["participant_id"], 7)
+        act_df = get_activity_names(part["participant_id"], sample_length=7)
         for _ in range(6):
             act_counts["Study ID (Participant ID)"].append(part["study_name"] +
                                                     " (" + part["participant_id"] + ")")
@@ -218,9 +218,9 @@ def make_activity_count_graph(participants, researcher_id):
         ),
         tooltip=['Count']
     )
-    LAMP.Type.set_attachment(researcher_id, "me",
-                         attachment_key = "graphs.data_quality.activity_counts",
-                         body=(chart).to_dict())
+    set_graph(researcher_id,
+              "graphs.data_quality.activity_counts",
+              (chart).to_dict())
 
 def make_data_qual_tags(researcher_id, qual_df2):
     """ Make the data quality tags graph. Attach the data portal.
@@ -239,9 +239,9 @@ def make_data_qual_tags(researcher_id, qual_df2):
         tooltip=['Missing days', "Average frequency"]
     )
 
-    LAMP.Type.set_attachment(researcher_id, "me",
-                         attachment_key = "graphs.data_quality.quality_tags",
-                         body=(chart).to_dict())
+    set_graph(researcher_id,
+              "graphs.data_quality.quality_tags",
+              (chart).to_dict())
 
 def make_passive_data_graphs(participants, researcher_id, qual_df1):
     """ Make the passive data feature (screen duration, steps, hometime) graphs.
@@ -326,9 +326,10 @@ def make_passive_data_graphs(participants, researcher_id, qual_df1):
         chart12 = alt.hconcat(chart1, chart2)
     else:
         chart12 = alt.vconcat(chart1, chart2)
-    LAMP.Type.set_attachment(researcher_id, "me",
-                         attachment_key = "graphs.data_quality.passive_features",
-                         body=(alt.vconcat(chart12, chart3)).to_dict())
+
+    set_graph(researcher_id,
+              "graphs.data_quality.passive_features",
+              (alt.vconcat(chart12, chart3)).to_dict())
 
 def make_survey_count_graph_by_name(participants, researcher_id, name):
     """ Function to make survey count graphs for an individual survey.
@@ -341,7 +342,7 @@ def make_survey_count_graph_by_name(participants, researcher_id, name):
     """
     act_counts = {"Study ID (Participant ID)": [], "Count": []}
     for part in participants:
-        act_df = get_activity_names(part["participant_id"], 7)
+        act_df = get_activity_names(part["participant_id"], sample_length=7)
         act_counts["Study ID (Participant ID)"].append(
             part["study_name"] + " (" + part["participant_id"] + ")")
         act_counts["Count"].append(len(act_df[act_df["name"] == name]))
@@ -355,9 +356,9 @@ def make_survey_count_graph_by_name(participants, researcher_id, name):
     )
     key_name = name.replace(" ", "_").lower()
     key_name = f"graphs.data_quality.{key_name}"
-    LAMP.Type.set_attachment(researcher_id, "me",
-                         attachment_key = key_name,
-                         body=(chart).to_dict())
+    set_graph(researcher_id,
+              key_name,
+              (chart).to_dict())
 
 def make_percent_completion_graph(spec, researcher_id, name):
     """ Function to make a graph of the percent of activites
@@ -411,7 +412,7 @@ def make_percent_completion_graph(spec, researcher_id, name):
             total_count = 0
             for act in spec[k]:
                 act_df = get_activity_names(part,
-                                    act["time_interval"] / MS_IN_DAY)
+                                    sample_length=act["time_interval"] / MS_IN_DAY)
                 part_count += min(len(act_df[act_df["name"] == act["activity_name"]]),
                                   act["count"])
                 total_count += act["count"]
@@ -432,9 +433,9 @@ def make_percent_completion_graph(spec, researcher_id, name):
     )
     key_name = name.replace(" ", "_").lower()
     key_name = f"graphs.data_quality.{key_name}"
-    LAMP.Type.set_attachment(researcher_id, "me",
-                             attachment_key = key_name,
-                             body=(chart).to_dict())
+    set_graph(researcher_id,
+              key_name,
+              (chart).to_dict())
 
 def clear_chart(researcher_id, name):
     """ Function to clear a chart from the data portal.
@@ -444,9 +445,9 @@ def clear_chart(researcher_id, name):
             name: the name of the plot
     """
     key_name = "graphs.data_quality." + name
-    LAMP.Type.set_attachment(researcher_id, "me",
-                         attachment_key = key_name,
-                         body=None)
+    set_graph(researcher_id,
+              key_name,
+              None)
 
 def data_quality(researcher_id):
     """ Function to create quality graphs for data monitoring.

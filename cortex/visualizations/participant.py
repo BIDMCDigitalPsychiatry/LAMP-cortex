@@ -10,15 +10,26 @@ from ..run import run
 
 MS_PER_HOUR = 1000*60*60
 
-#pylint:disable=too-many-arguments,too-many-locals,dangerous-default-value,too-many-nested-blocks,too-many-branches,too-many-statements
-def create_sample_window(days_ago,sample_length, set_to_utc_midnight):
-    """Create a relevant time window for LAMP analysis"""
-    #Create our relevant time window to call LAMP
-    start_timestamp = (int(time.time())-(days_ago+sample_length)*24*60*60)*1000
-    end_timestamp = (int(time.time())-(days_ago)*24*60*60)*1000
+def create_sample_window(end_of_window, sample_length, set_to_utc_midnight):
+    """ Create a relevant time window for LAMP analysis.
+
+        Args:
+            end_of_window (int, unit: days): the number of days ago to start the window
+            sample_length (int, unit: days): the length of the sample in days
+                the window goes backward in time sample_length from end_of_window
+                ex: if end of window is 1 and sample length is 7 the window will be
+                    the week of data ending yesterday (1 day ago) and ending a week
+                    before yesterday (length is 7)
+            set_utc_to_midnight (booleanl): whether to shift the start and end time to
+                midnight utc on that day
+        Returns:
+            the start and end timestamp of the window in ms
+    """
+    start_timestamp = (int(time.time())-(end_of_window+sample_length)*24*60*60)*1000
+    end_timestamp = (int(time.time())-(end_of_window)*24*60*60)*1000
     if set_to_utc_midnight:
-        return shift_time(start_timestamp,0),shift_time(end_timestamp,0)
-    return start_timestamp,end_timestamp
+        return shift_time(start_timestamp,0), shift_time(end_timestamp,0)
+    return start_timestamp, end_timestamp
 
 def passive(id_list,
             sensor_info=[{"sensor": "lamp.gps", 'target_hz': .1, 'display_name': "GPS_Quality"},
@@ -431,18 +442,18 @@ def active(id_list,
     return active_counts if return_dict else None
 
 def cortex_tertiles(target_id,
-                                cortex_measures=['acc_energy',
-                                                 'entropy',
-                                                 'hometime',
-                                                 'screen_duration'],
-                                measure_params={},
-                                use_cache=False,
-                                show_graphs=True, attach_graphs=True, display_graphs=True,
-                                days_ago=0, sample_length=7,
-                                reporter_func=print,
-                                set_to_utc_midnight=True,
-                                return_dict=False,
-                               **kwargs):
+                    cortex_measures=['acc_energy',
+                                     'entropy',
+                                     'hometime',
+                                     'screen_duration'],
+                    measure_params={},
+                    use_cache=False,
+                    show_graphs=True, attach_graphs=True, display_graphs=True,
+                    days_ago=0, sample_length=7,
+                    reporter_func=print,
+                    set_to_utc_midnight=True,
+                    return_dict=False,
+                   **kwargs):
     """ Function to run an array of cortex functions on to generate cortex graphs.
 
         Args:

@@ -120,13 +120,15 @@ def get_part_id_from_name(name, parts):
             return part
     return -1
 
-def get_activity_names(part_id, days_ago = -1):
+def get_activity_names(part_id, sample_length = -1, end_of_window = int(time.time() * 1000)):
     """ Get activity names and specs for a participant.
 
         Args:
             part_id (string): the participant_id
-            days_ago (float, default: -1): get the activities from the previous x days
-                if -1, all data will be used
+            sample_length (float, default: -1, unit: days): get the activities from
+                the previous x days. If -1, all data will be used
+            end_of_window (float, default: current time, unit: ms): the end
+                of the window to pull data in ms
         Returns:
             The DataFrame of ActivityEvents with two additional columns:
             "name" and "spec" from the Activity data
@@ -136,9 +138,9 @@ def get_activity_names(part_id, days_ago = -1):
     df_names = []
     df_type = []
     df_act_events = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
-    if days_ago > 0:
+    if sample_length > 0:
         df_act_events = [x for x in df_act_events if
-                       (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)]
+                       (x["timestamp"] > end_of_window - sample_length * MS_IN_DAY)]
     df_act_events = pd.DataFrame(df_act_events)
     act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
     df_names = []
@@ -155,7 +157,7 @@ def get_activity_names(part_id, days_ago = -1):
     df_act_events["spec"] = df_type
     return df_act_events
 
-def set_graph(target,key,graph,display_on_patient_portal,set_on_parents):
+def set_graph(target, key, graph, display_on_patient_portal=False, set_on_parents=False):
     """ Attaches a graph to a target in LAMP. If the target is a participant,
         graphs can also be attached for viewing in the data portal or
         patient portal.
