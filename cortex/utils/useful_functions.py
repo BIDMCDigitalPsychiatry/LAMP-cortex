@@ -5,6 +5,9 @@ from functools import reduce
 import datetime
 import pandas as pd
 import LAMP
+import time
+
+MS_IN_DAY = 24 * 3600 * 1000
 
 def generate_ids(id_set):
     """ This function takes either a single id of type Researcher, Study, or
@@ -114,11 +117,13 @@ def get_part_id_from_name(name, parts):
             return part
     return -1
 
-def get_activity_names(part_id):
+def get_activity_names(part_id, days_ago = -1):
     """ Get activity names and specs for a participant.
 
         Args:
-            part_id: the participant_id
+            part_id (string): the participant_id
+            days_ago (float, default: -1): get the activities from the previous x days
+                if -1, all data will be used
         Returns:
             The DataFrame of ActivityEvents with two additional columns:
             "name" and "spec" from the Activity data
@@ -127,7 +132,11 @@ def get_activity_names(part_id):
     """
     df_names = []
     df_type = []
-    df_act_events = pd.DataFrame(LAMP.ActivityEvent.all_by_participant(part_id)["data"])
+    df_act_events = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
+    if days_ago > 0:
+        df_act_events = [x for x in df_act_events if
+                       (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)]
+    df_act_events = pd.DataFrame(df_act_events)
     act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
     df_names = []
     for j in range(len(df_act_events)):
