@@ -3,11 +3,14 @@
 """
 from functools import reduce
 import datetime
+import time
+import re
 import pandas as pd
 import LAMP
-import time
 
 MS_IN_DAY = 24 * 3600 * 1000
+#Used for set_graphs
+EXPERIMENTAL_NAME='lamp.selectedExperimental'
 
 def generate_ids(id_set):
     """ This function takes either a single id of type Researcher, Study, or
@@ -151,3 +154,65 @@ def get_activity_names(part_id, days_ago = -1):
     df_act_events["name"] = df_names
     df_act_events["spec"] = df_type
     return df_act_events
+
+def set_graph(target,key,graph,display_on_patient_portal,set_on_parents):
+    """ Attaches a graph to a target in LAMP. If the target is a participant,
+        graphs can also be attached for viewing in the data portal or
+        patient portal.
+
+        Args:
+            target: LAMP ID to set a graph tag on.
+            graph: A JSON representation of a vega spec
+            display_on_patient_portal: if True,
+                graph displays on patient portal
+            set_on_parents: if True, graph is made
+                available to parents in the data portal
+        Returns:
+            None
+    """
+
+    if not re.match(r'(^[A-Za-z_.]+$)',key):
+        #Attachment names should be alphanumeric with '.' and '_' characters
+        #We attempt to fix and warn a common mistake
+        key = key.replace(' ','_')
+        if not re.match(r'(^[A-Za-z_.]+$)',key):
+            raise ValueError("""Please use an alphanumeric key with '.' and '_'
+            characters for LAMP attachments""")
+        print('''Coerced invalid attachments string to correctness. Next time,
+        please use an alphanumeric key with '.' and '_'
+        characters for LAMP attachments''')
+
+
+    LAMP.Type.set_attachment(target, "me",
+                             attachment_key=key,
+                             body=graph)
+
+    if not 'Study' in LAMP.Type.parent(target)['data']:
+        return
+
+    if display_on_patient_portal:
+        #Add the graph to the list of displayed graphs
+        if EXPERIMENTAL_NAME in LAMP.Type.list_attachments(target)['data']:
+            current_selection = LAMP.Type.get_attachment(target,
+                                                         EXPERIMENTAL_NAME)['data']
+            current_selection += [key]
+            LAMP.Type.set_attachment(target, "me",
+                                     attachment_key = EXPERIMENTAL_NAME,
+                                     body=list(set(current_selection)))
+        else:
+            LAMP.Type.set_attachment(target, "me",
+                                     attachment_key = EXPERIMENTAL_NAME,
+                                     body=[key])
+    if set_on_parents:
+        #Attach the name to researcher and study wide tags for the data portal
+        for lamp_type,_id in LAMP.Type.parent(target)['data'].items():
+            try:
+                attachment=f'lamp.dashboard.{lamp_type.lower()}_tags'
+                current_attachments = LAMP.Type.get_attachment(_id,
+                                                               attachment)['data']
+            except LAMP.ApiException:
+                current_attachments = []
+            new_attachments = list(set(current_attachments + [key]))
+            LAMP.Type.set_attachment(_id, 'me',
+                                     f'lamp.dashboard.{lamp_type.lower()}_tags',
+                                     body=new_attachments)
