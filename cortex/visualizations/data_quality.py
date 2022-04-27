@@ -7,6 +7,7 @@ import altair as alt
 import LAMP
 import pandas as pd
 import cortex
+from ..utils.useful_functions import get_activity_names, generate_ids
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -38,36 +39,6 @@ def get_parts(researcher_id):
                 })
     return participants
 
-def get_act_names(part_id, days_ago):
-    """ Get an activity df with names of activities and types.
-
-        Args:
-            part_id: the participant id
-            days_ago: number of prior days to include
-                (ie days_ago=7 for the previous week)
-        Returns:
-            the df with names and types
-    """
-    df_names = []
-    df_type = []
-    df_act_event = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
-    df_act_event = pd.DataFrame([x for x in df_act_event if
-                       (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)])
-    act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
-    df_names = []
-    for j in range(len(df_act_event)):
-        if len(list(act_names[act_names["id"] == df_act_event.loc[j, "activity"]]["name"])) > 0:
-            df_names.append(list(act_names[act_names["id"] == df_act_event.loc[j, "activity"]]
-                                 ["name"])[0])
-            df_type.append(list(act_names[act_names["id"] == df_act_event.loc[j, "activity"]]
-                                ["spec"])[0].split(".")[1])
-        else:
-            df_names.append(None)
-            df_type.append(None)
-    df_act_event["name"] = df_names
-    df_act_event["type"] = df_type
-    return df_act_event
-
 def get_data_tags_df(participants):
     """ Produce the data quality tags.
 
@@ -80,63 +51,52 @@ def get_data_tags_df(participants):
     for part in participants:
         ## get screen state ##
         screen_state = 0
-        for d in range(start_time, end_time, MS_IN_DAY):
-            ss = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
-                                                     origin="lamp.screen_state",
-                                                     _from=d,
-                                                     to=d+MS_IN_DAY,
-                                                     _limit=1)["data"]
-            if len(ss) == 0:
-                ss = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
+        for time_val in range(start_time, end_time, MS_IN_DAY):
+            ss_data = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
                                                      origin="lamp.device_state",
-                                                     _from=d,
-                                                     to=d+MS_IN_DAY,
+                                                     _from=time_val,
+                                                     to=time_val+MS_IN_DAY,
                                                      _limit=1)["data"]
-            if len(ss) > 0:
+            if len(ss_data) > 0:
                 screen_state += 1
-        prev_screen_state = LAMP.SensorEvent.all_by_participant(participant_id=part["participant_id"],
-                                                     origin="lamp.screen_state",
-                                                     _limit=1)["data"]
-
-        if len(prev_screen_state) == 0:
-            prev_screen_state = LAMP.SensorEvent.all_by_participant(
-                                                     participant_id=part["participant_id"],
-                                                     origin="lamp.device_state",
-                                                     _limit=1)["data"]
+        prev_screen_state = LAMP.SensorEvent.all_by_participant(
+                                        participant_id=part["participant_id"],
+                                        origin="lamp.device_state",
+                                        _limit=1)["data"]
         if len(prev_screen_state) == 0:
             prev_screen_state = None
         else:
             prev_screen_state = prev_screen_state[0]["timestamp"]
 
         ## get gps ##
-        df = pd.DataFrame.from_dict(
+        gps_df = pd.DataFrame.from_dict(
             cortex.secondary.data_quality.data_quality(id=part["participant_id"],
                                                    start=start_time,
                                                    end=end_time + 1,
                                                    resolution=MS_IN_DAY,
                                                    feature="gps",
                                                    bin_size=60 * 60 * 1000)['data'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        if len(df[df["value"] == 0]) > 0:
-            gps_missing_days = list(df[df["value"] == 0]["timestamp"].dt.date)
+        gps_df['timestamp'] = pd.to_datetime(gps_df['timestamp'], unit='ms')
+        if len(gps_df[gps_df["value"] == 0]) > 0:
+            gps_missing_days = list(gps_df[gps_df["value"] == 0]["timestamp"].dt.date)
         else:
             gps_missing_days = None
-        gps = df[df["value"] != 0]["value"].mean()
+        gps = gps_df[gps_df["value"] != 0]["value"].mean()
 
         ## get acc ##
-        df = pd.DataFrame.from_dict(
+        acc_df = pd.DataFrame.from_dict(
             cortex.secondary.data_quality.data_quality(id=part["participant_id"],
                                                    start=start_time,
                                                    end=end_time + 1,
                                                    resolution=MS_IN_DAY,
                                                    feature="gps",
                                                    bin_size=60 * 60 * 1000)['data'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        if len(df[df["value"] == 0]) > 0:
-            acc_missing_days = list(df[df["value"] == 0]["timestamp"].dt.date)
+        acc_df['timestamp'] = pd.to_datetime(acc_df['timestamp'], unit='ms')
+        if len(acc_df[acc_df["value"] == 0]) > 0:
+            acc_missing_days = list(acc_df[acc_df["value"] == 0]["timestamp"].dt.date)
         else:
             acc_missing_days = None
-        acc = df[df["value"] != 0]["value"].mean()
+        acc = acc_df[acc_df["value"] != 0]["value"].mean()
 
         if screen_state == 7:
             screen_state_quality = "good"
@@ -164,7 +124,7 @@ def get_data_tags_df(participants):
             acc_quality = acc_quality + "_missing"
         elif acc_missing_days is not None:
             acc_quality = "missing"
-        d0 = {"part_id": part["participant_id"],
+        dict0.append({"part_id": part["participant_id"],
               "screen_state": screen_state,
               "last_screen_date": prev_screen_state,
               "acc": acc,
@@ -173,38 +133,34 @@ def get_data_tags_df(participants):
               "gps_missing_days": gps_missing_days,
               "screen_state_quality": screen_state_quality,
               "gps_quality": gps_quality,
-              "acc_quality": acc_quality,}
-        dict0.append(d0)
+              "acc_quality": acc_quality,})
 
-    df = pd.DataFrame(dict0)
+    df_orig = pd.DataFrame(dict0)
 
     # Prepare df in form for altair
     df2 = []
-    for x in range(len(df)):
-        for y in ["screen_state_quality", "acc_quality", "gps_quality"]:
-            if y == "acc_quality":
-                dates = json.dumps(df.loc[x, "acc_missing_days"], indent=4,
+    for i in range(len(df_orig)):
+        for qual_type in ["screen_state_quality", "acc_quality", "gps_quality"]:
+            if qual_type in ["gps_quality", "acc_quality"]:
+                qual_prefix = qual_type.split("_")[0]
+                dates = json.dumps(df_orig.loc[i, qual_prefix + "_missing_days"], indent=4,
                                    sort_keys=True, default=str)
-                qual = df.loc[x, "acc"]
-            elif y == "gps_quality":
-                dates = json.dumps(df.loc[x, "gps_missing_days"], indent=4,
-                                   sort_keys=True, default=str)
-                qual = df.loc[x, "gps"]
+                qual = df_orig.loc[i, qual_prefix]
             else:
                 dates = None
-                qual = df.loc[x, "screen_state"]
-            p = df.loc[x, "part_id"]
-            study_name = [x["study_name"] for x in participants if x["participant_id"] == p][0]
+                qual = df_orig.loc[i, "screen_state"]
+            part = df_orig.loc[i, "part_id"]
+            study_name = [x["study_name"] for x in participants if x["participant_id"] == part][0]
             df2.append({
-                "Study ID (Participant ID)": study_name + " ("  + p + ")",
-                "Participant ID": p,
-                "Quality": df.loc[x, y],
-                "Type": y,
+                "Study ID (Participant ID)": study_name + " ("  + part + ")",
+                "Participant ID": part,
+                "Quality": df_orig.loc[i, qual_type],
+                "Type": qual_type,
                 "Missing days": dates,
                 "Average frequency": qual,
             })
     df2 = pd.DataFrame(df2)
-    return df, df2
+    return df_orig, df2
 
 
 #### -------- Make graphs -------- #####
@@ -219,33 +175,33 @@ def make_activity_count_graph(participants, researcher_id):
                   "spatial_span", "jewels_a", "cats_and_dogs"]
 
     act_counts = {"Study ID (Participant ID)": [], "Count": [], "Activity Type": []}
-    for p in participants:
-        df = get_act_names(p["participant_id"], 7)
+    for part in participants:
+        act_df = get_activity_names(part["participant_id"], 7)
         for _ in range(6):
-            act_counts["Study ID (Participant ID)"].append(p["study_name"] +
-                                                    " (" + p["participant_id"] + ")")
+            act_counts["Study ID (Participant ID)"].append(part["study_name"] +
+                                                    " (" + part["participant_id"] + ")")
         # Survey
         act_counts["Activity Type"].append("Survey")
-        act_counts["Count"].append(len(df[df["type"] == "survey"]))
+        act_counts["Count"].append(len(act_df[act_df["type"] == "survey"]))
         # Tips
         act_counts["Activity Type"].append("Tips")
-        act_counts["Count"].append(len(df[df["type"] == "tips"]))
+        act_counts["Count"].append(len(act_df[act_df["type"] == "tips"]))
         # Breathe
         act_counts["Activity Type"].append("Breathe")
-        act_counts["Count"].append(len(df[df["type"] == "breathe"]))
+        act_counts["Count"].append(len(act_df[act_df["type"] == "breathe"]))
         # Group
         act_counts["Activity Type"].append("Group")
-        act_counts["Count"].append(len(df[df["type"] == "group"]))
+        act_counts["Count"].append(len(act_df[act_df["type"] == "group"]))
         # Games
         act_counts["Activity Type"].append("Games")
-        act_counts["Count"].append(len(df[df["type"].isin(game_names)]))
+        act_counts["Count"].append(len(act_df[act_df["type"].isin(game_names)]))
         # Other
         act_counts["Activity Type"].append("Other")
-        act_counts["Count"].append(len(df[(df["type"] != "survey") &
-                                          (df["type"] != "tips") &
-                                          (df["type"] != "breathe") &
-                                          (df["type"] != "group") &
-                                          (~df["type"].isin(game_names))]))
+        act_counts["Count"].append(len(act_df[(act_df["type"] != "survey") &
+                                          (act_df["type"] != "tips") &
+                                          (act_df["type"] != "breathe") &
+                                          (act_df["type"] != "group") &
+                                          (~act_df["type"].isin(game_names))]))
     act_counts = pd.DataFrame(act_counts)
 
     val = ["Other", "Tips", "Survey", "Group", "Games", "Breathe"]
@@ -297,57 +253,54 @@ def make_passive_data_graphs(participants, researcher_id, qual_df1):
                 threshold will not be plotted.
     """
     step_counts = []
-    for p in participants:
+    for part in participants:
         steps = pd.DataFrame(
-            cortex.secondary.step_count.step_count(id=p["participant_id"],
+            cortex.secondary.step_count.step_count(id=part["participant_id"],
                                                    start=int(time.time() * 1000) - 7 * MS_IN_DAY,
                                                    end=int(time.time() * 1000) + 1,
-                                                   resolution=MS_IN_DAY)["data"])
-        steps = steps.dropna()
+                                                   resolution=MS_IN_DAY)["data"]).dropna()
         if len(steps) > 0:
             steps = steps["value"].mean()
         else:
             steps = 0
         step_counts.append({
-            "Study ID (Participant ID)": p["study_name"] + " (" + p["participant_id"] + ")",
+            "Study ID (Participant ID)": part["study_name"] + " (" + part["participant_id"] + ")",
             "Average steps": steps,
         })
     step_counts = pd.DataFrame(step_counts)
 
     screen_dur = []
-    for p in participants:
+    for part in participants:
         screen = 0
-        if (list(qual_df1[qual_df1["part_id"] == p["participant_id"]]
+        if (list(qual_df1[qual_df1["part_id"] == part["participant_id"]]
                 ["screen_state_quality"])[0] == "good"):
             screen = pd.DataFrame(
-                cortex.secondary.screen_duration.screen_duration(id=p["participant_id"],
+                cortex.secondary.screen_duration.screen_duration(id=part["participant_id"],
                                              start=int(time.time() * 1000) - 7 * MS_IN_DAY,
                                              end=int(time.time() * 1000) + 1,
-                                             resolution=MS_IN_DAY)["data"])
-            screen = screen.dropna()
+                                             resolution=MS_IN_DAY)["data"]).dropna()
             if len(screen) > 0:
                 screen = screen["value"].mean() / (3600 * 1000)
         screen_dur.append({
-            "Study ID (Participant ID)": p["study_name"] + " (" + p["participant_id"] + ")",
+            "Study ID (Participant ID)": part["study_name"] + " (" + part["participant_id"] + ")",
             "Average screen time (hrs)": screen,
         })
     screen_dur = pd.DataFrame(screen_dur)
 
     hometime = []
-    for p in participants:
+    for part in participants:
         home = 0
-        gps_qual = list(qual_df1[qual_df1["part_id"] == p["participant_id"]]["gps_quality"])[0]
+        gps_qual = list(qual_df1[qual_df1["part_id"] == part["participant_id"]]["gps_quality"])[0]
         if gps_qual in ["good", "okay"]:
             home = pd.DataFrame(
-                cortex.secondary.hometime.hometime(id=p["participant_id"],
+                cortex.secondary.hometime.hometime(id=part["participant_id"],
                                                    start=int(time.time() * 1000) - 7 * MS_IN_DAY,
                                                    end=int(time.time() * 1000) + 1,
-                                                   resolution=MS_IN_DAY)["data"])
-            home = home.dropna()
+                                                   resolution=MS_IN_DAY)["data"]).dropna()
             if len(home) > 0:
                 home = home["value"].mean() / (3600 * 1000)
         hometime.append({
-            "Study ID (Participant ID)": p["study_name"] + " (" + p["participant_id"] + ")",
+            "Study ID (Participant ID)": part["study_name"] + " (" + part["participant_id"] + ")",
             "Average hometime (hrs)": home,
         })
     hometime = pd.DataFrame(hometime)
@@ -373,10 +326,9 @@ def make_passive_data_graphs(participants, researcher_id, qual_df1):
         chart12 = alt.hconcat(chart1, chart2)
     else:
         chart12 = alt.vconcat(chart1, chart2)
-    chart = alt.vconcat(chart12, chart3)
     LAMP.Type.set_attachment(researcher_id, "me",
                          attachment_key = "graphs.data_quality.passive_features",
-                         body=(chart).to_dict())
+                         body=(alt.vconcat(chart12, chart3)).to_dict())
 
 def make_survey_count_graph_by_name(participants, researcher_id, name):
     """ Function to make survey count graphs for an individual survey.
@@ -388,11 +340,11 @@ def make_survey_count_graph_by_name(participants, researcher_id, name):
         The graph tag will be graphs.data_quality.name
     """
     act_counts = {"Study ID (Participant ID)": [], "Count": []}
-    for p in participants:
-        df = get_act_names(p["participant_id"], 7)
+    for part in participants:
+        act_df = get_activity_names(part["participant_id"], 7)
         act_counts["Study ID (Participant ID)"].append(
-            p["study_name"] + " (" + p["participant_id"] + ")")
-        act_counts["Count"].append(len(df[df["name"] == name]))
+            part["study_name"] + " (" + part["participant_id"] + ")")
+        act_counts["Count"].append(len(act_df[act_df["name"] == name]))
     act_counts = pd.DataFrame(act_counts)
 
     chart = alt.Chart(act_counts, title="Activities in the last 7 days (updated: "
@@ -406,6 +358,83 @@ def make_survey_count_graph_by_name(participants, researcher_id, name):
     LAMP.Type.set_attachment(researcher_id, "me",
                          attachment_key = key_name,
                          body=(chart).to_dict())
+
+def make_percent_completion_graph(spec, researcher_id, name):
+    """ Function to make a graph of the percent of activites
+        (from the spec) that have been completed.
+
+        Args:
+            spec (dict): the specification dict
+                {participant / study / researcher id:
+                   [
+                       {
+                           "activity_name": "some_activity",
+                           "count": 2,
+                           "time_interval": MS_IN_DAY * 7
+                       }
+                   ]
+                }
+                example spec:
+                {"U12345678":
+                   [
+                       {
+                           "activity_name": "Daily Survey",
+                           "count": 7,
+                           "time_interval": MS_IN_DAY * 7
+                       }
+                   ]
+                 "shdjei293jfj":
+                     [
+                       {
+                           "activity_name": "Mood",
+                           "count": 3,
+                           "time_interval": MS_IN_DAY * 7
+                       },
+                       {
+                           "activity_name": "Anxiety",
+                           "count": 2,
+                           "time_interval": MS_IN_DAY * 5
+                       }
+                   ]
+                }
+            Note: behavior is not defined if participants are in
+                multiple keys.
+            researcher_id: the researcher id
+            name: the name of the survey. Must be exact.
+        The graph tag will be graphs.data_quality.name
+    """
+    perc_compl = {"Study ID (Participant ID)": [], "Completion": []}
+    for k in spec:
+        part_list = generate_ids(k)
+        for part in part_list:
+            part_count = 0
+            total_count = 0
+            for act in spec[k]:
+                act_df = get_activity_names(part,
+                                    act["time_interval"] / MS_IN_DAY)
+                part_count += min(len(act_df[act_df["name"] == act["activity_name"]]),
+                                  act["count"])
+                total_count += act["count"]
+            try:
+                study_name = LAMP.Type.get_attachment(part, "lamp.name")["data"]
+            except LAMP.ApiException:
+                study_name = ""
+            perc_compl["Study ID (Participant ID)"].append(
+                                study_name + " (" + part + ")")
+            perc_compl["Completion"].append(part_count / total_count)
+    perc_compl = pd.DataFrame(perc_compl)
+
+    chart = alt.Chart(perc_compl, title="Activity completion (updated: "
+                      + f"{formatted_date})").mark_bar(color="deepskyblue").encode(
+        x=alt.X("Study ID (Participant ID)"),
+        y=alt.Y("Completion", scale=alt.Scale(domain=[0, 1])),
+        tooltip=['Completion']
+    )
+    key_name = name.replace(" ", "_").lower()
+    key_name = f"graphs.data_quality.{key_name}"
+    LAMP.Type.set_attachment(researcher_id, "me",
+                             attachment_key = key_name,
+                             body=(chart).to_dict())
 
 def clear_chart(researcher_id, name):
     """ Function to clear a chart from the data portal.
