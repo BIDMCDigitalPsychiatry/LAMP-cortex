@@ -133,8 +133,10 @@ def get_activity_names(part_id, days_ago = -1):
     df_names = []
     df_type = []
     df_act_events = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
-    df_act_events = pd.DataFrame([x for x in df_act_events if
-                       (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)])
+    if days_ago > 0:
+        df_act_events = [x for x in df_act_events if
+                       (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)]
+    df_act_events = pd.DataFrame(df_act_events)
     act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
     df_names = []
     for j in range(len(df_act_events)):
