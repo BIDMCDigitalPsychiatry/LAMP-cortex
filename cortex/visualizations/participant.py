@@ -25,19 +25,19 @@ def create_sample_window(end_of_window, sample_length, set_to_utc_midnight):
         Returns:
             the start and end timestamp of the window in ms
     """
-    start_timestamp = (int(time.time())-(end_of_window+sample_length)*24*60*60)*1000
-    end_timestamp = (int(time.time())-(end_of_window)*24*60*60)*1000
+    start_timestamp = (int(time.time()) - (end_of_window + sample_length) * 24 * 60 * 60) *1000
+    end_timestamp = (int(time.time()) - (end_of_window) * 24 * 60 * 60) *1000
     if set_to_utc_midnight:
         return shift_time(start_timestamp,0), shift_time(end_timestamp,0)
     return start_timestamp, end_timestamp
 
 def passive(id_list,
-            sensor_info=[{"sensor": "lamp.gps", 'target_hz': .1, 'display_name': "GPS_Quality"},
+            sensor_info=[{"sensor": "lamp.gps", 'target_hz': 0.1, 'display_name': "GPS_Quality"},
             {"sensor": "lamp.accelerometer", 'target_hz': 3, 'display_name':"Accel_Quality"}],
             show_graphs=True, attach_graphs=True, display_graphs=True,
             days_ago=0, sample_length=7,
             set_to_utc_midnight=True, reporter_func=print,
-            return_dict=False,reset=False):
+            return_dict=False, reset=False):
     """ Generates and attaches participant-level passive data quality graphs.
     Stores data from previous runs as attachments to speed up outputs.
 
@@ -63,7 +63,7 @@ def passive(id_list,
         id_list = generate_ids(id_list)
     except LAMP.ApiException as invalid_id:
         raise KeyError("One or more ids provided was invalid.") from invalid_id
-    if len(id_list)==0:
+    if len(id_list) == 0:
         return None
     #Create our relevant time window to call LAMP
     start_timestamp, end_timestamp = create_sample_window(days_ago,
@@ -72,7 +72,7 @@ def passive(id_list,
     summary_dictionary={}
     def timestamp_from_date(value):
         return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").timestamp()*1000
-    #for each participant
+
     for participant in id_list:
         summary_dictionary[participant]={}
         #analyze each sensor

@@ -173,11 +173,11 @@ def set_graph(target, key, graph, display_on_patient_portal=False, set_on_parent
             None
     """
 
-    if not re.match(r'(^[A-Za-z_.]+$)',key):
+    if not re.match(r'(^[A-Za-z_.0-9]+$)',key):
         #Attachment names should be alphanumeric with '.' and '_' characters
         #We attempt to fix and warn a common mistake
         key = key.replace(' ','_')
-        if not re.match(r'(^[A-Za-z_.]+$)',key):
+        if not re.match(r'(^[A-Za-z_.0-9]+$)',key):
             raise ValueError("""Please use an alphanumeric key with '.' and '_'
             characters for LAMP attachments""")
         print('''Coerced invalid attachments string to correctness. Next time,
