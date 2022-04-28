@@ -23,6 +23,12 @@ find tests -name '*tests.py' -print0 |
             coverage report -m cortex/secondary/data_quality.py
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/secondary/step_count.py
+        elif [[ $line = "tests/util_tests.py" ]]
+        then
+            echo "${green} Running tests for ${line} ${reset}"
+            coverage run "$line"
+            echo "${cyan} Coverage Report for ${line}"
+            coverage report -m cortex/utils/useful_functions_misc.py
         else
             echo "TODO: add other tests here"
             # coverage report

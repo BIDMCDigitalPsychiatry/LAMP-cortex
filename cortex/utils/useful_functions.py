@@ -3,9 +3,9 @@
 """
 from functools import reduce
 import datetime
+import time
 import pandas as pd
 import LAMP
-import time
 
 MS_IN_DAY = 24 * 3600 * 1000
 
