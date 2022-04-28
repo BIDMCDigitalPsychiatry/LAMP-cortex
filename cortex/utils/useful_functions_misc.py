@@ -1,5 +1,6 @@
 """ Module for miscellaneous useful functions """
 import LAMP
+from statistics import mode
 
 def get_os_version(participant_id):
     """ Get OS / Device version from lamp.analytics data.
@@ -19,7 +20,7 @@ def get_os_version(participant_id):
                   for x in analytics_data
                   if ("action" in x["data"]) and (x['data']["action"] == "login")]
     if len(login_data) > 0:
-        user_str = login_data[0].split("; ")
+        user_str = mode(login_data).split("; ")
         if len(user_str) >= 4:
             return {
                 "device_type": user_str[0],
