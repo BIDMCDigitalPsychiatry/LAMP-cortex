@@ -20,6 +20,7 @@ def step_count(**kwargs):
                 is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
+        Warning: Step collection may be cummulative making this feature invalid.
 
     Returns:
         A dict consisting:
@@ -34,8 +35,9 @@ def step_count(**kwargs):
     if "type" not in _steps:
         # Older data, not supported
         return {'timestamp': kwargs['start'], 'value': None}
-    if len(_steps[_steps["type"] == "step_count"] == 0):
-        # No step_count data
+
+    _steps = _steps[_steps["type"] == "step_count"]
+    if len(_steps) == 0:
         return {'timestamp': kwargs['start'], 'value': None}
 
     # Remove duplicates
