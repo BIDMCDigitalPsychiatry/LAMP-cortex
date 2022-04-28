@@ -184,8 +184,7 @@ def passive(id_list,
             else:
                 colors=['grey','blue']
                 domain=[0,target_sample_rate]
-                
-            
+
             chart = alt.Chart(result_dataframe).mark_rect().encode(
                 alt.X('hours(Time):T', title='Hour'),
                 alt.Y('monthdate(Time):N', title='Day'),
@@ -306,7 +305,7 @@ def active(id_list,
 
         if len(target_ids)>0:
             data = [x for x in data if x['activity'] in target_ids]
-        
+
         if exclude_groups:
             data = [x for x in data if x['activity'] not in group_ids]
 
@@ -511,10 +510,10 @@ def cortex_tertiles(target_id,
     # this lets us use labels more easily
     if isinstance(cortex_measures, str):
         cortex_measures = [cortex_measures]
-        
+
     if isinstance(cortex_measures, list):
         cortex_measures = {x:x for x in cortex_measures}
-        
+
     print(cortex_measures)
 
     failed_to_cortex = []
