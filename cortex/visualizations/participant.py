@@ -498,9 +498,8 @@ def cortex_tertiles(target_id,
 
     #Create our relevant time window to call LAMP
     start_timestamp, end_timestamp = create_sample_window(days_ago,
-                                                          sample_length,
+                                                          sample_length+1,
                                                           set_to_utc_midnight)
-
     coll_dict = {}
 
     for user in id_list:
@@ -587,6 +586,8 @@ def cortex_tertiles(target_id,
                            alt.Tooltip(field='raw_score',title='Raw Score',type='nominal')]
 
                 if 0 not in measure_df['val']:
+                    title = (f'{cortex_measures[measure]} tertiles'+
+                    f' over the past {len(measure_df["value"])} days').capitalize()
 
                     chart = (alt.Chart().
                                       mark_point().
@@ -605,7 +606,7 @@ def cortex_tertiles(target_id,
                                                                         "salmon",
                                                                         "goldenrod"]),
                                              sort=['High','Medium',"Low"])).
-                             properties(title=f'{cortex_measures[measure]} tertiles over the past {len(measure_df["value"])} days'.capitalize()))
+                             properties(title=title))
 
                     vert_lines = alt.Chart().mark_bar(width=1, orient='vertical').encode(
                         x=alt.X('monthdate(timestamp):O', axis =alt.Axis(title="Time")),
@@ -636,7 +637,7 @@ def cortex_tertiles(target_id,
                                                                         "goldenrod",
                                                                         'black']),
                                              sort=['High','Medium',"Low","Zero"])).
-                             properties(title=f'{cortex_measures[measure]} tertiles over the past {len(measure_df["value"])} days'.capitalize()))
+                             properties(title=title))
 
                     vert_lines = alt.Chart().mark_bar(width=1, orient='vertical').encode(
                         x=alt.X('monthdate(timestamp):O', axis =alt.Axis(title="Time")),
