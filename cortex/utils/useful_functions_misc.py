@@ -7,47 +7,23 @@ def get_os_version(participant_id):
         Args:
             participant_id: the participant id
         Returns:
-            None if there is no analytics data.
-            Else, a dictionary with "device_type", "os_version", and "phone_type"
-            if they are found in the analytics data
+            A dictionary with "device_type", "os_version", and "phone_type"
+            if they are found in the analytics data. Otherwise, the
+            dictionary will be filled with None
+        Note: These new login strings are found in data from Spring 2022 or
+            later. This will not work with older data.
     """
     analytics_data = LAMP.SensorEvent.all_by_participant(participant_id,
                                         origin="lamp.analytics")["data"]
-    df0 = [x for x in analytics_data if "action" in x["data"]]
-    df0 = [x for x in df0 if x['data']["action"] == "login"]
-
-    df_2 = [x for x in analytics_data if "user_agent" in x["data"]]
-    df_2 = [x for x in df_2 if 'LAMP-dashboard' in x["data"]["user_agent"]]
-    if len(df0) > 0:
-        device_type = df0[0]["data"]["device_type"]
-        os_version = None
-        phone_type = None
-        os_info = df0[0]["data"]["user_agent"]
-        split = True
-        if "," in os_info:
-            os_info.split(",")
-        else:
-            split = False
-        if split:
-            if ";" in os_info:
-                os_info = os_info.split('; ')
-                if device_type == 'Android':
-                    pass
-                else:
-                    os_version = os_info[1].split(" ")[1]
-                    phone_type = os_info[2].split(" ")[1]
-            else:
-                os_info = os_info.split(",")
-                if device_type == "Android":
-                    if len(df_2) > 0:
-                        os_version = (
-                        df_2[0]["data"]["user_agent"].split("(")[1].split(")")[0].split("; ")[1])
-                    phone_type = os_info[2]
-                else:
-                    pass
-        return {
-            "device_type": device_type,
-            "os_version": os_version,
-            "phone_type": phone_type
-        }
-    return None
+    login_data = [x["data"]["device_type"] +"; "+ x["data"]['user_agent']
+                  for x in analytics_data
+                  if ("action" in x["data"]) and (x['data']["action"] == "login")]
+    if len(login_data) > 0:
+        user_str = login_data[0].split("; ")
+        if len(user_str) >= 4:
+            return {
+                "device_type": user_str[0],
+                "os_version": user_str[2],
+                "phone_type": user_str[3],
+            }
+    return {"device_type": None, "os_version": None, "phone_type": None}
