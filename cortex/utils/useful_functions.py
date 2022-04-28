@@ -193,6 +193,9 @@ def set_graph(target, key, graph, display_on_patient_portal=False, set_on_parent
         return
 
     if display_on_patient_portal:
+        if not re.match(r'(^lamp.dashboard.experimental.)',key):
+            print("""Warning! Names that do not start with 'lamp.dashboard.experimental'
+            may not be shown to participants on the participant portal.""")
         #Add the graph to the list of displayed graphs
         if EXPERIMENTAL_NAME in LAMP.Type.list_attachments(target)['data']:
             current_selection = LAMP.Type.get_attachment(target,
@@ -218,3 +221,5 @@ def set_graph(target, key, graph, display_on_patient_portal=False, set_on_parent
             LAMP.Type.set_attachment(_id, 'me',
                                      f'lamp.dashboard.{lamp_type.lower()}_tags',
                                      body=new_attachments)
+
+

@@ -166,7 +166,7 @@ def passive(id_list,
             chart = alt.Chart(result_dataframe).mark_line().encode(
                         x=alt.X('Time:T', axis=alt.Axis(title='Time')),
                         y=alt.X('Counts', axis=alt.Axis(title='Data entries received'))
-                    ).properties(title={'text':title})
+                    ).properties(title={'text':title.capitalize()})
             line = alt.Chart(pd.DataFrame({'y': [target_sample_rate],
                                        'label':[f"Target Sample Rate ({sensor['target_hz']} Hz)"
                                                ]})).mark_rule(color='red').encode(y=alt.Y('y'))
@@ -178,18 +178,26 @@ def passive(id_list,
             scatter = chart+line+text
 
             #Create heatmap chart
+            if result_dataframe['Counts'].max()>target_sample_rate:
+                colors=['grey','blue','blue']
+                domain=[0,target_sample_rate,result_dataframe['Counts'].max()]
+            else:
+                colors=['grey','blue']
+                domain=[0,target_sample_rate]
+                
+            
             chart = alt.Chart(result_dataframe).mark_rect().encode(
                 alt.X('hours(Time):T', title='Hour'),
                 alt.Y('monthdate(Time):N', title='Day'),
                 alt.Color('Counts', title='Data',
-                          scale=alt.Scale(range=['grey', 'blue'],
-                                          domain=[0,target_sample_rate])),
-                ).properties(title={'text':title})
+                          scale=alt.Scale(range=colors,
+                                          domain=domain)),
+                ).properties(title={'text':title.capitalize()})
             # Configure text
-            text = chart.mark_text(baseline='middle').encode(
+            text = chart.mark_text(baseline='middle',dx=10).encode(
                 text='significant:N',
                 color=alt.value('white')
-            ).transform_calculate(significant=f'datum.counts>{target_sample_rate}? "*" :""')
+            ).transform_calculate(significant=f'datum.Counts>{target_sample_rate}? "*" :""')
             #Assemble heatmap plot
             heatmap = (chart+text)
 
@@ -223,7 +231,8 @@ def passive(id_list,
 def active(id_list,
              target_array=[''],exclude_array=None, exclude_groups=True,
              show_graphs=True, attach_graphs=True, display_graphs=True,
-              days_ago=0, sample_length=30, show_missing_days=True,
+              graph_name='lamp.dashboard.experimental.activity_counts',
+              days_ago=0, sample_length=30,
                reporter_func=print, return_dict=False):
     """ Generates and attaches participant-level active data quality graphs.
 
@@ -237,12 +246,12 @@ def active(id_list,
             show_graphs: if True, graphs are displayed in the output
             attach_graphs: if True, graphs are attached to the participant
             display_graphs: if True, graphs are attached to the study and researcher for display
+            graph_name: set to another string to override the default name
             days_ago: the number of days ago the analysis should end.
                         If 0, analysis ends on the current timestamp
             sample_length: The number of days to query data for
             reporter_func: The function that should output important logging info.
                         Use with a webhook, for example logging to slack
-            show_missing_days: if False, does not show empty columns for days with no data
             return_dict: If true, returns a dictionary containing data output. Else returns None.
         Returns:
             summary_dictionary: a dictionary containing data about the data
@@ -262,6 +271,7 @@ def active(id_list,
         activity_data = LAMP.Activity.all_by_participant(_id)['data']
         id_to_name = {x['id']:x['name'] for
                       x in activity_data if 'id' in x and 'name' in x}
+        group_ids = [x['id'] for x in activity_data if x['spec']=='lamp.group']
         # if a filter was provided
         if len(target_identifier)>0:
             #check if the filter is an ID
@@ -295,8 +305,10 @@ def active(id_list,
             data += data_next
 
         if len(target_ids)>0:
-            data = [x for x in data if x['activity'] in target_ids
-                    and (exclude_groups and x['spec']=='lamp.group')]
+            data = [x for x in data if x['activity'] in target_ids]
+        
+        if exclude_groups:
+            data = [x for x in data if x['activity'] not in group_ids]
 
         # We filter out any timestamp before 2015, since it is invalid.
         # This is largely to prevent erroneous data from appearing on 'Jan 1st, 1970'
@@ -390,13 +402,11 @@ def active(id_list,
         #this boolean helps us display data more nicely if there are a lot of different activities
         too_much_data = data_df.groupby('timestamp')['count'].transform('sum').max()>=9
         #if the columns will be too narrow, we don't display text
-        graph_too_wide = (data_df.groupby('activity')['timestamp'].transform('count').max()>=30
-                          or (show_missing_days and
-                              (data_df['timestamp'].max()-data_df['timestamp'].min()).days>30))
+        graph_too_wide = (data_df.groupby('activity')['timestamp'].transform('count').max()>=30)
         data_df['activity_subname'] = data_df['activity'].apply(condense_name)
 
         final = alt.Chart(data_df).mark_bar().encode(
-                x = alt.X('timestamp:'+("T" if show_missing_days else "O"), title='Date'),
+                x = alt.X('timestamp:T', title='Date'),
                 y = alt.Y('count:Q', stack='zero',title='Activity Breakdown'),
                 color=alt.Color('activity:N'),
                 order=alt.Order('activity',sort='ascending'),
@@ -407,10 +417,10 @@ def active(id_list,
 
         )
         if not graph_too_wide:
-            text = alt.Chart(data_df).mark_text(dy=8 if show_missing_days else 0,
+            text = alt.Chart(data_df).mark_text(dy=0,
                                                 dx=-5 if too_much_data else -20,
                                                 angle=270, color='white').encode(
-                x=alt.X('timestamp:'+("T" if show_missing_days else "O")),
+                x=alt.X('timestamp:T'),
                 y=alt.Y('count:Q', stack='zero'),
                 order=alt.Order('activity',sort='ascending'),
                 text=alt.Text('text_output:N'),
@@ -433,9 +443,8 @@ def active(id_list,
 
     if attach_graphs:
         reporter_func("Graphs generated. Attaching Graphs...")
-        name = "lamp.dashboard.experimental.activity_counts"
         for participant,graph in chart_dict.items():
-            set_graph(participant, key=name,graph=graph,
+            set_graph(participant, key=graph_name,graph=graph,
                  display_on_patient_portal=display_graphs,
                  set_on_parents=True)
     reporter_func("Analysis complete")
@@ -498,16 +507,21 @@ def cortex_tertiles(target_id,
     for user in id_list:
         coll_dict[user] = {}
 
+    # coerce cortex measures into dict format
+    # this lets us use labels more easily
     if isinstance(cortex_measures, str):
         cortex_measures = [cortex_measures]
+        
+    if isinstance(cortex_measures, list):
+        cortex_measures = {x:x for x in cortex_measures}
+        
+    print(cortex_measures)
 
     failed_to_cortex = []
     for _id in id_list:
         try:
             print(f"Attempting to run cortex analyses on {_id}")
-            measure_list = (cortex_measures.keys()
-                            if isinstance(cortex_measures, dict)
-                            else cortex_measures)
+            measure_list = cortex_measures.keys()
             coll_dict[_id]['raw']={}
             for cortex_measure in measure_list:
                 print(f'Running {cortex_measure} on {_id}')
@@ -591,7 +605,8 @@ def cortex_tertiles(target_id,
                                                                  range=["blue",
                                                                         "salmon",
                                                                         "goldenrod"]),
-                                             sort=['High','Medium',"Low"])))
+                                             sort=['High','Medium',"Low"])).
+                             properties(title=f'{cortex_measures[measure]} tertiles over the past {len(measure_df["value"])} days'.capitalize()))
 
                     vert_lines = alt.Chart().mark_bar(width=1, orient='vertical').encode(
                         x=alt.X('monthdate(timestamp):O', axis =alt.Axis(title="Time")),
@@ -621,7 +636,8 @@ def cortex_tertiles(target_id,
                                                                         "salmon",
                                                                         "goldenrod",
                                                                         'black']),
-                                             sort=['High','Medium',"Low","Zero"])))
+                                             sort=['High','Medium',"Low","Zero"])).
+                             properties(title=f'{cortex_measures[measure]} tertiles over the past {len(measure_df["value"])} days'.capitalize()))
 
                     vert_lines = alt.Chart().mark_bar(width=1, orient='vertical').encode(
                         x=alt.X('monthdate(timestamp):O', axis =alt.Axis(title="Time")),
@@ -635,10 +651,7 @@ def cortex_tertiles(target_id,
                                             range=["blue","salmon","goldenrod",'black']),
                                              sort=['High','Medium',"Low","Zero"]))
                 final = alt.layer(chart,vert_lines,data=measure_df)
-                if not isinstance(cortex_measures, dict):
-                    coll_dict[_id]['graphs'][measure] = final.to_dict()
-                else:
-                    coll_dict[_id]['graphs'][cortex_measures[measure]] = final.to_dict()
+                coll_dict[_id]['graphs'][cortex_measures[measure]] = final.to_dict()
             except Exception as error: #pylint:disable=broad-except
                 reporter_func(f'''Could not generate {measure}
                 graph for {_id}. {error.__class__.__name__}:{error}''')
