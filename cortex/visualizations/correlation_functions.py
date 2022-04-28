@@ -2,17 +2,16 @@
 import os
 import time
 import logging
-logging.getLogger('seaborn').setLevel(level=logging.WARNING)
-logging.getLogger('matplotlib').setLevel(level=logging.WARNING)
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from scipy.stats import pearsonr
-import matplotlib.pyplot as plt
-from statsmodels.stats.multitest import multipletests
-
 import LAMP
 from ..primary.survey_scores import survey_scores
+from statsmodels.stats.multitest import multipletests
+logging.getLogger('seaborn').setLevel(level=logging.WARNING)
+logging.getLogger('matplotlib').setLevel(level=logging.WARNING)
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 def save_surveys_to_file(part_id, survey_path, scoring_dict):
