@@ -18,7 +18,8 @@ def get_os_version(participant_id):
                                         origin="lamp.analytics")["data"]
     login_data = [x["data"]["device_type"] +"; "+ x["data"]['user_agent']
                   for x in analytics_data
-                  if ("action" in x["data"]) and (x['data']["action"] == "login")]
+                  if ("action" in x["data"]) and (x['data']["action"] == "login")
+                 and ('device_type' in x['data'] and 'device_type'!='Dashboard')]
     if len(login_data) > 0:
         user_str = mode(login_data).split("; ")
         if len(user_str) >= 4:
