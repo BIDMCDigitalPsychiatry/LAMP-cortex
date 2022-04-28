@@ -20,6 +20,7 @@ def step_count(**kwargs):
                 is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
+        Warning: Step collection may be cummulative making this feature invalid.
 
     Returns:
         A dict consisting:
@@ -31,32 +32,16 @@ def step_count(**kwargs):
         return {'timestamp': kwargs['start'], 'value': None}
     _steps = pd.DataFrame(_steps)
 
-    # get device type
-    _analytics = analytics(**kwargs)
-    _device_types = [_event['device_type'] for _event in _analytics['data']
-                     if 'device_type' in _event]
-    _device_type = 'iOS' # default to ios
+    if "type" not in _steps:
+        # Older data, not supported
+        return {'timestamp': kwargs['start'], 'value': None}
 
-    for device in _device_types:
-        if device not in ['iOS', 'Android']: # ignore non-smartphone reads
-            continue
-        _device_type = device
-        break
-
-    if len(_device_types) == 0:
-        if "source" in _steps and len(_steps[_steps["source"] == "com.google.android.gms"]) > 0:
-            _device_type = "Android"
-
-    if _device_type == "iOS":
-        if "unit" in _steps:
-            _steps = _steps[_steps["unit"] == "count"]
-            _steps = _steps.rename(columns={"value": "steps"})
-        else:
-            return {'timestamp': kwargs['start'], 'value': None}
+    _steps = _steps[_steps["type"] == "step_count"]
+    if len(_steps) == 0:
+        return {'timestamp': kwargs['start'], 'value': None}
 
     # Remove duplicates
     _steps = _steps[_steps['timestamp'] != _steps['timestamp'].shift()]
-    if "steps" not in _steps:
-        return {'timestamp': kwargs['start'], 'value': None}
 
-    return {'timestamp': kwargs['start'], 'value': _steps["steps"].sum()}
+    return {'timestamp': kwargs['start'],
+            'value': _steps[_steps["type"] == "step_count"]["value"].sum()}
