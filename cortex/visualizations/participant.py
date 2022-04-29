@@ -210,14 +210,14 @@ def passive(id_list,
              [sensor['display_name']]['graph']['heatmap'])=heatmap.to_dict()
 
             if attach_graphs:
-                print(f"lamp.dashboard.experimental.{sensor['display_name']}_scatter")
+                name = f"lamp.dashboard.experimental.{sensor['display_name']}"
                 set_graph(participant,
-                         key=f"lamp.dashboard.experimental.{sensor['display_name']}_scatter",
+                         key=name+'_scatter',
                          graph=scatter.to_dict(),
                          display_on_patient_portal=display_graphs,
                          set_on_parents=True)
                 set_graph(participant,
-                         key=f"lamp.dashboard.experimental.{sensor['display_name']}_heatmap",
+                         key=name+"_heatmap",
                          graph=heatmap.to_dict(),
                          display_on_patient_portal=display_graphs,
                          set_on_parents=True)
@@ -411,9 +411,7 @@ def active(id_list,
                 order=alt.Order('activity',sort='ascending'),
                 tooltip=[alt.Tooltip(field='activity',title='Activity Name',type='nominal'),
                          alt.Tooltip(field='count',title='Times Completed',type='quantitative'),
-                         #alt.Tooltip(field='id',title='Activity ID',type='nominal'),
                          alt.Tooltip(field='timestamp',title="Date",type='temporal')]
-
         )
         if not graph_too_wide:
             text = alt.Chart(data_df).mark_text(dy=0,
@@ -429,7 +427,6 @@ def active(id_list,
                              alt.Tooltip(field='count',
                                          title='Times Completed',
                                          type='quantitative'),
-                             #alt.Tooltip(field='id',title='Activity ID',type='nominal'),
                              alt.Tooltip(field='timestamp',
                                          title="Date",
                                          type='temporal')]
@@ -584,11 +581,11 @@ def cortex_tertiles(target_id,
                 tooltip = [alt.Tooltip(field='timestamp',title='Date',type='temporal'),
                            alt.Tooltip(field='Tertile',title='Relative Amount',type='nominal'),
                            alt.Tooltip(field='raw_score',title='Raw Score',type='nominal')]
+                
+                title = (f'{cortex_measures[measure]} tertiles'+
+                f' over the past {len(measure_df["value"])} days').capitalize()
 
                 if 0 not in measure_df['val']:
-                    title = (f'{cortex_measures[measure]} tertiles'+
-                    f' over the past {len(measure_df["value"])} days').capitalize()
-
                     chart = (alt.Chart().
                                       mark_point().
                                       encode(alt.X('monthdate(timestamp):O',
