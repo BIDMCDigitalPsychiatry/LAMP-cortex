@@ -4,10 +4,13 @@
 from functools import reduce
 import datetime
 import time
+import re
 import pandas as pd
 import LAMP
 
 MS_IN_DAY = 24 * 3600 * 1000
+#Used for set_graphs
+EXPERIMENTAL_NAME='lamp.selectedExperimental'
 
 def generate_ids(id_set):
     """ This function takes either a single id of type Researcher, Study, or
@@ -117,13 +120,15 @@ def get_part_id_from_name(name, parts):
             return part
     return -1
 
-def get_activity_names(part_id, days_ago = -1):
+def get_activity_names(part_id, sample_length = -1, end_of_window = int(time.time() * 1000)):
     """ Get activity names and specs for a participant.
 
         Args:
             part_id (string): the participant_id
-            days_ago (float, default: -1): get the activities from the previous x days
-                if -1, all data will be used
+            sample_length (float, default: -1, unit: days): get the activities from
+                the previous x days. If -1, all data will be used
+            end_of_window (float, default: current time, unit: ms): the end
+                of the window to pull data in ms
         Returns:
             The DataFrame of ActivityEvents with two additional columns:
             "name" and "spec" from the Activity data
@@ -133,9 +138,9 @@ def get_activity_names(part_id, days_ago = -1):
     df_names = []
     df_type = []
     df_act_events = LAMP.ActivityEvent.all_by_participant(part_id)["data"]
-    if days_ago > 0:
+    if sample_length > 0:
         df_act_events = [x for x in df_act_events if
-                       (x["timestamp"] > int(time.time() * 1000) - days_ago * MS_IN_DAY)]
+                       (x["timestamp"] > end_of_window - sample_length * MS_IN_DAY)]
     df_act_events = pd.DataFrame(df_act_events)
     act_names = pd.DataFrame(LAMP.Activity.all_by_participant(part_id)["data"])
     df_names = []
@@ -151,3 +156,70 @@ def get_activity_names(part_id, days_ago = -1):
     df_act_events["name"] = df_names
     df_act_events["spec"] = df_type
     return df_act_events
+
+def set_graph(target, key, graph, display_on_patient_portal=False, set_on_parents=False):
+    """ Attaches a graph to a target in LAMP. If the target is a participant,
+        graphs can also be attached for viewing in the data portal or
+        patient portal.
+
+        Args:
+            target: LAMP ID to set a graph tag on.
+            graph: A JSON representation of a vega spec
+            display_on_patient_portal: if True,
+                graph displays on patient portal
+            set_on_parents: if True, graph is made
+                available to parents in the data portal
+        Returns:
+            None
+    """
+
+    if not re.match(r'(^[A-Za-z_.0-9]+$)',key):
+        #Attachment names should be alphanumeric with '.' and '_' characters
+        #We attempt to fix and warn a common mistake
+        key = key.replace(' ','_')
+        if not re.match(r'(^[A-Za-z_.0-9]+$)',key):
+            raise ValueError("""Please use an alphanumeric key with '.' and '_'
+            characters for LAMP attachments""")
+        print('''Coerced invalid attachments string to correctness. Next time,
+        please use an alphanumeric key with '.' and '_'
+        characters for LAMP attachments''')
+
+
+    LAMP.Type.set_attachment(target, "me",
+                             attachment_key=key,
+                             body=graph)
+
+    if not 'Study' in LAMP.Type.parent(target)['data']:
+        return
+
+    if display_on_patient_portal:
+        if not re.match(r'(^lamp.dashboard.experimental.)',key):
+            print("""Warning! Names that do not start with 'lamp.dashboard.experimental'
+            may not be shown to participants on the participant portal.""")
+        #Add the graph to the list of displayed graphs
+        if EXPERIMENTAL_NAME in LAMP.Type.list_attachments(target)['data']:
+            current_selection = LAMP.Type.get_attachment(target,
+                                                         EXPERIMENTAL_NAME)['data']
+            current_selection += [key]
+            LAMP.Type.set_attachment(target, "me",
+                                     attachment_key = EXPERIMENTAL_NAME,
+                                     body=list(set(current_selection)))
+        else:
+            LAMP.Type.set_attachment(target, "me",
+                                     attachment_key = EXPERIMENTAL_NAME,
+                                     body=[key])
+    if set_on_parents:
+        #Attach the name to researcher and study wide tags for the data portal
+        for lamp_type,_id in LAMP.Type.parent(target)['data'].items():
+            try:
+                attachment=f'lamp.dashboard.{lamp_type.lower()}_tags'
+                current_attachments = LAMP.Type.get_attachment(_id,
+                                                               attachment)['data']
+            except LAMP.ApiException:
+                current_attachments = []
+            new_attachments = list(set(current_attachments + [key]))
+            LAMP.Type.set_attachment(_id, 'me',
+                                     f'lamp.dashboard.{lamp_type.lower()}_tags',
+                                     body=new_attachments)
+
+
