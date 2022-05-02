@@ -21,10 +21,10 @@ class TestSecondary(unittest.TestCase):
     TEST_PARTICIPANT_ANDROID = "U1771421483"
     TEST_PARTICIPANT_IOS = "U3826134542"
     EMPTY_PARTICIPANT = "U5704591513"
+    TEST_PARTICIPANT_STEPS = "U5946075691"
     TEST_END_TIME = 1583532324130 + 30 * MS_IN_DAY
     TEST_START_TIME_JERK = 1584137124130
-    TEST_STEPS_START_ANDROID = 1636016400000
-    TEST_STEPS_START_IOS = 1643623200000
+    TEST_START_TIME_STEPS = 1651161331270 - 5 * MS_IN_DAY
 
     def setUp(self):
         """ Setup the tests """
@@ -101,26 +101,18 @@ class TestSecondary(unittest.TestCase):
         for x in ret0['data']:
             self.assertEqual(x['value'], None)
 
-    def test_step_count_android(self):
-        # Test that step count works for android
-        ret0 = secondary.step_count.step_count(id=self.TEST_PARTICIPANT_ANDROID,
-                                           start=self.TEST_STEPS_START_ANDROID,
-                                           end=self.TEST_STEPS_START_ANDROID + 4 * self.MS_IN_DAY,
-                                           resolution=self.MS_IN_DAY)
-        self.assertEqual(ret0['data'][0]['value'], 7826)
-        self.assertEqual(ret0['data'][1]['value'], 2265)
-        self.assertEqual(ret0['data'][2]['value'], 1614)
-
-    def test_step_count_ios(self):
-        # Test that step count works for ios
-        ret0 = secondary.step_count.step_count(id=self.TEST_PARTICIPANT_IOS,
-                                           start=self.TEST_STEPS_START_IOS,
-                                           end=self.TEST_STEPS_START_IOS + 4 * self.MS_IN_DAY + 1,
-                                           resolution=self.MS_IN_DAY)
-        self.assertEqual(ret0['data'][0]['value'], None)
-        self.assertEqual(ret0['data'][1]['value'], 2617)
-        self.assertEqual(ret0['data'][2]['value'], 1470)
-        self.assertEqual(ret0['data'][3]['value'], 1180)
+    def test_step_count(self):
+        # Test that step count works
+        ret0 = secondary.step_count.step_count(id=self.TEST_PARTICIPANT_STEPS,
+                                           start=self.TEST_START_TIME_STEPS,
+                                           end=self.TEST_START_TIME_STEPS + 6 * self.MS_IN_DAY + 1,
+                                           resolution=self.MS_IN_DAY)["data"]
+        self.assertEqual(ret0[0]['value'], None)
+        self.assertEqual(ret0[1]['value'], None)
+        self.assertEqual(ret0[2]['value'], None)
+        self.assertEqual(ret0[3]['value'], 131120)
+        self.assertEqual(ret0[4]['value'], 179017)
+        self.assertEqual(ret0[5]['value'], 3598)
 
 if __name__ == '__main__':
     unittest.main()
