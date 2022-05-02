@@ -1,23 +1,29 @@
-""" Module for computing screen active bouts from screen state """
+""" Module for computing screen active bouts from device state """
 import datetime
 import LAMP
 
 from ..feature_types import primary_feature
-from ..raw.screen_state import screen_state
-from ..raw.analytics import analytics
+from ..raw.device_state import device_state
 
 @primary_feature(
     name="cortex.screen_active",
-    dependencies=[screen_state, analytics]
+    dependencies=[device_state]
 )
 def screen_active(attach=True,
                   duration_threshold=1000 * 60 * 60 * 2, #2 hours
                   **kwargs):
     """Builds bout of screen activity.
 
-    Relies on the 'screen_state' raw sensor. On events/off events are
-    encoded differently for iOS and Android devices. Accordingly, device
-    type is found first using lamp.analytics.
+    Relies on the 'device_state' raw sensor. In the past, on events/off events
+    were encoded differently for iOS and Android devices. For this functionality,
+    please use an older version of cortex (03.11.2022 or earlier). These events
+    should now be consistent across iOS and Android.
+
+    The mapping is:
+        0 --> "screen_on"
+        1 --> "screen_off"
+        2 --> "locked"
+        3 --> "unlocked"
 
     Args:
         attach (boolean): Indicates whether to use LAMP.Type.attachments in calculating the feature.
@@ -40,41 +46,27 @@ def screen_active(attach=True,
     start_time = 0
     end_time = int(datetime.datetime.now().timestamp()) * 1000
 
-    # get device type
-    _analytics = analytics(**kwargs)
-    _device_types = [_event['device_type']
-                     for _event in _analytics['data'] if 'device_type' in _event]
-    _device_type = 'iOS' #default to ios
-
-    for d in _device_types:
-        if d not in ['iOS', 'Android']: #ignore non-smartphone reads
-            continue
-        _device_type = d
-        break
-
     # get all of the data for the bouts
-    _screen_state = list(reversed(screen_state(id=kwargs['id'],
+    _device_state = list(reversed(device_state(id=kwargs['id'],
                                                start=start_time,
                                                end=end_time)['data']))
     has_raw_data = 1
-    if len(_screen_state) == 0:
+    if len(_device_state) == 0:
         has_raw_data = 0
 
-    # Ensure state is present; convert value if not
-    for _event in _screen_state:
-        if 'state' not in _event:
+    # Ensure value is present; convert state if not
+    for _event in _device_state:
+        if 'value' not in _event:
             if 'data' not in _event:
-                _event['state'] = _event['value']
+                _event['value'] = _event['state']
             else:
-                _event['state'] = _event['data']['value']
+                _event['value'] = _event['data']['state']
 
     # Initialize
-    _screen_active = _get_screen_state_data(_screen_state,
-                                            device_type=_device_type,
+    _screen_active = _get_device_state_data(_device_state,
                                             duration_threshold=duration_threshold,
                                             flipped=0)
-    _screen_active_flipped = _get_screen_state_data(_screen_state,
-                                                    device_type=_device_type,
+    _screen_active_flipped = _get_device_state_data(_device_state,
                                                     duration_threshold=duration_threshold,
                                                     flipped=1)
 
@@ -93,43 +85,42 @@ def screen_active(attach=True,
         # assume normal is correct
         _ret_screen_active = _screen_active
 
-    # filter out events that
     return {'data': _ret_screen_active, 'has_raw_data': has_raw_data}
 
-def _get_screen_state_data(_screen_state,
-                           device_type,
+def _get_device_state_data(_device_state,
                            duration_threshold=1000 * 60 * 60 * 2,
                            flipped=0):
+    """ Get device_state data bouts.
 
-    if device_type == 'iOS':
-        on_events = [0] #[1, 3]
-        off_events = [1, 2] #[0, 2]
-    elif device_type == 'Android':
-        # ANDROID STUFF
-        on_events = [0, 3] #[1, 3]
-        off_events = [1, 2] #[0, 2]
-    else:
-        raise Exception('Unknown device type')
+        Arg:
+            _device_state (list): the raw device state data
+            duration_threshold (int, unit: ms, default: 2 hours): exclude bouts
+                longer than this threshold
+            flipped (boolean, default: 0): whether to use the screen on bouts
+                or screen off bouts
+    """
+
+    on_events = [0, 3]
+    off_events = [1, 2]
 
     if flipped:
-        on_copy, off_copy = [n for n in on_events], [n for n in off_events]
-        on_events = off_copy
-        off_events = on_copy
+        on_events = [1, 2]
+        off_events = [0, 3]
 
     _screen_active = []
     start = True # if looking for start
     bout = {}
 
-    for i in range(len(_screen_state) - 1):
-        elapsed = _screen_state[i+1]['timestamp'] - _screen_state[i]['timestamp']
-        if (elapsed < 1000 and _screen_state[i+1]['state'] in on_events
-            and _screen_state[i]['state'] in on_events):
+    for i in range(len(_device_state) - 1):
+        elapsed = _device_state[i+1]['timestamp'] - _device_state[i]['timestamp']
+        if (elapsed < 1000 and _device_state[i+1]['value'] in on_events
+            and _device_state[i]['value'] in on_events):
             continue
-        if start and _screen_state[i]['state'] in on_events:
-            bout['start'] = _screen_state[i]['timestamp']
+        if start and _device_state[i]['value'] in on_events:
+            bout['start'] = _device_state[i]['timestamp']
             start = False
-        elif not start and _screen_state[i]['state'] in off_events:
-            bout['end'] = _screen_state[i]['timestamp']
+        elif not start and _device_state[i]['value'] in off_events:
+            bout['end'] = _device_state[i]['timestamp']
             bout['duration'] = bout['end'] - bout['start']
 
             #If bout duration too long, ignore it
@@ -139,8 +130,8 @@ def _get_screen_state_data(_screen_state,
             bout = {}
             start = True
 
-    if not start and _screen_state[-1]['state'] in off_events:
-        bout['end'] = _screen_state[-1]['timestamp']
+    if not start and _device_state[-1]['value'] in off_events:
+        bout['end'] = _device_state[-1]['timestamp']
         bout['duration'] = bout['end'] - bout['start']
         _screen_active.append(bout)
 

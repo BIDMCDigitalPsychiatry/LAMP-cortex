@@ -335,24 +335,24 @@ def raw_feature(name, dependencies):
                                                         _limit=int(kwgs['_limit']))['data']
                 data += data_next
             # Special case for screen_ state and device state mapping to the same thing
-            if name == "lamp.screen_state":
+            if name == "lamp.device_state":
                 data_next = []
-                data_device_state = LAMP.SensorEvent.all_by_participant(kwgs['id'],
-                                               origin="lamp.device_state",
+                data_screen_state = LAMP.SensorEvent.all_by_participant(kwgs['id'],
+                                               origin="lamp.screen_state",
                                                _from=int(kwgs['start']),
                                                to=int(kwgs['end']),
                                                _limit=int(kwgs['_limit']))['data']
                 while (kwgs['recursive'] and
-                       (len(data_device_state) == MAX_RETURN_SIZE or
+                       (len(data_screen_state) == MAX_RETURN_SIZE or
                         len(data_next) == MAX_RETURN_SIZE)):
-                    to = data_device_state[-1]['timestamp']
+                    to = data_screen_state[-1]['timestamp']
                     data_next = LAMP.SensorEvent.all_by_participant(kwgs['id'],
-                                                            origin="lamp.device_state",
+                                                            origin="lamp.screen_state",
                                                             _from=int(kwgs['start']),
                                                             to=int(to),
                                                             _limit=int(kwgs['_limit']))['data']
-                    data_device_state += data_next
-                data += data_device_state
+                    data_screen_state += data_next
+                data += data_screen_state
             ret = [{'timestamp': x['timestamp'], **x['data']} for x in data]
             # Sort because of device_state / screen_state
             ret = (sorted(ret, key = lambda i: i['timestamp'], reverse=True))

@@ -7,7 +7,7 @@ from ..feature_types import raw_feature
 )
 def steps(_limit=10000,
           cache=False,
-          recursive=False,
+          recursive=True,
           **kwargs):
     """ Get all step count bounded by time interval.
 

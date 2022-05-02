@@ -7,7 +7,7 @@ from ..feature_types import raw_feature
 )
 def calls(_limit=10000,
           cache=False,
-          recursive=False,
+          recursive=True,
           **kwargs):
     """ Get all call data bounded by the time interval.
 
