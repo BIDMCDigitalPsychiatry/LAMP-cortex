@@ -47,6 +47,8 @@ echo "${green} calls.py ${reset}"
 pylint cortex/raw/calls.py
 echo "${green} cats_and_dogs.py ${reset}"
 pylint cortex/raw/cats_and_dogs.py
+echo "${green} device_motion.py ${reset}"
+pylint cortex/raw/device_motion.py
 echo "${green} gps.py ${reset}"
 pylint cortex/raw/gps.py
 echo "${green} gyroscope.py ${reset}"
