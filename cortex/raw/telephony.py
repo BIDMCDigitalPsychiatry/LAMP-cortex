@@ -7,7 +7,7 @@ from ..feature_types import raw_feature
 )
 def telephony(_limit=10000,
         cache=False,
-        recursive=False,
+        recursive=True,
         **kwargs):
     """ Get all telephony data bounded by time interval.
 

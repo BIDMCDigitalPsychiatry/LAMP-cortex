@@ -2,14 +2,16 @@
 import LAMP
 from ..feature_types import raw_feature
 
+MAX_RETURN_SIZE = 10000
+
 @raw_feature(
     name='lamp.survey',
     dependencies=['lamp.survey']
 )
 def survey(replace_ids=True,
-           _limit=2147483647,
+           _limit=10000,
            cache=False,
-           recursive=False,
+           recursive=True,
            **kwargs):
     """ Get all survey data bounded by time interval.
 
@@ -52,17 +54,26 @@ def survey(replace_ids=True,
     # Once the API Server supports filtering origin by an ActivitySpec, we won't need this.
     activities = LAMP.Activity.all_by_participant(kwargs['id'])['data']
     surveys = {x['id']: x for x in activities if x['spec'] == 'lamp.survey'}
+
+    data_next = []
     raw = LAMP.ActivityEvent.all_by_participant(kwargs['id'],
-                                                # origin="lamp.survey" backend not implemented
                                                 _from=kwargs['start'],
                                                 to=kwargs['end'],
                                                 _limit=_limit)['data']
+    while (recursive and
+           (len(raw) == MAX_RETURN_SIZE or len(data_next) == MAX_RETURN_SIZE)):
+        to = raw[-1]['timestamp']
+        data_next = LAMP.ActivityEvent.all_by_participant(kwargs['id'],
+                                                _from=kwargs['start'],
+                                                to=int(to),
+                                                _limit=_limit)['data']
+        raw += data_next
 
     def remove_duplicate_activity_events(raw_data):
         # Here, we remove any duplicates from raw data
         # by generating a new list, then replacing the old one.
         raw_minus_duplicates = []
-        for index, event in enumerate(raw_data):
+        for _, event in enumerate(raw_data):
             #get a list of all duplicate elements
             duplicates = list(filter(
                 lambda x: x['temporal_slices'] == event['temporal_slices'], raw_minus_duplicates))

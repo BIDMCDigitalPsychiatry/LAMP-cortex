@@ -25,6 +25,8 @@ class TestPrimary(unittest.TestCase):
     TEST_SCREEN_ACTIVE_START_2 = 1585346933781
     TEST_SCREEN_ACTIVE_END_2 = TEST_SCREEN_ACTIVE_START_2 + 3 * MS_IN_DAY
     TEST_START_TIME_JERK = 1584137124130
+    TEST_PARTICIPANT_DEVICE = "U2913598741"
+    TEST_SCREEN_ACTIVE_START_3 = 1648050625957
 
     def setUp(self):
         """ Setup the tests """
@@ -234,16 +236,16 @@ class TestPrimary(unittest.TestCase):
         ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT,
                                                    start=self.TEST_SCREEN_ACTIVE_START_0,
                                                    end=self.TEST_SCREEN_ACTIVE_END_0)
-        correct_dur = 600000
+        correct_dur = 599999
         self.assertEqual(ret0['data'][0]['duration'], correct_dur)
 
     def test_screenactive_correct_number(self):
         # Test if the number of bouts is correct
-        ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT,
-                                                   start=self.TEST_SCREEN_ACTIVE_START_1,
-                                                   end=self.TEST_SCREEN_ACTIVE_END_1)
+        ret0 = primary.screen_active.screen_active(id=self.TEST_PARTICIPANT_DEVICE,
+                                                   start=self.TEST_SCREEN_ACTIVE_START_3,
+                                                   end=self.TEST_SCREEN_ACTIVE_START_3 + self.MS_IN_DAY)
         num_bouts = len(ret0['data'])
-        self.assertEqual(num_bouts, 7)
+        self.assertEqual(num_bouts, 76)
 
     # 3. Acc_jerk
     def test_acc_jerk_no_data(self):

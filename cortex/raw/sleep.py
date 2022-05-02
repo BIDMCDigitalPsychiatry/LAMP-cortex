@@ -7,7 +7,7 @@ from ..feature_types import raw_feature
 )
 def sleep(_limit=10000,
           cache=False,
-          recursive=False,
+          recursive=True,
           **kwargs):
     """ Get all Healthkit sleep data bounded by time interval.
 

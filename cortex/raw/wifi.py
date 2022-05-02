@@ -7,7 +7,7 @@ from ..feature_types import raw_feature
 )
 def wifi(_limit=10000,
          cache=False,
-         recursive=False,
+         recursive=True,
          **kwargs):
     """ Get all wifi data bounded by time interval.
 

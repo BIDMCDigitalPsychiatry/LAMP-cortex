@@ -1,11 +1,11 @@
-""" Module for raw feature screen state """
+""" Module for raw feature device state """
 from ..feature_types import raw_feature
 
 @raw_feature(
-    name="lamp.screen_state",
-    dependencies=["lamp.screen_state"]
+    name="lamp.device_state",
+    dependencies=["lamp.device_state"]
 )
-def screen_state(_limit=10000,
+def device_state(_limit=10000,
                  cache=False,
                  recursive=True,
                  **kwargs):
@@ -19,18 +19,27 @@ def screen_state(_limit=10000,
 
     Returns:
         timestamp (int): The UTC timestamp for the screen_state event.
-        value OR state (int): 0, 1, 2, 3 to denote screen on, off, locked, charging**
-        valueString (str): "Screen On", "Screen Off", "Screen Locked"
+        value (int): 0, 1, 2, 3 to denote screen on, off, locked, charging**
+        representation (str): "screen_off", "screen_on", "locked", "unlocked"
     Note that based on phone type, value may be returned as "value" or as
             "state". Additionally, not all devices will return a "valueString".
     ** value / state are also phone dependent, so state = 0 on one phone could be the
         same as state = 1 on a different phone.
 
     Example:
-    [{'timestamp': 1618014245255, 'value': 1, 'valueString': 'Screen Off'},
-     {'timestamp': 1618014216292, 'value': 0, 'valueString': 'Screen On'},
-     {'timestamp': 1618013053261, 'value': 2, 'valueString': 'Screen Locked'},
-     {'timestamp': 1618013043261, 'value': 1, 'valueString': 'Screen Off'},
-     {'timestamp': 1618012058266, 'value': 0, 'valueString': 'Screen On'},]
+    [{'sensor': 'lamp.device_state',
+      'data': {
+          'value': 1,
+          'representation': 'screen_off',
+          'battery_level': 0.8999999761581421
+      },
+      'timestamp': 1650897192888},
+    {'sensor': 'lamp.device_state',
+     'data': {
+         'value': 0,
+         'representation': 'screen_on',
+         'battery_level': 0.9100000262260437
+      },
+      'timestamp': 1650896876889},]
     """
     return
