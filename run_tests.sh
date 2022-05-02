@@ -28,7 +28,7 @@ find tests -name '*tests.py' -print0 |
             echo "${green} Running tests for ${line} ${reset}"
             coverage run "$line"
             echo "${cyan} Coverage Report for ${line}"
-            coverage report -m cortex/utils/useful_functions_misc.py
+            coverage report -m cortex/utils/misc_functions.py
         else
             echo "TODO: add other tests here"
             # coverage report
