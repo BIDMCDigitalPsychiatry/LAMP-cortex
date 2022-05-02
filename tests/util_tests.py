@@ -30,18 +30,18 @@ class TestUtils(unittest.TestCase):
     def test_get_device_info_old_data(self):
         # Should return None for all fields for older users
         # as the user_agent string has changed lately
-        ret0 = utils.useful_functions_misc.get_os_version(self.TEST_PARTICIPANT_OLD)
+        ret0 = utils.miscellaneous_functions.get_os_version(self.TEST_PARTICIPANT_OLD)
         for x in ret0:
             self.assertEqual(ret0[x], None)
 
     def test_get_device_info_old_ios_android(self):
         # Test if the participant has no data
-        ret0 = utils.useful_functions_misc.get_os_version(self.TEST_PARTICIPANT_IOS)
+        ret0 = utils.miscellaneous_functions.get_os_version(self.TEST_PARTICIPANT_IOS)
         self.assertEqual(ret0['device_type'], 'iOS')
         self.assertEqual(ret0['os_version'], 'iOS 15.3.1')
         self.assertEqual(ret0['phone_type'], 'iPhone iPhone10,4')
 
-        ret1 = utils.useful_functions_misc.get_os_version(self.TEST_PARTICIPANT_ANDROID)
+        ret1 = utils.miscellaneous_functions.get_os_version(self.TEST_PARTICIPANT_ANDROID)
         self.assertEqual(ret1['device_type'], 'Android')
         self.assertEqual(ret1['os_version'], 'Android 10')
         self.assertEqual(ret1['phone_type'], 'OnePlus')
