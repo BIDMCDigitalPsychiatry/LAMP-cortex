@@ -28,8 +28,8 @@ echo "${green} notifications.py ${reset}"
 pylint cortex/utils/notifications.py
 echo "${green} module_scheduler.py ${reset}"
 pylint cortex/utils/module_scheduler.py
-echo "${green} miscellaneous_functions.py ${reset}"
-pylint cortex/utils/miscellaneous_functions.py
+echo "${green} misc_functions.py ${reset}"
+pylint cortex/utils/misc_functions.py
 echo "${green} useful_functions.py ${reset}"
 pylint cortex/utils/useful_functions.py
 
