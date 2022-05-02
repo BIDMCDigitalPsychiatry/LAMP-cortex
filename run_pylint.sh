@@ -28,8 +28,8 @@ echo "${green} notifications.py ${reset}"
 pylint cortex/utils/notifications.py
 echo "${green} module_scheduler.py ${reset}"
 pylint cortex/utils/module_scheduler.py
-echo "${green} useful_functions_misc.py ${reset}"
-pylint cortex/utils/useful_functions_misc.py
+echo "${green} misc_functions.py ${reset}"
+pylint cortex/utils/misc_functions.py
 echo "${green} useful_functions.py ${reset}"
 pylint cortex/utils/useful_functions.py
 
@@ -49,6 +49,8 @@ echo "${green} cats_and_dogs.py ${reset}"
 pylint cortex/raw/cats_and_dogs.py
 echo "${green} device_state.py ${reset}"
 pylint cortex/raw/device_state.py
+echo "${green} device_motion.py ${reset}"
+pylint cortex/raw/device_motion.py
 echo "${green} gps.py ${reset}"
 pylint cortex/raw/gps.py
 echo "${green} gyroscope.py ${reset}"

@@ -221,5 +221,3 @@ def set_graph(target, key, graph, display_on_patient_portal=False, set_on_parent
             LAMP.Type.set_attachment(_id, 'me',
                                      f'lamp.dashboard.{lamp_type.lower()}_tags',
                                      body=new_attachments)
-
-
