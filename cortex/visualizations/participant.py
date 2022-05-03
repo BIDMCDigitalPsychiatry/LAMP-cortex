@@ -82,13 +82,15 @@ def passive(id_list,
             try:
                 #try to retrieve any sensor data from prior runs
                 name = f"lamp.analysis.{sensor['display_name']}_stored"
+                saved_data = []
+                excluded_intervals=[]
                 if reset:
-                    LAMP.Type.set_attachment(participant,'me',{name},None)
-                try:
-                    saved_data = LAMP.Type.get_attachment(participant,name)['data']
-                except LAMP.ApiException:
-                    saved_data = []
-                    excluded_intervals=[]
+                    LAMP.Type.set_attachment(participant,'me',name,None)
+                else:
+                    try:
+                        saved_data = LAMP.Type.get_attachment(participant,name)['data']
+                    except LAMP.ApiException:
+                        print(f"Found no {participant} data under {name}")
 
                 # if data is saved, we may need to query less data
                 # thus, we make a list of excluded intervals
