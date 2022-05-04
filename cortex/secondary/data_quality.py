@@ -50,7 +50,7 @@ def data_quality(feature, bin_size=-1, **kwargs):
     else:
         log.info("This feature is not yet supported.")
         return {'timestamp':kwargs['start'], 'value': None}
-    number_of_bins = len(range(kwargs["start"], kwargs["end"], bin_size))
+    number_of_bins = len(range(kwargs["start"], kwargs["end"], bin_width))
 
     # check for the special case where there is no data
     if len(LAMP.SensorEvent.all_by_participant(participant_id=kwargs["id"],
