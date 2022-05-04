@@ -111,8 +111,8 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(ret0[1]['value'], None)
         self.assertEqual(ret0[2]['value'], None)
         self.assertEqual(ret0[3]['value'], 131120)
-        self.assertEqual(ret0[4]['value'], 179017)
-        self.assertEqual(ret0[5]['value'], 3598)
+        self.assertEqual(ret0[4]['value'], 179956)
+        self.assertEqual(ret0[5]['value'], 282319)
 
 if __name__ == '__main__':
     unittest.main()

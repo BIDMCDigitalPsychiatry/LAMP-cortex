@@ -7,7 +7,7 @@ find tests -name '*tests.py' -print0 |
         if [[ $line = "tests/primary_feature_tests.py" ]]
         then
             echo "${green} Running tests for ${line} ${reset}"
-            coverage run "$line"
+            coverage run -m unittest "$line"
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/primary/significant_locations.py
             coverage report -m cortex/primary/trips.py
@@ -16,7 +16,7 @@ find tests -name '*tests.py' -print0 |
         elif [[ $line = "tests/secondary_feature_tests.py" ]]
         then
             echo "${green} Running tests for ${line} ${reset}"
-            coverage run "$line"
+            coverage run -m unittest "$line"
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/secondary/bluetooth_device_count.py
             echo "${cyan} Coverage Report for ${line}"
@@ -26,7 +26,7 @@ find tests -name '*tests.py' -print0 |
         elif [[ $line = "tests/util_tests.py" ]]
         then
             echo "${green} Running tests for ${line} ${reset}"
-            coverage run "$line"
+            coverage run -m unittest "$line"
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/utils/misc_functions.py
         else
