@@ -82,6 +82,23 @@ class TestSecondary(unittest.TestCase):
                                            bin_size=10000)
         self.assertEqual(ret0['data'][0]['value'], 0.05775462962962963)
 
+    def test_call_duration(self):
+        # Test that call duration works
+        import numpy as np
+        options = ["incoming", "outgoing", "all"]
+        for option in options:
+            ret = np.sum(event['value'] for event in cortex.secondary.call_duration.call_duration(
+                                           incoming = "all",
+                                           id="U26468383",
+                                           start=1584137124130,
+                                           end=1583532324130 + 30 * 60 * 60 * 24 * 1000,
+                                           resolution=60 * 60 * 24 * 1000,
+                                           feature="telephony")['data'] if event['value']!=None)
+            
+            goal = np.sum(call['data']['duration'] for call in LAMP.SensorEvent.all_by_participant(self.TEST_PARTICIPANT, origin='lamp.telephony')['data'] if call['data']['type'] == option)
+
+            self.assertEqual(ret, goal)
+
     def test_data_quality_acc(self):
         # test that acc works
         ret0 = secondary.data_quality.data_quality(id=self.TEST_PARTICIPANT,
