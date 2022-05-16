@@ -2,14 +2,16 @@
 import numpy as np
 
 from ..feature_types import secondary_feature, log
-from ..raw.calls import calls
+from ..raw.telephony import telephony
 
 MS_IN_A_DAY = 86400000
+
+
 @secondary_feature(
     name='cortex.feature.call_duration',
-    dependencies=[calls]
+    dependencies=[telephony]
 )
-def call_duration(incoming=True, **kwargs):
+def call_duration(incoming, **kwargs):
     """The time (in ms) spent talking on the phone.
 
     Args:
@@ -27,15 +29,28 @@ def call_duration(incoming=True, **kwargs):
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): The time spent in a call.
     """
-    incoming_dict = {True: 1, False: 2}
-    label = incoming_dict[incoming]
-    log.info('Loading raw calls data...')
-    _calls = calls(**kwargs)['data']
-    log.info('Computing call duration...')
-    _call_duration = np.sum([call['call_duration'] for call in _calls
-                             if call['call_type'] == label])
+    log.info('Computing call duration ...')
+
+    _calls = telephony(**kwargs)['data']
+
+    call_duration = np.sum(call['duration'] for call in _calls)
+
+    if incoming == "all":
+        call_duration = np.sum(call['duration'] for call in _calls
+                               if (call['type'] == "incoming"
+                                   or call['type'] == "outgoing"))
+
+    if incoming == "incoming":
+        call_duration = np.sum(call['duration'] for call in _calls
+                               if call['type'] == "incoming")
+
+    if incoming == "outgoing":
+        call_duration = np.sum(call['duration'] for call in _calls
+                               if call['type'] == "outgoing")
+
     # if you have no call duration, this means you have no call data
-    # over the period, should return None
-    if _call_duration == 0:
-        _call_duration = None
-    return {'timestamp': kwargs['start'], 'value': _call_duration}
+
+    if call_duration == 0:
+        call_duration = None
+
+    return {'timestamp': kwargs['start'], 'value': call_duration}
