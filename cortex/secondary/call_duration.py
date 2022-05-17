@@ -11,12 +11,14 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.call_duration',
     dependencies=[telephony]
 )
-def call_duration(incoming, **kwargs):
+def call_duration(call_direction="all", **kwargs):
     """The time (in ms) spent talking on the phone.
 
     Args:
-        incoming (boolean): If True the duration of received calls is returned;
-            else the duration of sent calls is returned.
+        call_direction (string): If "incoming" the duration of received calls is returned;
+            if "outgoing" the duration of sent calls is returned;
+            if "all" the duration of all calls is returned.
+            Default parameter is "all".
         **kwargs:
             id (string): The participant's LAMP id. Required.
             start (int): The initial UNIX timestamp (in ms) of the window for which the feature
@@ -29,28 +31,34 @@ def call_duration(incoming, **kwargs):
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): The time spent in a call.
     """
-    log.info('Computing call duration ...')
-
     _calls = telephony(**kwargs)['data']
 
-    call_duration = np.sum(call['duration'] for call in _calls)
+    if call_direction == "all":
+        call_duration = np.sum(call['duration'] for call in _calls)
 
-    if incoming == "all":
-        call_duration = np.sum(call['duration'] for call in _calls
-                               if (call['type'] == "incoming"
-                                   or call['type'] == "outgoing"))
-
-    if incoming == "incoming":
-        call_duration = np.sum(call['duration'] for call in _calls
+    else: 
+        
+        if call_direction == "incoming":
+            call_duration = np.sum(call['duration'] for call in _calls
                                if call['type'] == "incoming")
-
-    if incoming == "outgoing":
-        call_duration = np.sum(call['duration'] for call in _calls
+        
+        else:
+            
+            if call_direction == "outgoing":
+                call_duration = np.sum(call['duration'] for call in _calls
                                if call['type'] == "outgoing")
+        
+            else:
+            
+                call_duration = None
+                log.info('"'+call_direction+"' was passed but is not an acceptable argument. Acceptable arguments include 'all', 'incoming', or 'outgoing'")
 
-    # if you have no call duration, this means you have no call data
+    # if you have no call duration of any kind, this means you have no call data
+    # in this case, return None.
 
-    if call_duration == 0:
+    if np.sum(call['duration'] for call in _calls) == 0:
         call_duration = None
+        
+    log.info('Computing call duration ...')
 
     return {'timestamp': kwargs['start'], 'value': call_duration}
