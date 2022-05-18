@@ -33,32 +33,36 @@ def call_duration(call_direction="all", **kwargs):
     """
     _calls = telephony(**kwargs)['data']
 
+    incoming = kwargs.get('incoming')
+
+    # optional incoming variable sets call_direction in accordance with
+    # previous version of call_duration, in which function returned
+    # incoming calls if incoming is True, else returned outgoing calls.
+
+    if incoming is not None:
+        if incoming is True:
+            call_direction = "incoming"
+        else:
+            call_direction = "outgoing"
+
     if call_direction == "all":
         call_duration = np.sum(call['duration'] for call in _calls)
 
-    else: 
-        
-        if call_direction == "incoming":
-            call_duration = np.sum(call['duration'] for call in _calls
+    elif call_direction == "incoming":
+        call_duration = np.sum(call['duration'] for call in _calls 
                                if call['type'] == "incoming")
-        
-        else:
-            
-            if call_direction == "outgoing":
-                call_duration = np.sum(call['duration'] for call in _calls
+    elif call_direction == "outgoing":
+        call_duration = np.sum(call['duration'] for call in _calls
                                if call['type'] == "outgoing")
-        
-            else:
-            
-                call_duration = None
-                log.info('"'+call_direction+"' was passed but is not an acceptable argument. Acceptable arguments include 'all', 'incoming', or 'outgoing'")
+    else:
+        call_duration = None
+        log.info('"' + call_direction + "' was passed but is not an acceptable argument. Acceptable arguments include 'all','incoming', or 'outgoing'")
 
     # if you have no call duration of any kind, this means you have no call data
     # in this case, return None.
 
     if np.sum(call['duration'] for call in _calls) == 0:
         call_duration = None
-        
     log.info('Computing call duration ...')
 
     return {'timestamp': kwargs['start'], 'value': call_duration}
