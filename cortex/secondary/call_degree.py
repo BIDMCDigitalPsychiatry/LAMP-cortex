@@ -24,8 +24,7 @@ def call_degree(call_type,**kwargs):
             timestamp (int): The beginning of the window (same as kwargs['start']).
             value (float): The number of unique phone numbers.
     """
-    temptemp = telephony(**kwargs)
-    temp_calls = temptemp['data']
+    temp_calls = telephony(**kwargs)['data']
 
     _call_output = []
 
@@ -38,7 +37,7 @@ def call_degree(call_type,**kwargs):
             if temp_dat['type'] == call_type:
                 _call_output.append(temp_dat)
 
-        elif call_type == "all":
+        else:
             if temp_dat['type'] == call_type:
                 _call_output.append(temp_dat)
 

@@ -118,7 +118,7 @@ class TestSecondary(unittest.TestCase):
 #         self.assertEqual(ret0[4]['value'], 179017)
 #         self.assertEqual(ret0[5]['value'], 3598)
         
-    def test_final_andrew(self):
+    def test_call_degree(self):
         # Test that call degree works
         ret0 = secondary.call_degree.call_degree(call_type = 'incoming',id=self.TEST_DAN,
                                            start=self.TEST_START_TIME_STEPS,
