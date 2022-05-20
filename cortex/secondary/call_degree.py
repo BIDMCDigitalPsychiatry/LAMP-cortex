@@ -1,5 +1,7 @@
 """ Module for call_degree from raw feature calls """
 import numpy as np
+import logging
+import pdb
 from ..feature_types import secondary_feature
 from ..raw.telephony import telephony
 
@@ -27,20 +29,29 @@ def call_degree(call_type,**kwargs):
     temp_calls = telephony(**kwargs)['data']
 
     _call_output = []
+    
+    if not temp_calls:
+        
+            return None
+        
+    else:
+        
+        for temp_dat in temp_calls:
 
-    for temp_dat in temp_calls:
-        if call_type == 'incoming':
-            if temp_dat['type'] == call_type:
+            if call_type == 'incoming':
+                if temp_dat['type'] == call_type:
+                    _call_output.append(temp_dat)
+
+            elif call_type == "outgoing":
+                if temp_dat['type'] == call_type:
+                    _call_output.append(temp_dat)
+
+            elif call_type == "all":
                 _call_output.append(temp_dat)
 
-        elif call_type == "outgoing":
-            if temp_dat['type'] == call_type:
-                _call_output.append(temp_dat)
+            else:
+                logging.warning("call_type can be incoming, outgoing, or all")
 
-        else:
-            if temp_dat['type'] == call_type:
-                _call_output.append(temp_dat)
+        _call_degree = np.unique([call['trace'] for call in _call_output]).size
 
-    _call_degree = np.unique([call['trace'] for call in _call_output]).size
-
-    return {'timestamp':kwargs['start'], 'value': _call_degree}
+        return {'timestamp':kwargs['start'], 'value': _call_degree}
