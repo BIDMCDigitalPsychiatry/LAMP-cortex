@@ -25,6 +25,9 @@ def call_duration(call_direction="all", **kwargs):
                 is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window for which the feature
                 is being generated. Required.
+            incoming (boolean): Used to indicate direction of call. If not
+                None, overrides call_direction. If True, sets direction to
+                incoming calls. If False, sets direction to outgoing calls.
 
     Returns:
         A dict consisting:
@@ -45,7 +48,13 @@ def call_duration(call_direction="all", **kwargs):
         else:
             call_direction = "outgoing"
 
-    if call_direction == "all":
+    # if you have no call duration of any kind, this means you have no call data
+    # in this case, return None.
+
+    if len(_calls) == 0:
+        call_duration = None
+
+    elif call_direction == "all":
         call_duration = np.sum(call['duration'] for call in _calls)
 
     elif call_direction == "incoming":
@@ -58,11 +67,6 @@ def call_duration(call_direction="all", **kwargs):
         call_duration = None
         log.info('"' + call_direction + "' was passed but is not an acceptable argument. Acceptable arguments include 'all','incoming', or 'outgoing'")
 
-    # if you have no call duration of any kind, this means you have no call data
-    # in this case, return None.
-
-    if np.sum(call['duration'] for call in _calls) == 0:
-        call_duration = None
     log.info('Computing call duration ...')
 
     return {'timestamp': kwargs['start'], 'value': call_duration}

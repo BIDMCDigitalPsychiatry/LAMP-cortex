@@ -113,7 +113,7 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(ret0[3]['value'], 131120)
         self.assertEqual(ret0[4]['value'], 179956)
         self.assertEqual(ret0[5]['value'], 282319)
-        
+
     def test_call_duration(self):
         # Test that call duration works
         import numpy as np
@@ -126,8 +126,26 @@ class TestSecondary(unittest.TestCase):
                                            end=1583532324130 + 30 * 60 * 60 * 24 * 1000,
                                            resolution=60 * 60 * 24 * 1000,
                                            feature="telephony")['data'] if event['value']!=None)
-            
+
             goal = np.sum(call['data']['duration'] for call in LAMP.SensorEvent.all_by_participant(self.TEST_PARTICIPANT, origin='lamp.telephony')['data'] if call['data']['type'] == option)
+
+            self.assertEqual(ret, goal)
+
+    def test_call_number(self):
+        # Test that call number works
+        import numpy as np
+        options = ["incoming", "outgoing", "all"]
+        for option in options:
+            ret = np.sum(event['value'] for event in cortex.secondary.call_number.call_number(
+                                           call_direction = option,
+                                           id="U26468383",
+                                           start=1584137124130,
+                                           end=1583532324130 + 30 * 60 * 60 * 24 * 1000,
+                                           resolution=60 * 60 * 24 * 1000,
+                                           feature="telephony")['data'] if event['value']!=None)
+
+            test_group = [call for call in LAMP.SensorEvent.all_by_participant(self.TEST_PARTICIPANT, origin='lamp.telephony')['data'] if call['data']['type'] == option]
+            goal = len(test_group)
 
             self.assertEqual(ret, goal)
 
