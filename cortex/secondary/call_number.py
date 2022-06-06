@@ -47,14 +47,9 @@ def call_number(call_direction="all", **kwargs):
     elif call_direction == "all":
         call_number = len(_calls)
 
-    elif call_direction == "incoming":
+    elif call_direction == "incoming" or call_direction == "outgoing":
 
-        group = [calls for calls in _calls if calls['type'] == 'incoming']
-        call_number = len(group)
-
-    elif call_direction == "outgoing":
-
-        group = [calls for calls in _calls if calls['type'] == 'outgoing']
+        group = [calls for calls in _calls if calls['type'] == call_direction]
         call_number = len(group)
 
     else:
