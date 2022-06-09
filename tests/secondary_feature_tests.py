@@ -8,6 +8,7 @@ import logging
 import cortex
 import cortex.secondary as secondary
 import LAMP
+import numpy as np
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 LAMP.connect(os.getenv('LAMP_ACCESS_KEY'), os.getenv('LAMP_SECRET_KEY'),
             os.getenv('LAMP_SERVER_ADDRESS', 'api.lamp.digital'))
@@ -25,6 +26,9 @@ class TestSecondary(unittest.TestCase):
     TEST_END_TIME = 1583532324130 + 30 * MS_IN_DAY
     TEST_START_TIME_JERK = 1584137124130
     TEST_START_TIME_STEPS = 1651161331270 - 5 * MS_IN_DAY
+    TEST_PARTICIPANT_CALLS = "U7955172051"
+    CALLS_TEST_START = 1654781897000 + 10 * MS_IN_DAY
+    CALLS_TEST_END = 1654781897001 + 11 * MS_IN_DAY
 
     def setUp(self):
         """ Setup the tests """
@@ -116,38 +120,97 @@ class TestSecondary(unittest.TestCase):
 
     def test_call_duration(self):
         # Test that call duration works
-        import numpy as np
-        options = ["incoming", "outgoing", "all"]
+        # Argument 'x' tests whether erroneous argument returns None.
+        options = ["incoming", "outgoing", "all", "x"]
+        rets=[]
         for option in options:
-            ret = np.sum(event['value'] for event in cortex.secondary.call_duration.call_duration(
-                                           incoming = "all",
-                                           id="U26468383",
-                                           start=1584137124130,
-                                           end=1583532324130 + 30 * 60 * 60 * 24 * 1000,
-                                           resolution=60 * 60 * 24 * 1000,
-                                           feature="telephony")['data'] if event['value']!=None)
+            local_ret = cortex.secondary.call_duration.call_duration(
+                                           call_direction = option,
+                                           id=self.TEST_PARTICIPANT_CALLS,
+                                           start=self.CALLS_TEST_START,
+                                           end=self.CALLS_TEST_END,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="telephony")['data'][0]['value']
+            rets.append(local_ret)
 
-            goal = np.sum(call['data']['duration'] for call in LAMP.SensorEvent.all_by_participant(self.TEST_PARTICIPANT, origin='lamp.telephony')['data'] if call['data']['type'] == option)
+        # Test that None returned when there's no call data.
 
-            self.assertEqual(ret, goal)
+        ret_none = cortex.secondary.call_duration.call_duration(
+                                        call_direction = "all",
+                                        id=self.TEST_PARTICIPANT_CALLS,
+                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
+                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        resolution=self.MS_IN_DAY,
+                                        feature="telephony")['data'][0]['value']
+
+        # Test that deprecated 'incoming' still functions.
+
+        options_incoming = [True, False]
+        rets_incoming=[]
+        for option in options_incoming:
+            local_ret = cortex.secondary.call_duration.call_duration(
+                                        incoming=option,
+                                        id=self.TEST_PARTICIPANT_CALLS,
+                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
+                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        resolution=self.MS_IN_DAY,
+                                        feature="telephony")['data'][0]['value']
+            rets_incoming.append(local_ret)
+
+        self.assertEqual(rets[0], 34)
+        self.assertEqual(rets[1], 24)
+        self.assertEqual(rets[2], 58)
+        self.assertEqual(rets[3], None)
+        self.assertEqual(ret_none, None)
+        self.assertEqual(rets_incoming[0], 34)
+        self.assertEqual(rets_incoming[0], 24)
 
     def test_call_number(self):
         # Test that call number works
-        import numpy as np
-        options = ["incoming", "outgoing", "all"]
+        # Argument 'x' tests whether erroneous argument returns None.
+        options = ["incoming", "outgoing", "all", "x"]
+        rets=[]
         for option in options:
-            ret = np.sum(event['value'] for event in cortex.secondary.call_number.call_number(
+            local_ret = cortex.secondary.call_number.call_number(
                                            call_direction = option,
-                                           id="U26468383",
-                                           start=1584137124130,
-                                           end=1583532324130 + 30 * 60 * 60 * 24 * 1000,
-                                           resolution=60 * 60 * 24 * 1000,
-                                           feature="telephony")['data'] if event['value']!=None)
+                                           id=self.TEST_PARTICIPANT_CALLS,
+                                           start=self.CALLS_TEST_START,
+                                           end=self.CALLS_TEST_END,
+                                           resolution=self.MS_IN_DAY,
+                                           feature="telephony")['data'][0]['value']
+            rets.append(local_ret)
 
-            test_group = [call for call in LAMP.SensorEvent.all_by_participant(self.TEST_PARTICIPANT, origin='lamp.telephony')['data'] if call['data']['type'] == option]
-            goal = len(test_group)
+        # Test that None returned when there's no call data.
 
-            self.assertEqual(ret, goal)
+        ret_none = cortex.secondary.call_number.call_number(
+                                        call_direction = "all",
+                                        id=self.TEST_PARTICIPANT_CALLS,
+                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
+                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        resolution=self.MS_IN_DAY,
+                                        feature="telephony")['data'][0]['value']
 
+        # Test that deprecated 'incoming' still functions.
+
+        options_incoming = [True, False]
+        rets_incoming=[]
+        for option in options_incoming:
+            local_ret = cortex.secondary.call_number.call_number(
+                                        incoming=option,
+                                        id=self.TEST_PARTICIPANT_CALLS,
+                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
+                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        resolution=self.MS_IN_DAY,
+                                        feature="telephony")['data'][0]['value']
+            rets_incoming.append(local_ret)
+
+        self.assertEqual(rets[0], 1)
+        self.assertEqual(rets[1], 1)
+        self.assertEqual(rets[2], 2)
+        self.assertEqual(rets[3], None)
+        self.assertEqual(ret_none, None)
+        self.assertEqual(rets_incoming[0], 1)
+        self.assertEqual(rets_incoming[0], 1)
+        
 if __name__ == '__main__':
     unittest.main()

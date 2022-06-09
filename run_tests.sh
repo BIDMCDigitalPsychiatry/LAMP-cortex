@@ -25,6 +25,8 @@ find tests -name '*tests.py' -print0 |
             coverage report -m cortex/secondary/step_count.py
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/secondary/call_duration.py
+            echo "${cyan} Coverage Report for ${line}"
+            coverage report -m cortex/secondary/call_number.py
         elif [[ $line = "tests/util_tests.py" ]]
         then
             echo "${green} Running tests for ${line} ${reset}"

@@ -11,20 +11,22 @@ def call_number(call_direction="all", **kwargs):
     """Returns the number of calls made.
 
     Args:
-        call_direction (string): Returns all calls if "all", 
-            returns received calls if "incoming", returns sent calls if "outgoing".
+        call_direction (string): Returns all calls if "all",
+            returns received calls if "incoming", returns
+            sent calls if "outgoing".
         **kwargs:
             id (string): The participant's LAMP id. Required.
-            start (int): The initial UNIX timestamp (in ms) of the window for which the feature
-                is being generated. Required.
-            end (int): The last UNIX timestamp (in ms) of the window for which the feature
-                is being generated. Required.
-            incoming (boolean): If True the number of received calls is returned;
-                else the number of sent calls is returned.
+            start (int): The initial UNIX timestamp (in ms) of the window
+                for which the feature is being generated. Required.
+            end (int): The last UNIX timestamp (in ms) of the window
+                for which the feature is being generated. Required.
+            incoming (boolean): If True the number of received calls
+                is returned; else the number of sent calls is returned.
 
     Returns:
         A dict consisting:
-            timestamp (int): The beginning of the window (same as kwargs['start']).
+            timestamp (int): The beginning of the window
+            (same as kwargs['start']).
             value (float): The number of calls.
     """
     _calls = telephony(**kwargs)['data']
@@ -42,18 +44,20 @@ def call_number(call_direction="all", **kwargs):
             call_direction = "outgoing"
 
     if len(_calls) == 0:
-        call_number = None
+        number = None
 
     elif call_direction == "all":
-        call_number = len(_calls)
+        number = len(_calls)
 
-    elif call_direction == "incoming" or call_direction == "outgoing":
+    elif call_direction in ("incoming", "outgoing"):
 
         group = [calls for calls in _calls if calls['type'] == call_direction]
-        call_number = len(group)
+        number = len(group)
 
     else:
-        call_number = None
-        log.info('"' + call_direction + "' was passed but is not an acceptable argument. Acceptable arguments include 'all','incoming', or 'outgoing'")
+        number = None
+        log.info(""" %s was passed but is not an acceptable argument.
+        Acceptable arguments include 'all','incoming', or 'outgoing'" """,
+                 call_direction)
 
-    return {'timestamp': kwargs['start'], 'value': call_number}
+    return {'timestamp': kwargs['start'], 'value': number}
