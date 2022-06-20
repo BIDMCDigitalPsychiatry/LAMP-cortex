@@ -142,7 +142,7 @@ def get_data_tags_df(participants):
     for i in range(len(df_orig)):
         for qual_type in ["screen_state_quality", "acc_quality", "gps_quality"]:
             if qual_type in ["gps_quality", "acc_quality"]:
-                qual_prefix = qual_type.split("_")[0]
+                qual_prefix = qual_type.split('_', maxsplit=1)[0]
                 dates = json.dumps(df_orig.loc[i, qual_prefix + "_missing_days"], indent=4,
                                    sort_keys=True, default=str)
                 qual = df_orig.loc[i, qual_prefix]
@@ -182,26 +182,26 @@ def make_activity_count_graph(participants, researcher_id):
                                                     " (" + part["participant_id"] + ")")
         # Survey
         act_counts["Activity Type"].append("Survey")
-        act_counts["Count"].append(len(act_df[act_df["type"] == "survey"]))
+        act_counts["Count"].append(len(act_df[act_df["spec"] == "survey"]))
         # Tips
         act_counts["Activity Type"].append("Tips")
-        act_counts["Count"].append(len(act_df[act_df["type"] == "tips"]))
+        act_counts["Count"].append(len(act_df[act_df["spec"] == "tips"]))
         # Breathe
         act_counts["Activity Type"].append("Breathe")
-        act_counts["Count"].append(len(act_df[act_df["type"] == "breathe"]))
+        act_counts["Count"].append(len(act_df[act_df["spec"] == "breathe"]))
         # Group
         act_counts["Activity Type"].append("Group")
-        act_counts["Count"].append(len(act_df[act_df["type"] == "group"]))
+        act_counts["Count"].append(len(act_df[act_df["spec"] == "group"]))
         # Games
         act_counts["Activity Type"].append("Games")
-        act_counts["Count"].append(len(act_df[act_df["type"].isin(game_names)]))
+        act_counts["Count"].append(len(act_df[act_df["spec"].isin(game_names)]))
         # Other
         act_counts["Activity Type"].append("Other")
-        act_counts["Count"].append(len(act_df[(act_df["type"] != "survey") &
-                                          (act_df["type"] != "tips") &
-                                          (act_df["type"] != "breathe") &
-                                          (act_df["type"] != "group") &
-                                          (~act_df["type"].isin(game_names))]))
+        act_counts["Count"].append(len(act_df[(act_df["spec"] != "survey") &
+                                          (act_df["spec"] != "tips") &
+                                          (act_df["spec"] != "breathe") &
+                                          (act_df["spec"] != "group") &
+                                          (~act_df["spec"].isin(game_names))]))
     act_counts = pd.DataFrame(act_counts)
 
     val = ["Other", "Tips", "Survey", "Group", "Games", "Breathe"]
@@ -469,5 +469,6 @@ def data_quality(researcher_id):
     make_activity_count_graph(participants, researcher_id)
     make_data_qual_tags(researcher_id, qual_df2)
     make_passive_data_graphs(participants, researcher_id, qual_df1)
-    time_elapsed = "{:.2f}".format((time.time() - start_time) / 60)
+    time_elapsed = (time.time() - start_time) / 60
+    time_elapsed = f"{time_elapsed:.2f}"
     log.info("Run time: %s minutes", time_elapsed)
