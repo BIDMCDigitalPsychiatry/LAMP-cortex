@@ -2,10 +2,7 @@
 import unittest
 import sys
 import os
-import math
-import pandas as pd
 import logging
-import cortex
 import cortex.utils as utils
 import LAMP
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))

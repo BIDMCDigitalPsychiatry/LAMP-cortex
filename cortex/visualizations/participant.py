@@ -275,13 +275,16 @@ def active(id_list,
         group_ids = [x['id'] for x in activity_data if x['spec']=='lamp.group']
         # if a filter was provided
         if len(target_identifier)>0:
-            #check if the filter is an ID
+            #check if the filter is a name or an ID
             filtered_activities = [x for x in activity_data
-                                  if x['name']==target_identifier]
+                                   if x['name']==target_identifier
+                                   or x['id']==target_identifier]
             if len(filtered_activities)>0:
+                #if the filter was a name or ID, we want only one id
                 target=filtered_activities[0]['id']
             else:
-                # if it wasn't, we assume it was a name
+                # if it wasn't, we assume it was a spec
+                # this is a special case as we need to get multiple ids
                 target_ids = [x['id'] for x in activity_data
                              if x['spec'] == target_identifier]
                 if len(target_ids)==0:
@@ -391,7 +394,11 @@ def active(id_list,
         for _id,data_df in active_counts.items():
             active_counts[_id] = data_df[~data_df['activity'].isin(exclude_array)]
     chart_dict = {}
-    reporter_func("Finished pulling data. Generating graphs...")
+    if len(active_counts.keys()):
+        reporter_func('Finished pulling data. Generating graphs...')
+    else:
+        reporter_func('No data found for any participant. '+
+                      'If this seems to be in error please double check your filters.')
 
     def condense_name(string):
         first_character = string[0]
@@ -439,7 +446,7 @@ def active(id_list,
             (final).display()
         chart_dict[part_id]=(final).to_dict()
 
-    if attach_graphs:
+    if attach_graphs and len(active_counts.keys()):
         reporter_func("Graphs generated. Attaching Graphs...")
         for participant,graph in chart_dict.items():
             set_graph(participant, key=graph_name,graph=graph,
@@ -583,7 +590,6 @@ def cortex_tertiles(target_id,
                 tooltip = [alt.Tooltip(field='timestamp',title='Date',type='temporal'),
                            alt.Tooltip(field='Tertile',title='Relative Amount',type='nominal'),
                            alt.Tooltip(field='raw_score',title='Raw Score',type='nominal')]
-                
                 title = (f'{cortex_measures[measure]} tertiles'+
                 f' over the past {len(measure_df["value"])} days').capitalize()
 
