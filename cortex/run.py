@@ -215,7 +215,7 @@ def get_first_last_datapoint(participant, original_time, resolution, start = 1):
     if start:
         original_time = min(times)
     else:
-        original_time = min(times)
+        original_time = max(times)
     if resolution % MS_PER_DAY == 0:
         original_time = set_date_9am(original_time, start)
     return original_time
