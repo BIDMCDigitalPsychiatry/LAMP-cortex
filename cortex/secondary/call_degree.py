@@ -11,10 +11,10 @@ MS_IN_A_DAY = 86400000
     dependencies=[telephony]
 )
 
-def call_degree(call_type,**kwargs):
+def call_degree(call_direction = 'incoming',**kwargs):
     """Returns the number of unique phone numbers a participant called
     Args:
-        call_type: string that is "incoming" or "outgoing" or "all"
+        call_direction: string that is "incoming" or "outgoing" or "all"
         **kwargs:
             id (string): The participant's LAMP id. Required.
             start (int): The initial UNIX timestamp (in ms) of the window for which the feature
@@ -32,25 +32,33 @@ def call_degree(call_type,**kwargs):
     
     if not temp_calls:
         
-            return None
+            return {'timestamp':kwargs['start'], 'value': None}
         
     else:
         
         for temp_dat in temp_calls:
 
-            if call_type == 'incoming':
-                if temp_dat['type'] == call_type:
+            if call_direction == 'incoming':
+                if temp_dat['type'] == call_direction:
                     _call_output.append(temp_dat)
 
-            elif call_type == "outgoing":
-                if temp_dat['type'] == call_type:
+            elif call_direction == "outgoing":
+                if temp_dat['type'] == call_direction:
                     _call_output.append(temp_dat)
 
-            elif call_type == "all":
+            elif call_direction == "all":
                 _call_output.append(temp_dat)
-
+            
+            elif isinstance(call_direction, bool):
+                if call_direction == True: 
+                    if temp_dat['type'] == 'incoming':
+                        _call_output.append(temp_dat)      
+                else:
+                    if temp_dat['type'] == 'outgoing':
+                        _call_output.append(temp_dat)      
+                
             else:
-                logging.warning("call_type can be incoming, outgoing, or all")
+                logging.warning("call_direction can be incoming, outgoing, or all")
 
         _call_degree = np.unique([call['trace'] for call in _call_output]).size
 
