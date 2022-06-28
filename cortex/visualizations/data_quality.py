@@ -89,7 +89,7 @@ def get_data_tags_df(participants):
                                                    start=start_time,
                                                    end=end_time + 1,
                                                    resolution=MS_IN_DAY,
-                                                   feature="gps",
+                                                   feature="accelerometer",
                                                    bin_size=60 * 60 * 1000)['data'])
         acc_df['timestamp'] = pd.to_datetime(acc_df['timestamp'], unit='ms')
         if len(acc_df[acc_df["value"] == 0]) > 0:
