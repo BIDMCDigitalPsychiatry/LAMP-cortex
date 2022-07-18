@@ -73,6 +73,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             run_part_and_features will take precendence and features will be
             set to [].
     """
+    
     if not print_logs:
         log.setLevel(logging.WARNING)
 
@@ -111,7 +112,11 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             _res = get_feature_for_participant(participant, f, params_f, start,
                                                end, resolution, cache)
 
-            _res2 = pd.DataFrame.from_dict(_res['data'])
+            if _res is not None:
+                _res2 = pd.DataFrame.from_dict(_res['data'])
+            else:
+                _res2 = pd.DataFrame([])
+                
             if _res2.shape[0] > 0:
                 # If no data exists, don't bother appending the df.
                 _res2.insert(0, 'id', participant) # prepend 'id' column
@@ -153,9 +158,11 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
             The data from the feature for that participant from cortex
     """
     func_list = {f['callable'].__name__: f for f in all_features()}
-    start = get_first_last_datapoint(participant, start, resolution, start = 1)
-    end = get_first_last_datapoint(participant, end, resolution, start = 0)
-    if start is None:
+    
+    start = get_first_last_datapoint(participant, feature, start, resolution, start = 1)
+    end = get_first_last_datapoint(participant, feature, end, resolution, start = 0)
+    
+    if start is None or end is None:
         log.info("Participant %s has no data. Returning 'None' for all features.", participant)
         return None
     if hasattr(secondary, feature):
@@ -175,7 +182,7 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                 **feature_params)
     return _res
 
-def get_first_last_datapoint(participant, original_time, resolution, start = 1):
+def get_first_last_datapoint(participant, feature, original_time, resolution, start = 1):
     """ Get the first or last raw data timestamp for the participant.
 
         Args:
@@ -183,6 +190,7 @@ def get_first_last_datapoint(participant, original_time, resolution, start = 1):
             original_time: the start / end time
             resolution: the resolution
             start (boolean, default: 1): whether it is a start or end time
+            feature: the name of the feature
         Returns:
             original_time if it is not None
             None if there is no raw data
@@ -195,6 +203,24 @@ def get_first_last_datapoint(participant, original_time, resolution, start = 1):
     limit_value = 1
     if start:
         limit_value = -1
+
+    func_list = {f['callable'].__name__: f for f in all_features()}
+    dependent_feats = [f for f in func_list[feature]["dependencies"]]
+    
+    primary_mods = [mod_name for mod_name, mod in inspect.getmembers(primary, inspect.ismodule)]
+    
+    dependent_feats_raw=[]
+    for f in dependent_feats:
+        edited=f
+        if 'lamp' in f:
+            edited = f.split('.')[1]
+        if f in primary_mods:
+            raw_feats=[f for f in func_list[f]["dependencies"]]
+            for raws in raw_feats:
+                dependent_feats_raw.append(edited)
+        else:
+            dependent_feats_raw.append(edited)
+
     times = [getattr(mod, mod_name)(id=participant,
                                         start=0,
                                         end=int(time.time())*1000,
@@ -209,13 +235,14 @@ def get_first_last_datapoint(participant, original_time, resolution, start = 1):
                                                cache=False,
                                                recursive=False,
                                                attach=False,
-                                               _limit=limit_value)['data']) > 0]
+                                               _limit=limit_value)['data']) > 0 and mod_name in dependent_feats_raw]   
     if len(times) == 0: # no data: return none
         return None
     if start:
         original_time = min(times)
     else:
-        original_time = max(times)
+        original_time = min(times)
+    print(original_time)
     if resolution % MS_PER_DAY == 0:
         original_time = set_date_9am(original_time, start)
     return original_time
