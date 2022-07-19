@@ -187,7 +187,7 @@ def get_acc_bouts(acc_df, jerk_threshold=0.5):
     """
     acc_df['above_threshold'] = acc_df['acc_jerk'] > jerk_threshold
     acc_df['prev_above'] = acc_df['above_threshold'].shift()
-    acc_df = acc_df.dropna()
+    acc_df = acc_df.iloc[1:, :]
     acc_df = acc_df[~acc_df['above_threshold']]
     acc_df = acc_df[acc_df['prev_above']]
     if not acc_df.empty:
