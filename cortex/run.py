@@ -205,21 +205,15 @@ def get_first_last_datapoint(participant, feature, original_time, resolution, st
         limit_value = -1
 
     func_list = {f['callable'].__name__: f for f in all_features()}
-    dependent_feats = [f for f in func_list[feature]["dependencies"]]
-    
-    primary_mods = [mod_name for mod_name, mod in inspect.getmembers(primary, inspect.ismodule)]
-    
-    dependent_feats_raw=[]
-    for f in dependent_feats:
-        edited=f
-        if 'lamp' in f:
-            edited = f.split('.')[1]
-        if f in primary_mods:
-            raw_feats=[f for f in func_list[f]["dependencies"]]
-            for raws in raw_feats:
-                dependent_feats_raw.append(edited)
-        else:
-            dependent_feats_raw.append(edited)
+    if func_list[feature]["type"] == "secondary":
+        dependent_feats = [func_list[f.__name__]["dependencies"] for f in 
+                           func_list[feature]["dependencies"]]
+    elif func_list[feature]["type"] == "primary":
+        dependent_feats = [f.__name__ for f in func_list[feature]["dependencies"]]
+    else:
+        dependent_feats = [f for f in func_list[feature]["dependencies"]]  
+        
+    print(dependent_feats)
 
     times = [getattr(mod, mod_name)(id=participant,
                                         start=0,
@@ -235,7 +229,8 @@ def get_first_last_datapoint(participant, feature, original_time, resolution, st
                                                cache=False,
                                                recursive=False,
                                                attach=False,
-                                               _limit=limit_value)['data']) > 0 and mod_name in dependent_feats_raw]   
+                                               _limit=limit_value)['data']) > 0 and 
+             mod_name in dependent_feats]   
     if len(times) == 0: # no data: return none
         return None
     if start:
