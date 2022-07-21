@@ -212,8 +212,6 @@ def get_first_last_datapoint(participant, feature, original_time, resolution, st
         dependent_feats = [f.__name__ for f in func_list[feature]["dependencies"]]
     else:
         dependent_feats = [f for f in func_list[feature]["dependencies"]]  
-        
-    print(dependent_feats)
 
     times = [getattr(mod, mod_name)(id=participant,
                                         start=0,
