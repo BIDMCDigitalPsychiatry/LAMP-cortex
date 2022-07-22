@@ -116,14 +116,14 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 _res2 = pd.DataFrame.from_dict(_res['data'])
             else:
                 _res2 = pd.DataFrame([])
-                
+
             if _res2.shape[0] > 0:
                 # If no data exists, don't bother appending the df.
                 _res2.insert(0, 'id', participant) # prepend 'id' column
                 if hasattr(primary, f):
-                    _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
+                    _res2['timestamp'] = pd.to_datetime(_res2.start, unit='ms')
                 else:
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
+                    _res2['timestamp'] = pd.to_datetime(_res2.timestamp, unit='ms')
                 _results[f] = pd.concat([_results[f], _res2])
 
                 # Save if there is a file path specified
@@ -205,13 +205,17 @@ def get_first_last_datapoint(participant, feature, original_time, resolution, st
         limit_value = -1
 
     func_list = {f['callable'].__name__: f for f in all_features()}
+    
     if func_list[feature]["type"] == "secondary":
-        dependent_feats = [func_list[f.__name__]["dependencies"] for f in 
-                           func_list[feature]["dependencies"]]
+        dependent_feats = []
+        for f in func_list[feature]["dependencies"]:
+            dependent_feats+=[feat.__name__ for feat in func_list[f.__name__]["dependencies"]]
+            
     elif func_list[feature]["type"] == "primary":
         dependent_feats = [f.__name__ for f in func_list[feature]["dependencies"]]
+        
     else:
-        dependent_feats = [f for f in func_list[feature]["dependencies"]]  
+        dependent_feats = [feature]  
 
     times = [getattr(mod, mod_name)(id=participant,
                                         start=0,
@@ -229,6 +233,7 @@ def get_first_last_datapoint(participant, feature, original_time, resolution, st
                                                attach=False,
                                                _limit=limit_value)['data']) > 0 and 
              mod_name in dependent_feats]   
+    
     if len(times) == 0: # no data: return none
         return None
     if start:
