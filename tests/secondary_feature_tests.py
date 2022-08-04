@@ -38,7 +38,7 @@ class TestSecondary(unittest.TestCase):
     # 0. nearby_device_count
     def test_device_count_no_data(self):
         # Test if the participant has no data
-        ret0 = secondary.nearby_device_count.bluetooth_device_count(id=self.EMPTY_PARTICIPANT,
+        ret0 = secondary.nearby_device_count.nearby_device_count(id=self.EMPTY_PARTICIPANT,
                                            start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
                                            end=self.TEST_END_TIME,
                                            resolution=self.MS_IN_DAY)
