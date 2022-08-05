@@ -27,6 +27,9 @@ class TestSecondary(unittest.TestCase):
     TEST_START_TIME_JERK = 1584137124130
     TEST_START_TIME_STEPS = 1651161331270 - 5 * MS_IN_DAY
     TEST_PARTICIPANT_CALLS = "U7955172051"
+    TEST_PARTICIPANT_NEARBY_DEVICES = "U1753020007"
+    NEARBY_TEST_START = 1646485947205
+    NEARBY_TEST_END = 1647003793838
     CALLS_TEST_START = 1654781897000 + 10 * MS_IN_DAY
     CALLS_TEST_END = 1654781897001 + 11 * MS_IN_DAY
 
@@ -45,6 +48,15 @@ class TestSecondary(unittest.TestCase):
         for x in ret0['data']:
             self.assertEqual(x['value'], None)
 
+    def test_device_count_data(self):
+        # Test that nearby device count works
+        ret0 = secondary.nearby_device_count.nearby_device_count(id=self.TEST_PARTICIPANT_NEARBY_DEVICES,
+                                           start=self.NEARBY_TEST_START,
+                                           end=self.NEARBY_TEST_END,
+                                           resolution=self.MS_IN_DAY)
+        self.assertEqual(ret0['data'][0]['value'], 3)
+        self.assertEqual(ret0['data'][1]['value'], None)   
+            
     # 1. data_quality
     def test_data_quality_no_data(self):
         # Test if the participant has no data
