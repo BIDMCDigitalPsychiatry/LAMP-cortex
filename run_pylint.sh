@@ -77,8 +77,6 @@ echo "${green} survey.py ${reset}"
 pylint cortex/raw/survey.py
 echo "${green} telephony.py ${reset}"
 pylint cortex/raw/telephony.py
-echo "${green} wifi.py ${reset}"
-pylint cortex/raw/wifi.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
