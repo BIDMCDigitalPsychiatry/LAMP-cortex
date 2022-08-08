@@ -163,8 +163,8 @@ class TestSecondary(unittest.TestCase):
             local_ret = cortex.secondary.call_duration.call_duration(
                                         incoming=option,
                                         id=self.TEST_PARTICIPANT_CALLS,
-                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
-                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        start=self.CALLS_TEST_START,
+                                        end=self.CALLS_TEST_END,
                                         resolution=self.MS_IN_DAY,
                                         feature="telephony")['data'][0]['value']
             rets_incoming.append(local_ret)
@@ -175,7 +175,7 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(rets[3], None)
         self.assertEqual(ret_none, None)
         self.assertEqual(rets_incoming[0], 34)
-        self.assertEqual(rets_incoming[0], 24)
+        self.assertEqual(rets_incoming[1], 24)
 
     def test_call_number(self):
         # Test that call number works
@@ -210,8 +210,8 @@ class TestSecondary(unittest.TestCase):
             local_ret = cortex.secondary.call_number.call_number(
                                         incoming=option,
                                         id=self.TEST_PARTICIPANT_CALLS,
-                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
-                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        start=self.CALLS_TEST_START,
+                                        end=self.CALLS_TEST_END,
                                         resolution=self.MS_IN_DAY,
                                         feature="telephony")['data'][0]['value']
             rets_incoming.append(local_ret)
@@ -222,7 +222,7 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(rets[3], None)
         self.assertEqual(ret_none, None)
         self.assertEqual(rets_incoming[0], 1)
-        self.assertEqual(rets_incoming[0], 1)
+        self.assertEqual(rets_incoming[1], 1)
         
 if __name__ == '__main__':
     unittest.main()

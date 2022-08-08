@@ -30,6 +30,7 @@ def nearby_device_count(**kwargs):
     _nearby_device = pd.DataFrame(nearby_device(**kwargs)['data'])
     _nearby_device_count = None
     if len(_nearby_device) > 0:
-        _nearby_device_count = len(np.unique(_nearby_device['address'], return_counts=False))
+        bluetooth_devices = _nearby_device[_nearby_device['type'] == 'bluetooth']
+        _nearby_device_count = len(np.unique(bluetooth_devices['address'], return_counts=False))
 
     return {'timestamp': kwargs['start'], 'value': _nearby_device_count}
