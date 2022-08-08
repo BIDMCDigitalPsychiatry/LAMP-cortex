@@ -18,7 +18,7 @@ find tests -name '*tests.py' -print0 |
             echo "${green} Running tests for ${line} ${reset}"
             coverage run -m unittest "$line"
             echo "${cyan} Coverage Report for ${line}"
-            coverage report -m cortex/secondary/bluetooth_device_count.py
+            coverage report -m cortex/secondary/nearby_device_count.py
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/secondary/data_quality.py
             echo "${cyan} Coverage Report for ${line}"

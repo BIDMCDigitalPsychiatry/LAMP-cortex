@@ -59,6 +59,8 @@ echo "${green} jewels_a.py ${reset}"
 pylint cortex/raw/jewels_a.py
 echo "${green} jewels_b.py ${reset}"
 pylint cortex/raw/jewels_b.py
+echo "${green} nearby_device.py ${reset}"
+pylint cortex/raw/nearby_device.py
 echo "${green} pop_the_bubbles.py ${reset}"
 pylint cortex/raw/pop_the_bubbles.py
 echo "${green} screen_state.py ${reset}"
@@ -75,8 +77,6 @@ echo "${green} survey.py ${reset}"
 pylint cortex/raw/survey.py
 echo "${green} telephony.py ${reset}"
 pylint cortex/raw/telephony.py
-echo "${green} wifi.py ${reset}"
-pylint cortex/raw/wifi.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
@@ -95,8 +95,6 @@ pylint cortex/primary/trips.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
-echo "${green} bluetooth_device_count.py ${reset}"
-pylint cortex/secondary/bluetooth_device_count.py
 echo "${green} call_degree.py ${reset}"
 pylint cortex/secondary/call_degree.py
 echo "${green} call_duration.py ${reset}"
@@ -115,6 +113,8 @@ echo "${green} hometime.py ${reset}"
 pylint cortex/secondary/hometime.py
 echo "${green} inactive_duration.py ${reset}"
 pylint cortex/secondary/inactive_duration.py
+echo "${green} nearby_device_count.py ${reset}"
+pylint cortex/secondary/nearby_device_count.py
 echo "${green} screen_duration.py ${reset}"
 pylint cortex/secondary/screen_duration.py
 echo "${green} step_count.py ${reset}"

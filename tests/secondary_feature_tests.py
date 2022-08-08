@@ -27,6 +27,9 @@ class TestSecondary(unittest.TestCase):
     TEST_START_TIME_JERK = 1584137124130
     TEST_START_TIME_STEPS = 1651161331270 - 5 * MS_IN_DAY
     TEST_PARTICIPANT_CALLS = "U7955172051"
+    TEST_PARTICIPANT_NEARBY_DEVICES = "U1753020007"
+    NEARBY_TEST_START = 1646485947205
+    NEARBY_TEST_END = 1647003793838
     CALLS_TEST_START = 1654781897000 + 10 * MS_IN_DAY
     CALLS_TEST_END = 1654781897001 + 11 * MS_IN_DAY
 
@@ -35,16 +38,25 @@ class TestSecondary(unittest.TestCase):
         logger = logging.getLogger()
         logger.setLevel(logging.CRITICAL)
 
-    # 0. bluetooth_device_count
+    # 0. nearby_device_count
     def test_device_count_no_data(self):
         # Test if the participant has no data
-        ret0 = secondary.bluetooth_device_count.bluetooth_device_count(id=self.EMPTY_PARTICIPANT,
+        ret0 = secondary.nearby_device_count.nearby_device_count(id=self.EMPTY_PARTICIPANT,
                                            start=self.TEST_END_TIME - 3 * self.MS_IN_DAY,
                                            end=self.TEST_END_TIME,
                                            resolution=self.MS_IN_DAY)
         for x in ret0['data']:
             self.assertEqual(x['value'], None)
 
+    def test_device_count_data(self):
+        # Test that nearby device count works
+        ret0 = secondary.nearby_device_count.nearby_device_count(id=self.TEST_PARTICIPANT_NEARBY_DEVICES,
+                                           start=self.NEARBY_TEST_START,
+                                           end=self.NEARBY_TEST_END,
+                                           resolution=self.MS_IN_DAY)
+        self.assertEqual(ret0['data'][0]['value'], 3)
+        self.assertEqual(ret0['data'][1]['value'], None)   
+            
     # 1. data_quality
     def test_data_quality_no_data(self):
         # Test if the participant has no data
@@ -151,8 +163,8 @@ class TestSecondary(unittest.TestCase):
             local_ret = cortex.secondary.call_duration.call_duration(
                                         incoming=option,
                                         id=self.TEST_PARTICIPANT_CALLS,
-                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
-                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        start=self.CALLS_TEST_START,
+                                        end=self.CALLS_TEST_END,
                                         resolution=self.MS_IN_DAY,
                                         feature="telephony")['data'][0]['value']
             rets_incoming.append(local_ret)
@@ -163,7 +175,7 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(rets[3], None)
         self.assertEqual(ret_none, None)
         self.assertEqual(rets_incoming[0], 34)
-        self.assertEqual(rets_incoming[0], 24)
+        self.assertEqual(rets_incoming[1], 24)
 
     def test_call_number(self):
         # Test that call number works
@@ -198,8 +210,8 @@ class TestSecondary(unittest.TestCase):
             local_ret = cortex.secondary.call_number.call_number(
                                         incoming=option,
                                         id=self.TEST_PARTICIPANT_CALLS,
-                                        start=self.CALLS_TEST_START - self.MS_IN_DAY,
-                                        end=self.CALLS_TEST_END - self.MS_IN_DAY,
+                                        start=self.CALLS_TEST_START,
+                                        end=self.CALLS_TEST_END,
                                         resolution=self.MS_IN_DAY,
                                         feature="telephony")['data'][0]['value']
             rets_incoming.append(local_ret)
@@ -210,7 +222,7 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(rets[3], None)
         self.assertEqual(ret_none, None)
         self.assertEqual(rets_incoming[0], 1)
-        self.assertEqual(rets_incoming[0], 1)
+        self.assertEqual(rets_incoming[1], 1)
         
 if __name__ == '__main__':
     unittest.main()
