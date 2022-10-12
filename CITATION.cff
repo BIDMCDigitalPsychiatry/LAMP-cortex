@@ -1,0 +1,22 @@
+cff-version: 0.0.1
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Currey
+    given-names: Danielle
+  - family-names: Hays
+    given-names: Ryan
+  - family-names: D'Mello
+    given-names: Ryan
+  - family-names: Scheuer
+    given-names: Luke
+  - family-names: Vaidyam
+    given-names: Aditya
+  - family-names: Lavoie
+    given-names: Joel
+  - family-names: Langholm
+    given-names: Carsten
+  - family-names: Gray
+    given-names: Lucy
+title: "LAMP-Cortex"
+version: 2022.10.11
+date-released: 2022-10-11
