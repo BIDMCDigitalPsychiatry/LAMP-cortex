@@ -18,6 +18,7 @@ class TestSecondary(unittest.TestCase):
     # pylint: disable=invalid-sequence-index
     """ Class for testing secondary features """
     MS_IN_DAY = 60 * 60 * 24 * 1000
+    MS_PER_DAY = MS_IN_DAY
     TEST_PARTICIPANT = "U26468383"
     TEST_PARTICIPANT_ANDROID = "U1771421483"
     TEST_PARTICIPANT_IOS = "U3826134542"
@@ -32,6 +33,10 @@ class TestSecondary(unittest.TestCase):
     NEARBY_TEST_END = 1647003793838
     CALLS_TEST_START = 1654781897000 + 10 * MS_IN_DAY
     CALLS_TEST_END = 1654781897001 + 11 * MS_IN_DAY
+    CALL_DEGREE_TEST_ID = "U1753020007"
+    CALL_DEGREE_EVENT = 1647302813034
+    CALL_DEGREE_START = CALL_DEGREE_EVENT - 10*MS_PER_DAY
+    CALL_DEGREE_END = CALL_DEGREE_EVENT + 2*MS_PER_DAY
 
     def setUp(self):
         """ Setup the tests """
@@ -56,7 +61,7 @@ class TestSecondary(unittest.TestCase):
                                            resolution=self.MS_IN_DAY)
         self.assertEqual(ret0['data'][0]['value'], 3)
         self.assertEqual(ret0['data'][1]['value'], None)   
-            
+
     # 1. data_quality
     def test_data_quality_no_data(self):
         # Test if the participant has no data
@@ -223,6 +228,45 @@ class TestSecondary(unittest.TestCase):
         self.assertEqual(ret_none, None)
         self.assertEqual(rets_incoming[0], 1)
         self.assertEqual(rets_incoming[1], 1)
-        
+
+    def test_call_degree_incoming(self):
+        # test argument specified as incoming
+        ret = cortex.secondary.call_degree.call_degree(id=self.CALL_DEGREE_TEST_ID,
+                                                       call_direction = 'incoming',
+                                                       start=self.CALL_DEGREE_START,
+                                                       end=self.CALL_DEGREE_END,
+                                                       resolution=self.MS_PER_DAY)['data']
+        ret_values = np.sum([f['value'] for f in ret if f['value'] is not None])
+        self.assertEqual(ret_values, 1)
+
+    def test_call_degree_outgoing(self):
+        # test argument specified as incoming
+        ret = cortex.secondary.call_degree.call_degree(id=self.CALL_DEGREE_TEST_ID,
+                                                       call_direction = 'outgoing',
+                                                       start=self.CALL_DEGREE_START,
+                                                       end=self.CALL_DEGREE_END,
+                                                       resolution=self.MS_PER_DAY)['data']
+        ret_values = np.sum([f['value'] for f in ret if f['value'] is not None])
+        self.assertEqual(ret_values, 1)
+
+    def test_call_degree_all(self):
+        # test argument specified as incoming
+        ret = cortex.secondary.call_degree.call_degree(id=self.CALL_DEGREE_TEST_ID,
+                                                       call_direction = 'all',
+                                                       start=self.CALL_DEGREE_START,
+                                                       end=self.CALL_DEGREE_END,
+                                                       resolution=self.MS_PER_DAY)['data']
+        ret_values = np.sum([f['value'] for f in ret if f['value'] is not None])
+        self.assertEqual(ret_values, 2)
+
+    def test_call_degree_default(self):
+        # test argument specified as incoming
+        ret = cortex.secondary.call_degree.call_degree(id=self.CALL_DEGREE_TEST_ID,
+                                                       start=self.CALL_DEGREE_START,
+                                                       end=self.CALL_DEGREE_END,
+                                                       resolution=self.MS_PER_DAY)['data']
+        ret_values = np.sum([f['value'] for f in ret if f['value'] is not None])
+        self.assertEqual(ret_values, 2)
+
 if __name__ == '__main__':
     unittest.main()
