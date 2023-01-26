@@ -153,7 +153,7 @@ def get_data_tags_df(participants):
             study_name = [x["study_name"] for x in participants if x["participant_id"] == part][0]
             df2.append({
                 "Study ID (Participant ID)": study_name + " ("  + part + ")",
-                "Participant ID": part,
+                "Participant ID": part + " ("+str(LAMP.Type.get_attachment(part, 'lamp.name')['data'])+")",
                 "Quality": df_orig.loc[i, qual_type],
                 "Type": qual_type,
                 "Missing days": dates,
@@ -233,7 +233,7 @@ def make_data_qual_tags(researcher_id, qual_df2):
     col = ["gray", "red", "gold", "limegreen", "crimson", "orange", "green"]
 
     chart = alt.Chart(qual_df2, title=f"Data quality (updated {formatted_date})").mark_bar().encode(
-        x="Study ID (Participant ID)",
+        x="Participant ID",
         y='Type',
         color=alt.Color('Quality', scale=alt.Scale(domain=val, range=col)),
         tooltip=['Missing days', "Average frequency"]
