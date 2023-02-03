@@ -36,7 +36,10 @@ def step_count(**kwargs):
         # Older data, not supported
         return {'timestamp': kwargs['start'], 'value': None}
 
-    _steps = _steps[_steps["type"] == "step_count"]
+    _steps = _steps[(_steps["type"] == "step_count") 
+                    & (_steps["source"] != 'null')].drop_duplicates()
+    _steps = _steps[_steps["source"] != None]
+                    
     if len(_steps) == 0:
         return {'timestamp': kwargs['start'], 'value': None}
 
