@@ -6,7 +6,7 @@ from ..raw.device_usage import device_usage
 from .. import raw
 
 @secondary_feature(
-    name="cortex.app_usage",
+    name="cortex.app_time",
     dependencies=[device_usage]
 )
 def app_time(category=None, attach=False, **kwargs):
