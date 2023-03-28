@@ -8,6 +8,7 @@ import inspect
 import datetime
 
 import pandas as pd
+import numpy as np
 
 import cortex.raw as raw
 import cortex.primary as primary
@@ -98,7 +99,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
     curr_val = 0
     for i, participant in enumerate(participants):
         for f in features_by_participant[i]:
-            # Make sure we aren't calling non-existant feature functions.
+            # Make sure we aren't calling non-existent feature functions.
             if f not in func_list.keys():
                 continue
             if f not in _results.keys():
@@ -116,9 +117,7 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 # If no data exists, don't bother appending the df.
                 _res2.insert(0, 'id', participant) # prepend 'id' column
                 if hasattr(primary, f):
-                    _res2.timestamp = pd.to_datetime(_res2.start, unit='ms')
-                else:
-                    _res2.timestamp = pd.to_datetime(_res2.timestamp, unit='ms')
+                    _res2.timestamp = _res2.start
                 _results[f] = pd.concat([_results[f], _res2])
 
                 # Save if there is a file path specified
@@ -132,6 +131,10 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
                 sys.stdout.write("[%-20s] %d%%" % ('='*int(20*j), 100*j))
                 sys.stdout.flush()
                 curr_val += 1
+
+    for feat in features:
+        if not _results[feat].empty:
+            _results[feat]['datetime'] = pd.to_datetime(_res2.timestamp, unit='ms')
 
     return _results
 
@@ -163,7 +166,7 @@ def get_feature_for_participant(participant, feature, feature_params, start, end
                  id=participant,
                  start=start,
                  end=end,
-                 resolution=MS_PER_DAY,
+                 resolution=resolution,
                  cache=cache,
                  **feature_params)
     else:
