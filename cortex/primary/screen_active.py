@@ -1,6 +1,8 @@
 """ Module for computing screen active bouts from device state """
 import datetime
 import LAMP
+import pandas as pd
+import numpy as np
 
 from ..feature_types import primary_feature
 from ..raw.device_state import device_state
@@ -9,7 +11,7 @@ from ..raw.device_state import device_state
     name="cortex.screen_active",
     dependencies=[device_state]
 )
-def screen_active(attach=True,
+def screen_active(attach=False,
                   duration_threshold=1000 * 60 * 60 * 2, #2 hours
                   **kwargs):
     """Builds bout of screen activity.
@@ -43,8 +45,8 @@ def screen_active(attach=True,
     # if attach then run it for the entrire thing and return the entire thing
     # otherwise run it for the entire thing but keep the original timestamps
     # get new timestamps
-    start_time = 0
-    end_time = int(datetime.datetime.now().timestamp()) * 1000
+    start_time = kwargs['start']
+    end_time = kwargs['end']
 
     # get all of the data for the bouts
     _device_state = list(reversed(device_state(id=kwargs['id'],
@@ -52,7 +54,7 @@ def screen_active(attach=True,
                                                end=end_time)['data']))
     has_raw_data = 1
     if len(_device_state) == 0:
-        has_raw_data = 0
+        return {'data': [], 'has_raw_data': 0}
 
     # Ensure value is present; convert state if not
     for _event in _device_state:
@@ -99,28 +101,33 @@ def _get_device_state_data(_device_state,
             flipped (boolean, default: 0): whether to use the screen on bouts
                 or screen off bouts
     """
-
-    on_events = [0, 3]
-    off_events = [1, 2]
+    MS_PER_HOUR = 1000*60*60
+    
+    on_events = [0]
+    off_events = [1]
 
     if flipped:
-        on_events = [1, 2]
-        off_events = [0, 3]
+        on_events = [1]
+        off_events = [0]
 
     _screen_active = []
     start = True # if looking for start
     bout = {}
-
+    
     for i in range(len(_device_state) - 1):
         elapsed = _device_state[i+1]['timestamp'] - _device_state[i]['timestamp']
+        if elapsed >= 5000:
+            n = i
+        else:
+            n = i+1
         if (elapsed < 1000 and _device_state[i+1]['value'] in on_events
             and _device_state[i]['value'] in on_events):
             continue
         if start and _device_state[i]['value'] in on_events:
-            bout['start'] = _device_state[i]['timestamp']
+            bout['start'] = _device_state[n]['timestamp']
             start = False
         elif not start and _device_state[i]['value'] in off_events:
-            bout['end'] = _device_state[i]['timestamp']
+            bout['end'] = _device_state[n]['timestamp']
             bout['duration'] = bout['end'] - bout['start']
 
             #If bout duration too long, ignore it
@@ -134,5 +141,5 @@ def _get_device_state_data(_device_state,
         bout['end'] = _device_state[-1]['timestamp']
         bout['duration'] = bout['end'] - bout['start']
         _screen_active.append(bout)
-
+    
     return _screen_active
