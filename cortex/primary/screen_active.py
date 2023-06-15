@@ -9,7 +9,7 @@ from ..raw.device_state import device_state
     name="cortex.screen_active",
     dependencies=[device_state]
 )
-def screen_active(attach=True,
+def screen_active(attach=False,
                   duration_threshold=1000 * 60 * 60 * 2, #2 hours
                   **kwargs):
     """Builds bout of screen activity.
