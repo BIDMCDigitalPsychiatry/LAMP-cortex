@@ -2,6 +2,7 @@
 import numpy as np
 from ..feature_types import secondary_feature
 from ..primary.screen_active import screen_active
+from ..raw.device_state import device_state
 
 MS_IN_A_DAY = 86400000
 @secondary_feature(
@@ -32,9 +33,17 @@ def screen_duration(**kwargs):
             value (float): The time (in ms) spent with the device screen on.
 
     """
-    _screen_active = screen_active(**kwargs)
-    _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])
+    
+    _device_state = device_state(id=kwargs['id'],
+                                 start=kwargs['start'],
+                                 end=kwargs['end'],
+                                 _limit=1)['data']
+    
     # screen duration should be None if there is no data
-    if _screen_active['has_raw_data'] == 0:
+    if len(_device_state) == 0:
         _screen_duration = None
-    return {'timestamp':kwargs['start'], 'value': _screen_duration}
+    else:
+        _screen_active = screen_active(**kwargs)
+        _screen_duration = np.sum([active_bout['duration'] for active_bout in _screen_active['data']])
+
+    return {'timestamp': kwargs['start'], 'value': _screen_duration}
