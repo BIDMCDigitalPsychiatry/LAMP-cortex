@@ -34,7 +34,7 @@ def create_sample_window(end_of_window, sample_length, set_to_utc_midnight):
 def passive(id_list,
             sensor_info=[{"sensor": "lamp.gps", 'target_hz': 0.1, 'display_name': "GPS_Quality"},
             {"sensor": "lamp.accelerometer", 'target_hz': 3, 'display_name':"Accel_Quality"}],
-            show_graphs=True, attach_graphs=True, display_graphs=True,
+            show_graphs=True, attach_graphs='all', display_graphs=True,
             days_ago=0, sample_length=7,
             set_to_utc_midnight=True, reporter_func=print,
             return_dict=False, reset=False):
@@ -45,7 +45,8 @@ def passive(id_list,
             id_list: a string or array of strings of LAMP ids
                     (participant, study, researcher)
             show_graphs: if True, graphs are displayed in the output
-            attach_graphs: if True, graphs are attached to the participant
+            attach_graphs: if True, graphs are attached to the participant. If 'heatmap', attach
+            only heatmap. If 'scatter', attach only scatterplot.
             display_graphs: if True, graphs are attached to the study and researcher for display
             days_ago: the number of days ago the analysis should end.
                         If 0, analysis ends on the current timestamp
@@ -211,13 +212,25 @@ def passive(id_list,
             (summary_dictionary[participant]
              [sensor['display_name']]['graph']['heatmap'])=heatmap.to_dict()
 
-            if attach_graphs:
-                name = f"lamp.dashboard.experimental.{sensor['display_name']}"
+            name = f"lamp.dashboard.experimental.{sensor['display_name']}"
+            if attach_graphs == 'all' or attach_graphs == True:
                 set_graph(participant,
                          key=name+'_scatter',
                          graph=scatter.to_dict(),
                          display_on_patient_portal=display_graphs,
                          set_on_parents=True)
+                set_graph(participant,
+                         key=name+"_heatmap",
+                         graph=heatmap.to_dict(),
+                         display_on_patient_portal=display_graphs,
+                         set_on_parents=True)
+            elif attach_graphs == 'scatter':
+                set_graph(participant,
+                         key=name+'_scatter',
+                         graph=scatter.to_dict(),
+                         display_on_patient_portal=display_graphs,
+                         set_on_parents=True)
+            elif attach_graphs == 'heatmap':
                 set_graph(participant,
                          key=name+"_heatmap",
                          graph=heatmap.to_dict(),
