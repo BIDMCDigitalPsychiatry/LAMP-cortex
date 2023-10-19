@@ -112,6 +112,9 @@ def run(id_or_set, features=[], feature_params={}, start=None, end=None,
             _res = get_feature_for_participant(participant, f, params_f, start,
                                                end, resolution, cache)
 
+            if _res is None:
+                log.info("Participant has no passive data. Returning None.")
+                return None
             _res2 = pd.DataFrame.from_dict(_res['data'])
             if _res2.shape[0] > 0:
                 # If no data exists, don't bother appending the df.
