@@ -762,9 +762,11 @@ def secondary_feature(name, dependencies):
 
             kwgs = _get_default_args(func)
             kwgs.update(kwargs)
-            timestamp_list = list(range(kwgs['start'], kwgs['end'], kwgs['resolution']))
+            n_res = int((kwgs['end'] - kwgs['start'])/kwgs['resolution'])
+            ts_list = [(kwgs['start'] + i*kwgs['resolution'], kwgs['start'] + (i+1)*kwgs['resolution'])
+                       for i in range(n_res)]
             data = []
-            for window in reversed([*zip(timestamp_list[:-1], timestamp_list[1:])]):
+            for window in reversed(ts_list):
                 window_start, window_end = window[0], window[1]
                 _result = func(**{**kwgs, 'start':window_start, 'end':window_end})
                 data.append(_result)
