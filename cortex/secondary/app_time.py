@@ -9,7 +9,7 @@ from .. import raw
     name="cortex.app_time",
     dependencies=[device_usage]
 )
-def app_time(category=None, attach=False, **kwargs):
+def app_time(category="all", attach=False, **kwargs):
     """ Get app usage data from raw device_usage.
 
     Args:
@@ -56,26 +56,24 @@ def app_time(category=None, attach=False, **kwargs):
                     "utilities": "SRDeviceUsageCategoryUtilities",
                     "weather": "SRDeviceUsageCategoryWeather"}
     
-    if (category is None) or category not in category_map.keys():
-        raise Exception("Please specify the argument 'category' as one of: %s" % list(category_map.keys()))
+    if category != "all" and category not in category_map.keys():
+        raise Exception("Please specify the argument 'category' as either 'all' or one of: %s" % list(category_map.keys()))
     
     _device_usage = device_usage(**kwargs)['data']
     
     if len(_device_usage) == 0:
         return {'timestamp': kwargs['start'], 'value': None}
-    
-    category_id = category_map[category]
         
     app_usage = [f['applicationUsageByCategory'] for f in _device_usage
                  if len(f['applicationUsageByCategory']) > 0]
     
-    type_usage = [f[category_id] for f in app_usage if category_id in f.keys()]
+    if category == 'all':
+        type_usage = [f[j] for f in app_usage for j in category_map.values() if j in f.keys()]
+    else:
+        category_id = category_map[category]
+        type_usage = [f[category_id] for f in app_usage if category_id in f.keys()]
     
-    usage_list = []
-    for element in type_usage:
-        usage_list += [f for f in element]
-    
-    value = np.sum([f['usageTime'] for f in usage_list])
+    value = np.sum(dur['usageTime'] for f in type_usage for dur in f)
     
     # After this time, data was reported in ms, not s. Change the unit from s to ms if data was collected before this time.
     cutoff_time = 1677088485*1000
