@@ -56,8 +56,7 @@ def call_number(call_direction="all", **kwargs):
 
     else:
         number = None
-        log.info(""" %s was passed but is not an acceptable argument.
-        Acceptable arguments include 'all','incoming', or 'outgoing'" """,
-                 call_direction)
+        raise Exception(f"{call_direction} is not a proper argument. "
+                        + "Must be incoming, outgoing, or all")
 
     return {'timestamp': kwargs['start'], 'value': number}
