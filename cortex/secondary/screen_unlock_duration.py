@@ -18,8 +18,6 @@ def screen_unlock_duration(**kwargs):
                 for which the feature is being generated. Required.
             end (int): The last UNIX timestamp (in ms) of the window
                 for which the feature is being generated. Required.
-            incoming (boolean): If True the number of received calls
-                is returned; else the number of sent calls is returned.
 
     Returns:
         A dict consisting:
