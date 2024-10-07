@@ -35,7 +35,7 @@ compress-pickle = "^2.0.1"
 pyyaml = "^6.0.2"
 pymongo = "^4.1.1"
 seaborn = "^0.11.1"
-matplotlib = "^3.4.1"
+matplotlib = "^3.9.0"
 statsmodels = "^0.14.4"
 scipy = "^1.14.1"
 
