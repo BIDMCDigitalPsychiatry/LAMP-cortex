@@ -95,6 +95,8 @@ pylint cortex/primary/trips.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
+echo "${green} battery_level.py ${reset}"
+pylint cortex/secondary/battery_level.py
 echo "${green} call_degree.py ${reset}"
 pylint cortex/secondary/call_degree.py
 echo "${green} call_duration.py ${reset}"
