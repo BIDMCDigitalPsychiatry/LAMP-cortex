@@ -106,6 +106,7 @@ def _get_device_state_data(_device_state,
     if flipped:
         on_events = [1, 2]
         off_events = [0, 3]
+        print('FLIP')
 
     _screen_active = []
     start = True # if looking for start
