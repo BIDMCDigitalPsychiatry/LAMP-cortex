@@ -79,8 +79,10 @@ def screen_active(attach=False,
         val = [loc for loc in _screen_active if loc['start'] <= screen_on_time <= loc['end']]
         if len(val) == 1:
             _ret_screen_active = _screen_active
+            print('nope')
         else:
             _ret_screen_active = _screen_active_flipped
+            print('flip')
     else:
         # assume normal is correct
         _ret_screen_active = _screen_active
@@ -106,7 +108,6 @@ def _get_device_state_data(_device_state,
     if flipped:
         on_events = [1, 2]
         off_events = [0, 3]
-        print('FLIP')
 
     _screen_active = []
     start = True # if looking for start
