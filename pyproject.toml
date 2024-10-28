@@ -20,7 +20,7 @@ packages = [
 cortex = 'cortex.feature_types:_main'
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 LAMP-core = "^2021.5.18"
 DateTime = "^4.3"
 numpy = "^1.22.4"
@@ -30,12 +30,12 @@ tzwhere = "^3.0.3"
 geopy = "^2.1.0"
 similaritymeasures = "^0.4.4"
 fastdtw = "^0.3.4"
-scikit-learn = "*"
+scikit-learn = "^1.1.3"
 pytz = "^2021.1"
 compress-pickle = "^2.0.1"
 pyyaml = "^6.0.2"
 pymongo = "^4.1.1"
-seaborn = "^0.11.1"
+seaborn = "^0.13.0"
 matplotlib = "^3.9.0"
 statsmodels = "^0.14.4"
 scipy = "^1.14.1"
