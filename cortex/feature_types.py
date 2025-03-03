@@ -35,7 +35,7 @@ __features__ = []
 def all_features():
     return __features__
 
-ACTIVITIES = ['lamp.survey', 'lamp.jewels_a', 'lamp.jewels_b', 'lamp.balloon_risk',
+ACTIVITIES = ['lamp.survey', 'lamp.jewels_b', 'lamp.balloon_risk',
               'lamp.cats_and_dogs', 'lamp.pop_the_bubbles', 'lamp.spatial_span']
 MAX_RETURN_SIZE = 10000 #maximum number of events that the API will return
 
