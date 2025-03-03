@@ -3,7 +3,7 @@ from ..feature_types import raw_feature
 
 @raw_feature(
     name="lamp.dcog",
-    dependencies=["lamp.dcog"]
+    dependencies=["lamp.d-cog"]
 )
 def dcog(_limit=10000,
              cache=False,
