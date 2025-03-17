@@ -9,7 +9,7 @@ def digit_span(_limit=10000,
              cache=False,
              recursive=True,
              **kwargs):
-    """ Get cats_and_dogs data bounded by time interval.
+    """ Get digit_span data bounded by time interval.
 
     Args:
         _limit (int): The maximum number of sensor events to query for in a single request
