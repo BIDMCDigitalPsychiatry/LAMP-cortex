@@ -79,6 +79,17 @@ echo "${green} telephony.py ${reset}"
 pylint cortex/raw/telephony.py
 echo "${green} dcog.py ${reset}"
 pylint cortex/raw/dcog.py
+echo "${green} digit_span.py ${reset}"
+pylint cortex/raw/digit_span.py
+echo "${green} fragmented_letters.py ${reset}"
+pylint cortex/raw/fragmented_letters.py
+echo "${green} funny_memory.py ${reset}"
+pylint cortex/raw/funny_memory.py
+echo "${green} trails_b.py ${reset}"
+pylint cortex/raw/trails_b.py
+echo "${green} voice_survey.py ${reset}"
+pylint cortex/raw/voice_survey.py
+
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"

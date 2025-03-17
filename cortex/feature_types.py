@@ -36,7 +36,9 @@ def all_features():
     return __features__
 
 ACTIVITIES = ['lamp.survey', 'lamp.jewels_a', 'lamp.jewels_b', 'lamp.balloon_risk',
-              'lamp.cats_and_dogs', 'lamp.pop_the_bubbles', 'lamp.spatial_span', 'lamp.dcog']
+              'lamp.cats_and_dogs', 'lamp.pop_the_bubbles', 'lamp.spatial_span', 'lamp.dcog',
+              'lamp.digit_span', 'lamp.fragmented_letters', 'lamp.funny_memory', 'lamp.trails_b',
+              'lamp.voice_survey',]
 MAX_RETURN_SIZE = 10000 #maximum number of events that the API will return
 
 # Raw features.
