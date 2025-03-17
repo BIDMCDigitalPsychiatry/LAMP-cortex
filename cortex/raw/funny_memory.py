@@ -9,7 +9,7 @@ def funny_memory(_limit=10000,
              cache=False,
              recursive=True,
              **kwargs):
-    """ Get digit_span data bounded by time interval.
+    """ Get funny_memory data bounded by time interval.
 
     Args:
         _limit (int): The maximum number of sensor events to query for in a single request
