@@ -9,7 +9,7 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.call_number',
     dependencies=[telephony, phone_usage]
 )
-def call_number(sensor='SensorKit', call_direction="all", **kwargs):
+def call_number(sensor='Telephony', call_direction="all", **kwargs):
     """Returns the number of calls made.
 
     Args:

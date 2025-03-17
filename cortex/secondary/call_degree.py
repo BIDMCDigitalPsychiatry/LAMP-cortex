@@ -10,7 +10,7 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.call_degree',
     dependencies=[telephony, phone_usage]
 )
-def call_degree(sensor='SensorKit', call_direction='all', **kwargs):
+def call_degree(sensor='Telephony', call_direction='all', **kwargs):
     """Returns the number of unique phone numbers a participant called
 
     Args:

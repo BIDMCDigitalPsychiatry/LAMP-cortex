@@ -11,7 +11,7 @@ MS_IN_A_DAY = 86400000
     name='cortex.feature.call_duration',
     dependencies=[telephony, phone_usage]
 )
-def call_duration(sensor='SensorKit', call_direction="all", **kwargs):
+def call_duration(sensor='Telephony', call_direction="all", **kwargs):
     """The time (in ms) spent talking on the phone.
 
     Args:
