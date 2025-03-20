@@ -77,6 +77,19 @@ echo "${green} survey.py ${reset}"
 pylint cortex/raw/survey.py
 echo "${green} telephony.py ${reset}"
 pylint cortex/raw/telephony.py
+echo "${green} dcog.py ${reset}"
+pylint cortex/raw/dcog.py
+echo "${green} digit_span.py ${reset}"
+pylint cortex/raw/digit_span.py
+echo "${green} fragmented_letters.py ${reset}"
+pylint cortex/raw/fragmented_letters.py
+echo "${green} funny_memory.py ${reset}"
+pylint cortex/raw/funny_memory.py
+echo "${green} trails_b.py ${reset}"
+pylint cortex/raw/trails_b.py
+echo "${green} voice_survey.py ${reset}"
+pylint cortex/raw/voice_survey.py
+
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for primary features ${reset}"
@@ -95,6 +108,8 @@ pylint cortex/primary/trips.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for secondary features ${reset}"
+echo "${green} battery_level.py ${reset}"
+pylint cortex/secondary/battery_level.py
 echo "${green} call_degree.py ${reset}"
 pylint cortex/secondary/call_degree.py
 echo "${green} call_duration.py ${reset}"
