@@ -15,7 +15,7 @@ This API client is used to process and featurize data collected in LAMP. [Visit 
 <a name="setting_up_cortex"></a>
 # Setting up Cortex
 
-You will need Python 3.4+ and `pip` installed in order to use Cortex. 
+You will need Python 3.8+ and `pip` installed in order to use Cortex. 
   - You may need root permissions, using `sudo`.
   - Alternatively, to install locally, use `pip --user`.
   - If `pip` is not recognized as a command, use `python3 -m pip`.
