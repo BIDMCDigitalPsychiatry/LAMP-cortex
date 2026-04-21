@@ -1,5 +1,15 @@
 # Cortex data analysis pipeline for the LAMP Platform.
 
+## Release Branch: v2 (Basic Auth)
+
+This is the `release/v2` branch — the stable basic-auth version of LAMP Cortex. It is pinned to `LAMP-core==2021.10.4` (LAMP-py `v2.0.0`).
+
+| Dependency | Version | Corresponds to |
+|-----------|---------|---------------|
+| `LAMP-core` | `2021.10.4` | LAMP-py `release/v2` / `v2.0.0` |
+
+This branch receives critical and security fixes only. For the latest features, see the `master` branch or `release/v3` when available.
+
 ## Overview
 
 This API client is used to process and featurize data collected in LAMP. [Visit our documentation](https://docs.lamp.digital/data_science/cortex/getting-started) for more information about using cortex and the LAMP API.

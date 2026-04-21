@@ -21,7 +21,7 @@ cortex = 'cortex.feature_types:_main'
 
 [tool.poetry.dependencies]
 python = "^3.8"
-LAMP-core = "^2021.5.18"
+LAMP-core = "2021.10.4"
 DateTime = "^4.3"
 numpy = "^1.20.3"
 pandas = "^1.2.4"
