@@ -20,15 +20,13 @@ packages = [
 cortex = 'cortex.feature_types:_main'
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 LAMP-core = "^2021.5.18"
 DateTime = "^4.3"
 numpy = "^1.20.3"
 pandas = "^1.2.4"
 altair = "^4.1.0"
-tzwhere = "^3.0.3"
 geopy = "^2.1.0"
-fastdtw = "^0.3.4"
 scikit-learn = "^1.5.2"
 pytz = "^2021.1"
 compress-pickle = "^2.0.1"
