@@ -8,7 +8,6 @@ import sys
 import cortex
 import itertools
 from functools import reduce
-from tzwhere import tzwhere
 import pytz
 from dateutil.tz import tzlocal
 
