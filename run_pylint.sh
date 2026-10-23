@@ -32,6 +32,8 @@ echo "${green} misc_functions.py ${reset}"
 pylint cortex/utils/misc_functions.py
 echo "${green} useful_functions.py ${reset}"
 pylint cortex/utils/useful_functions.py
+echo "${green} sensor_stream.py ${reset}"
+pylint cortex/utils/sensor_stream.py
 
 echo "${red}----------------------------------${reset}"
 echo "${red} Running pylint for all raw features ${reset}"
@@ -53,6 +55,8 @@ echo "${green} device_motion.py ${reset}"
 pylint cortex/raw/device_motion.py
 echo "${green} gps.py ${reset}"
 pylint cortex/raw/gps.py
+echo "${green} gps1m.py ${reset}"
+pylint cortex/raw/gps1m.py
 echo "${green} gyroscope.py ${reset}"
 pylint cortex/raw/gyroscope.py
 echo "${green} jewels_a.py ${reset}"

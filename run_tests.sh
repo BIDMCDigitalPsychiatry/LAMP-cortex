@@ -35,6 +35,16 @@ find tests -name '*tests.py' -print0 |
             coverage run -m unittest "$line"
             echo "${cyan} Coverage Report for ${line}"
             coverage report -m cortex/utils/misc_functions.py
+        elif [[ $line = "tests/binary_sensor_tests.py" ]]
+        then
+            # Offline: the HTTP server is faked and the frames are golden vectors.
+            # Needs the 'binary' extra (openzl, zstandard).
+            echo "${green} Running tests for ${line} ${reset}"
+            coverage run -m unittest "$line"
+            echo "${cyan} Coverage Report for ${line}"
+            coverage report -m cortex/utils/sensor_stream.py
+            echo "${cyan} Coverage Report for ${line}"
+            coverage report -m cortex/raw/gps1m.py
         else
             echo "TODO: add other tests here"
             # coverage report

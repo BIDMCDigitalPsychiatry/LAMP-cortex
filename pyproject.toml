@@ -37,6 +37,12 @@ matplotlib = "^3.9.0"
 statsmodels = "^0.14.4"
 scipy = "^1.14.1"
 requests = "^2.16.2"
+# Optional: the `binary` extra decodes sensor-stream frames (cortex.utils.sensor_stream).
+openzl = {version = "0.3.0", optional = true}
+zstandard = {version = ">=0.22", optional = true}
+
+[tool.poetry.extras]
+binary = ["openzl", "zstandard"]
 
 [tool.poetry.dev-dependencies]
 

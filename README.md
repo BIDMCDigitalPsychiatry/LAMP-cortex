@@ -8,6 +8,7 @@ This API client is used to process and featurize data collected in LAMP. [Visit 
 
 - [Setting up Cortex](#setting_up_cortex)
 - [Cortex example](#example_cortex_query)
+- [Binary sensor streams](#binary_sensor_stream)
 - [Find a bug?](#bug_report)
 - [Developing Cortex](#cortex_dev)
 - [Command-line usage](#advanced)
@@ -94,6 +95,67 @@ And the output might look like:
  13  U1234567890 2021-11-28 05:00:00  44383154.0}
  ```
 The output is the same as above, except the 'data' has been transformed into a Pandas DataFrame. Additionally, the dictionary is indexed by feature -- this way you can add to the list of features processed at once. Finally, a column "id" has been added so that multiple participants can be processed simultaneously. 
+
+<a name="binary_sensor_stream"></a>
+## Binary sensor streams: high-rate accelerometer
+
+The high-rate accelerometer sensors (`lamp.accelerometer10hz`, `lamp.accelerometer20hz`,
+`lamp.accelerometer50hz`, and `lamp.accelerometer100hz`) don't use `sensor_event`. Devices upload
+compressed binary frames to `/participant/{id}/sensor-stream` instead, so you read them with
+`cortex.utils.sensor_stream.load_sensor_stream`, not with a `cortex.raw` feature. The wire format
+is defined in the LAMP-protocol sensor-stream contract (`docs/sensor-stream.md`).
+
+Install the `binary` extra, which adds the `openzl` (0.3.0) and `zstandard` decoders:
+
+```sh
+pip install "LAMP-cortex[binary] @ git+https://github.com/BIDMCDigitalPsychiatry/LAMP-cortex.git@master"
+```
+
+The read routes authenticate with an API key, sent as the `x-api-key` header. Set it in
+`LAMP_API_KEY`, next to your other credentials. The loader reads the server from
+`LAMP_SERVER_ADDRESS`, as the rest of Cortex does, and uses `https://`. Keep a scheme out of
+`LAMP_SERVER_ADDRESS`: `import cortex` passes it to `LAMP.connect`, which always adds `https://`,
+so `http://localhost:3000` there breaks every `sensor_event` feature, including `lamp.gps1m`. To
+read from a server without TLS, such as a local development server, pass the address with its
+scheme to the loader instead: `load_sensor_stream(..., server_address='http://localhost:3000')`.
+
+```python
+import os
+os.environ['LAMP_API_KEY'] = 'YOUR_API_KEY'
+
+from cortex.utils.sensor_stream import load_sensor_stream
+df = load_sensor_stream("U1234567890", "lamp.accelerometer50hz",
+                        start=1790000100000, end=1790000400000)
+```
+
+The result is a DataFrame with exactly four columns: `timestamp` (int64, Unix epoch ms) and `x`,
+`y`, and `z` (float32, m/s², in the Android axis convention: face up on a table reads about
+`(0, 0, 9.81)`).
+
+- `start` and `end` are both inclusive.
+- Rows are newest first, like `cortex.raw` features. Pass `ascending=True` for oldest first.
+- Two rows can share a timestamp, and identical rows inside one frame are kept: they're real
+  samples that share a millisecond. A window can hold several frames (after an app restart or a
+  late batch); Cortex merges them and drops a row only when an identical row (all four columns
+  equal) appears in a different frame, as after a re-sent partial frame.
+- Every frame is checked before it's used: its `sha256`, then the contract's decoder checks
+  (one OpenZL output, a length that's a multiple of 20 bytes, `sample_count` records, the OpenZL
+  format version, and the first and last timestamps). A zstd blob must hold exactly one frame,
+  with no bytes after it. A failed check raises
+  `cortex.utils.sensor_stream.SensorStreamError`.
+
+To decode a frame you already have, call `decode_frame(blob, codec, sample_count=...,
+codec_format_version=...)`. It returns a NumPy structured array with dtype `ACCEL_DTYPE`.
+
+`lamp.gps1m` (one GPS fix per minute) stays on `sensor_event`, so it's an ordinary raw feature:
+`cortex.raw.gps1m.gps1m(id=..., start=..., end=...)`. Its data has the same shape as `lamp.gps`.
+
+The tests for this module (`tests/binary_sensor_tests.py`) run offline against golden vectors
+and a fake server:
+
+```sh
+LAMP_ACCESS_KEY=x LAMP_SECRET_KEY=x python -m unittest tests/binary_sensor_tests.py
+```
 
 <a name="bug_report"></a>
 ### Find a bug?

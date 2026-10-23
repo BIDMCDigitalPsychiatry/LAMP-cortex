@@ -182,13 +182,16 @@ def raw_feature(name, dependencies):
                 log.info("Processing raw feature " + name + "...")
 
                 # local data caching TODO: combine pickle window with API data
+                # Match the name plus '_', so 'gps' doesn't pick up 'gps1m_...' files
+                # (or 'accelerometer' pick up 'accelerometer100hz_...').
+                prefix = name.split('.')[1] + '_'
                 for file in [f for f in os.listdir(cache_dir) if f[-7:] == '.cortex']: # .lamp
                     path = cache_dir + '/' + file
 
-                    if not re.match('^' + name.split('.')[1], file):
+                    if not file.startswith(prefix):
                         continue
 
-                    _, rest = re.split('^'+name.split('.')[1]+'_', file)
+                    rest = file[len(prefix):]
                     saved = dict(zip(['id', 'start', 'end'],
                                      re.split('.cortex$', rest)[0].split('_')))
                     saved['name'] = name.split('.')[1]
