@@ -223,6 +223,26 @@ class TestDecodeFrame(unittest.TestCase):
         with self.assertRaises(SensorStreamError):
             decode_frame(_read('frame.zstd')[:-10], 'zstd', **_decode_kwargs(meta))
 
+    def test_rejects_zstd_frame_followed_by_another_frame(self):
+        # zstd decodes only the first frame of a blob; the rest must not be
+        # silently ignored.
+        records = np.frombuffer(_read('frame.bin'), dtype=ACCEL_DTYPE)
+        for content_size in (True, False):
+            with self.subTest(content_size=content_size):
+                cctx = zstandard.ZstdCompressor(write_content_size=content_size)
+                blob = cctx.compress(records[:2].tobytes()) + cctx.compress(records[2:3].tobytes())
+                with self.assertRaisesRegex(SensorStreamError, 'after the zstd frame'):
+                    decode_frame(blob, 'zstd', sample_count=2, codec_format_version=0,
+                                 start_timestamp=int(records['timestamp'][0]),
+                                 end_timestamp=int(records['timestamp'][1]))
+
+    def test_rejects_zstd_frame_with_trailing_garbage(self):
+        meta = _meta('frame.zstd')
+        for name in ('frame.zstd', 'frame_nosize.zstd'):
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(SensorStreamError, 'after the zstd frame'):
+                    decode_frame(_read(name) + b'GARBAGEGARBAGE', 'zstd', **_decode_kwargs(meta))
+
     def test_rejects_length_not_multiple_of_20(self):
         blob = zstandard.ZstdCompressor().compress(_read('frame.bin')[:-1])
         with self.assertRaisesRegex(SensorStreamError, 'multiple of 20'):

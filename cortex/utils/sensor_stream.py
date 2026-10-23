@@ -104,10 +104,21 @@ def _decompress_zstd(blob, sample_count):
     if declared != zstandard.CONTENTSIZE_UNKNOWN:
         _check_length(declared, sample_count)
     try:
-        return zstandard.ZstdDecompressor().decompress(blob, max_output_size=max_size)
+        raw = zstandard.ZstdDecompressor().decompress(blob, max_output_size=max_size)
+        # decompress() reads only the first zstd frame and ignores what follows
+        # it. Decode again, now bounded by the size above, to find where that
+        # frame ends, and reject a blob with anything after it.
+        dobj = zstandard.ZstdDecompressor().decompressobj()
+        dobj.decompress(blob)
     except zstandard.ZstdError as err:
         raise SensorStreamError(f"zstd couldn't decode the frame within sample_count * "
                                 f"{RECORD_SIZE} bytes: {err}") from err
+    if not dobj.eof:
+        raise SensorStreamError("The zstd frame is incomplete.")
+    if dobj.unused_data:
+        raise SensorStreamError(f"The blob has {len(dobj.unused_data)} bytes after the zstd "
+                                f"frame; expected exactly one frame.")
+    return raw
 
 
 def decode_frame(blob, codec, *, sample_count, codec_format_version,  # pylint: disable=too-many-arguments
@@ -117,6 +128,7 @@ def decode_frame(blob, codec, *, sample_count, codec_format_version,  # pylint: 
     The checks run in the contract's order, and the first failure raises:
     one OpenZL output, a length that's a multiple of 20, ``sample_count``
     records, the OpenZL format version, then the first and last timestamps.
+    A zstd blob must hold exactly one frame, with no bytes after it.
 
     Args:
         blob (bytes): The compressed frame bytes.

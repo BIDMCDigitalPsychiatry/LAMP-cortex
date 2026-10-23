@@ -136,7 +136,8 @@ The result is a DataFrame with exactly four columns: `timestamp` (int64, Unix ep
   equal) appears in a different frame, as after a re-sent partial frame.
 - Every frame is checked before it's used: its `sha256`, then the contract's decoder checks
   (one OpenZL output, a length that's a multiple of 20 bytes, `sample_count` records, the OpenZL
-  format version, and the first and last timestamps). A failed check raises
+  format version, and the first and last timestamps). A zstd blob must hold exactly one frame,
+  with no bytes after it. A failed check raises
   `cortex.utils.sensor_stream.SensorStreamError`.
 
 To decode a frame you already have, call `decode_frame(blob, codec, sample_count=...,
