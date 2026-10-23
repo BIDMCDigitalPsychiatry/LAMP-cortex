@@ -455,7 +455,7 @@ class TestLoadSensorStream(unittest.TestCase):
         with self.assertRaises(requests.HTTPError):
             self.load(server)
 
-    def test_merges_frames_in_one_window_and_drops_exact_duplicates(self):
+    def test_merges_frames_in_one_window_and_drops_cross_frame_duplicates(self):
         recs = _records()
         first, last = recs[0], recs[-1]
         # A third frame in the same window: one record that shares a timestamp
@@ -479,6 +479,35 @@ class TestLoadSensorStream(unittest.TestCase):
                          sorted([np.float32(first['x']), np.float32(first['x'] + 1.0)]))
         self.assertEqual((df['timestamp'] == last['timestamp']).sum(), 1)
         self.assertEqual(df['timestamp'].tolist(), sorted(df['timestamp'].tolist()))
+
+    def test_keeps_identical_records_within_one_frame(self):
+        # Two identical readings in one ms (a device at rest at 100 Hz) are
+        # real samples; the contract's "Merging frames" rule keeps both.
+        rest = (1790000100010, 0.0, 0.0, 9.80665)
+        blob, meta = _zstd_frame([(1790000100000, 0.0, 0.0, 9.80665), rest, rest,
+                                  (1790000100020, 0.0, 0.0, 9.80665)])
+        df = self.load(FakeServer([('f1', meta, blob)]), start=1790000100000,
+                       end=1790000100020, ascending=True)
+        self.assertEqual(len(df), 4)
+        self.assertEqual(df['timestamp'].tolist(),
+                         [1790000100000, 1790000100010, 1790000100010, 1790000100020])
+
+    def test_cross_frame_duplicates_keep_the_largest_in_frame_count(self):
+        rec = (1790000100010, 0.5, 0.25, 9.75)
+        other = (1790000100020, 1.0, 2.0, 3.0)
+        blob_a, meta_a = _zstd_frame([rec, rec])
+        blob_b, meta_b = _zstd_frame([rec])
+        blob_c, meta_c = _zstd_frame([rec, rec, rec, other])
+        cases = {'A=[r,r] then B=[r]': ([('a', meta_a, blob_a), ('b', meta_b, blob_b)], 2),
+                 'B=[r] then A=[r,r]': ([('b', meta_b, blob_b), ('a', meta_a, blob_a)], 2),
+                 'A, B, then C=[r,r,r,o]': ([('a', meta_a, blob_a), ('b', meta_b, blob_b),
+                                             ('c', meta_c, blob_c)], 3)}
+        for name, (frames, copies) in cases.items():
+            with self.subTest(name):
+                df = self.load(FakeServer(frames), start=1790000100000,
+                               end=1790000100020, ascending=True)
+                self.assertEqual((df['timestamp'] == rec[0]).sum(), copies)
+                self.assertEqual(len(df), copies + (len(frames) == 3))
 
     def test_trims_records_to_the_inclusive_range(self):
         start, end = self.START + 1000, self.START + 2000

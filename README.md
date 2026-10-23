@@ -130,8 +130,10 @@ The result is a DataFrame with exactly four columns: `timestamp` (int64, Unix ep
 
 - `start` and `end` are both inclusive.
 - Rows are newest first, like `cortex.raw` features. Pass `ascending=True` for oldest first.
-- Two rows can share a timestamp. A window can hold several frames (after an app restart or a
-  late batch); Cortex merges them and drops only rows that are equal in all four columns.
+- Two rows can share a timestamp, and identical rows inside one frame are kept: they're real
+  samples that share a millisecond. A window can hold several frames (after an app restart or a
+  late batch); Cortex merges them and drops a row only when an identical row (all four columns
+  equal) appears in a different frame, as after a re-sent partial frame.
 - Every frame is checked before it's used: its `sha256`, then the contract's decoder checks
   (one OpenZL output, a length that's a multiple of 20 bytes, `sample_count` records, the OpenZL
   format version, and the first and last timestamps). A failed check raises

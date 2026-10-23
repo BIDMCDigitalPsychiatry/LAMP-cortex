@@ -234,12 +234,20 @@ def _merge(arrays, start, end, ascending):
     """ Merges decoded frames into one DataFrame trimmed to ``[start, end]``. """
     if not arrays:
         return _empty_frame()
-    records = np.concatenate(arrays)
-    records = records[(records['timestamp'] >= int(start)) & (records['timestamp'] <= int(end))]
-    df = pd.DataFrame({name: records[name] for name in _COLUMNS})
+    frames = []
+    for records in arrays:
+        records = records[(records['timestamp'] >= int(start))
+                          & (records['timestamp'] <= int(end))]
+        frame = pd.DataFrame({name: records[name] for name in _COLUMNS})
+        # Number each copy of a record within its frame: 0, 1, 2, ...
+        frame['_occurrence'] = frame.groupby(_COLUMNS, sort=False, dropna=False).cumcount()
+        frames.append(frame)
+    df = pd.concat(frames, ignore_index=True)
     # Frames of one window can repeat records (a re-upload or an overlapping
-    # partial frame); drop only records equal in all four fields.
-    df = df.drop_duplicates(keep='first')
+    # partial frame). Drop a record only when the same copy of it appeared in
+    # an earlier frame, so identical records inside one frame stay: a record
+    # keeps as many copies as the frame that holds the most.
+    df = df.drop_duplicates(keep='first').drop(columns='_occurrence')
     df = df.sort_values('timestamp', kind='mergesort')
     if not ascending:
         df = df.iloc[::-1]
@@ -254,8 +262,10 @@ def load_sensor_stream(participant_id, sensor_spec, start, end, *,  # pylint: di
     Lists every frame that overlaps ``[start, end]``, downloads each one,
     checks its sha256 and the contract's decoder checks, and merges the
     records. A window can hold several frames (after a restart or a late
-    batch), so records that are exact duplicates in all four fields are
-    dropped; records that share a timestamp but differ are kept.
+    batch), so a record is dropped when an identical record (all four
+    fields equal) appears in a different frame. Identical records inside one
+    frame are real samples that share a millisecond, so they're kept, and
+    records that share a timestamp but differ are kept.
 
     Args:
         participant_id (str): The participant's LAMP id.
