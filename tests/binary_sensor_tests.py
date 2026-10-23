@@ -22,7 +22,6 @@ from unittest import mock
 
 import compress_pickle
 import numpy as np
-import pandas as pd
 import requests
 import zstandard
 
@@ -140,7 +139,8 @@ class FakeServer:
         assert participant == 'U1', participant
         if rest == 'sensor-stream':
             params = kwargs.get('params') or {}
-            offset = int(params.get('cursor') or 0)
+            cursor = str(params.get('cursor') or '0')
+            offset = int(cursor) if cursor.isdigit() else 0
             page = self.frames[offset:offset + self.page_size]
             nxt = offset + self.page_size
             body = {'data': [m for _, m, _ in page],
@@ -273,6 +273,10 @@ class TestDecodeFrame(unittest.TestCase):
         with self.assertRaisesRegex(SensorStreamError, 'format version'):
             decode_frame(_read('frame.openzl'), 'openzl', sample_count=500,
                          codec_format_version=23, start_timestamp=1, end_timestamp=2)
+
+    def test_rejects_garbage_zstd(self):
+        with self.assertRaises(SensorStreamError):
+            decode_frame(b'not a zstd frame', 'zstd', sample_count=1, codec_format_version=0)
 
     def test_rejects_unknown_codec(self):
         with self.assertRaisesRegex(SensorStreamError, 'codec'):
@@ -415,6 +419,30 @@ class TestLoadSensorStream(unittest.TestCase):
         server = FakeServer([('f1', meta, _read('frame.openzl'))])
         with self.assertRaisesRegex(SensorStreamError, 'sha256'):
             self.load(server)
+
+    def test_byte_length_mismatch_raises(self):
+        meta = dict(_meta('frame.openzl'), byte_length=4187)
+        server = FakeServer([('f1', meta, _read('frame.openzl'))])
+        with self.assertRaisesRegex(SensorStreamError, 'byte_length'):
+            self.load(server)
+
+    def test_repeated_cursor_raises_instead_of_looping(self):
+        server = self.golden_server(page_size=1)
+        original = server.get
+
+        def stuck_get(url, **kwargs):
+            resp = original(url, **kwargs)
+            if url.endswith('/sensor-stream'):
+                resp._json['next'] = 'same'  # pylint: disable=protected-access
+            return resp
+
+        server.get = stuck_get
+        with self.assertRaisesRegex(SensorStreamError, 'cursor'):
+            self.load(server)
+
+    def test_start_after_end_raises(self):
+        with self.assertRaises(ValueError):
+            self.load(self.golden_server(), start=self.END, end=self.START)
 
     def test_decoder_check_failure_raises(self):
         meta = dict(_meta('frame.openzl'), sample_count=499)
