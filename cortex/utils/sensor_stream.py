@@ -292,7 +292,10 @@ def load_sensor_stream(participant_id, sensor_spec, start, end, *,  # pylint: di
             a new session is opened and closed.
         server_address (str): The LAMP server, with or without a scheme.
             Defaults to ``LAMP_SERVER_ADDRESS``, then ``api.lamp.digital``.
-            ``https://`` is added when there's no scheme.
+            ``https://`` is added when there's no scheme. For a server
+            without TLS, pass ``'http://...'`` here; don't put a scheme in
+            ``LAMP_SERVER_ADDRESS``, because ``LAMP.connect`` always adds
+            ``https://`` to it.
         api_key (str): The API key, sent as ``x-api-key``. Defaults to
             ``LAMP_API_KEY``.
 

@@ -14,6 +14,7 @@ import hashlib
 import inspect
 import json
 import logging
+import re
 import shutil
 import sys
 import tempfile
@@ -577,6 +578,43 @@ class TestRawRegistration(unittest.TestCase):
         modules = dict(inspect.getmembers(cortex.raw, inspect.ismodule))
         self.assertNotIn('sensor_stream', modules)
         self.assertIs(sensor_stream.load_sensor_stream, load_sensor_stream)
+
+
+class TestServerAddressDocs(unittest.TestCase):
+    """ Regression: `LAMP_SERVER_ADDRESS` is shared with `LAMP.connect`. """
+
+    README = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          'README.md')
+
+    def test_lamp_connect_always_prepends_https(self):
+        # The premise of the docs rule below: a scheme in the shared variable
+        # would become `https://http://...` for every sensor_event feature.
+        # connect() rebinds LAMP's API globals; put the real ones back.
+        apis = ('API', 'Type', 'Credential', 'Researcher', 'Study', 'Participant', 'Activity',
+                'ActivitySpec', 'ActivityEvent', 'Sensor', 'SensorSpec', 'SensorEvent')
+        saved = {name: getattr(LAMP, name) for name in apis}
+        self.addCleanup(lambda: [setattr(LAMP, k, v) for k, v in saved.items()])
+        with mock.patch.object(LAMP, 'ApiClient'), \
+                mock.patch.object(LAMP, 'Configuration') as config:
+            LAMP.connect('x', 'x', 'localhost:3000')
+        self.assertEqual(config.call_args.kwargs['host'], 'https://localhost:3000')
+
+    def test_readme_never_puts_a_scheme_in_lamp_server_address(self):
+        with open(self.README, encoding='utf-8') as f:
+            text = f.read()
+        for pattern in (r"LAMP_SERVER_ADDRESS[`'\"\]\s=]*[a-z]+://",
+                        r"`LAMP_SERVER_ADDRESS` can include a scheme"):
+            match = re.search(pattern, text)
+            self.assertIsNone(match, f'README.md: {match and match.group(0)!r}')
+
+    def test_explicit_server_address_overrides_the_environment(self):
+        server = FakeServer([('f1', _meta('frame.openzl'), _read('frame.openzl'))])
+        with mock.patch.dict(os.environ, {'LAMP_SERVER_ADDRESS': 'api.example.org'}):
+            load_sensor_stream('U1', SPEC, 1790000100000, 1790000109980,
+                               session=server.session(), api_key='k',
+                               server_address='http://localhost:3000')
+        for url, _ in server.calls:
+            self.assertTrue(url.startswith('http://localhost:3000/participant/U1/'), url)
 
 
 class TestCachePrefix(unittest.TestCase):

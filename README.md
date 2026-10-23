@@ -112,8 +112,12 @@ pip install "LAMP-cortex[binary] @ git+https://github.com/BIDMCDigitalPsychiatry
 ```
 
 The read routes authenticate with an API key, sent as the `x-api-key` header. Set it in
-`LAMP_API_KEY`, next to your other credentials. `LAMP_SERVER_ADDRESS` can include a scheme
-(`http://localhost:3000`); without one, Cortex uses `https://`.
+`LAMP_API_KEY`, next to your other credentials. The loader reads the server from
+`LAMP_SERVER_ADDRESS`, as the rest of Cortex does, and uses `https://`. Keep a scheme out of
+`LAMP_SERVER_ADDRESS`: `import cortex` passes it to `LAMP.connect`, which always adds `https://`,
+so `http://localhost:3000` there breaks every `sensor_event` feature, including `lamp.gps1m`. To
+read from a server without TLS, such as a local development server, pass the address with its
+scheme to the loader instead: `load_sensor_stream(..., server_address='http://localhost:3000')`.
 
 ```python
 import os
